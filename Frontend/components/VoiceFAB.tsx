@@ -1,205 +1,411 @@
 'use client';
+
 import { motion, AnimatePresence } from 'motion/react';
 import { Mic, Square, Loader2, Volume2 } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams } from 'next/navigation';
 
 // Vapi Public Key and Assistant ID should be in .env
 const VAPI_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY || '';
 const VAPI_ASSISTANT_ID = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID || '';
 
-import { useParams } from 'next/navigation';
+const FIRST_MESSAGES: Record<string, string> = {
+  en: "Hello! I'm your WellSync health assistant. How can I help you today?",
+  hi: 'नमस्ते! मैं आपका वेलसिंक स्वास्थ्य सहायक हूँ। आज मैं आपकी क्या मदद कर सकता हूँ?',
+  mr: 'नमस्कार! मी तुमचा वेलसिंक आरोग्य सहाय्यक आहे. आज मी तुम्हाला कशी मदत करू शकतो?',
+  gu: 'નમસ્તે! હું તમારો વેલસિંક સ્વાસ્થ્ય સહાયક છું. આજે હું તમને કેવી રીતે મદદ કરી શકું?',
+  bn: 'হ্যালো! আমি আপনার ওয়েলসিঙ্ক স্বাস্থ্য সহকারী। আজ আমি আপনাকে কীভাবে সাহায্য করতে পারি?',
+  ta: 'வணக்கம்! நான் உங்கள் வெல்சின்க் சுகாதார உதவியாளர். இன்று நான் உங்களுக்கு எப்படி உதவ முடியும்?',
+  te: 'నమస్తే! నేను మీ వెల్సింక్ ఆరోగ్య సహాయకుడిని. ఈరోజు నేను మీకు ఎలా సహాయపడగలను?',
+};
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  hi: 'Hindi',
+  mr: 'Marathi',
+  gu: 'Gujarati',
+  bn: 'Bengali',
+  ta: 'Tamil',
+  te: 'Telugu',
+  en: 'English',
+};
+
+type StartContext = {
+  language: string;
+  langName: string;
+  greeting: string;
+  householdId: string;
+  dependentId: string;
+};
+
+type StartPreflight =
+  | { ok: true; context: StartContext }
+  | { ok: false; reason: string };
+
+type ParsedVapiError = {
+  type?: string;
+  stage?: string;
+  statusCode?: number;
+  message: string;
+  isBadRequest: boolean;
+  isStartMethodError: boolean;
+};
 
 interface VapiInstance {
   start: (assistantId: string, assistantOverrides?: any) => Promise<any>;
-  stop: () => void;
-  on: (event: any, callback: (...args: any[]) => void) => any;
+  stop: () => Promise<void> | void;
+  on: (event: string, callback: (...args: any[]) => void) => void;
 }
 
-export function VoiceFAB() {
-  const params = useParams();
-  const dependentId = params?.dependent_id as string;
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isActive, setIsActive] = useState(false);
-  const [vapi, setVapi] = useState<VapiInstance | null>(null);
+function asRecord(value: unknown): Record<string, any> | null {
+  return value && typeof value === 'object' ? (value as Record<string, any>) : null;
+}
 
-  // Dynamic import of Vapi SDK to avoid SSR issues
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const initVapi = async () => {
-        try {
-          const VapiModule = await import('@vapi-ai/web');
-          const VapiConstructor = VapiModule.default || VapiModule;
-          // @ts-ignore - Vapi constructor types can be tricky with ESM/CJS interop
-          const vapiInstance = new VapiConstructor(VAPI_PUBLIC_KEY);
-          setVapi(vapiInstance);
+function parseVapiError(error: unknown): ParsedVapiError {
+  const root = asRecord(error);
+  const nested = asRecord(root?.error);
 
-          vapiInstance.on('call-start', () => {
-            setIsConnecting(false);
-            setIsActive(true);
-          });
+  const type = (root?.type || nested?.type) as string | undefined;
+  const stage = (root?.stage || nested?.stage) as string | undefined;
 
-          vapiInstance.on('call-end', () => {
-            setIsConnecting(false);
-            setIsActive(false);
-          });
+  const numericStatus = [root?.statusCode, root?.status, nested?.statusCode, nested?.status].find(
+    (value) => typeof value === 'number'
+  ) as number | undefined;
 
-          vapiInstance.on('error', (e: any) => {
-            console.error('Vapi Error:', JSON.stringify(e, Object.getOwnPropertyNames(e)), e);
-            setIsConnecting(false);
-            setIsActive(false);
-          });
-        } catch (err) {
-          console.warn('Vapi SDK could not be initialized. Voice features will be simulated.');
-        }
-      };
-      initVapi();
-    }
-  }, []);
+  const message =
+    (root?.message as string | undefined) ||
+    (nested?.message as string | undefined) ||
+    (root?.error as string | undefined) ||
+    (typeof error === 'string' ? error : '') ||
+    'Unknown Vapi start error';
 
-  const toggleCall = useCallback(async () => {
-    if (isActive) {
-      vapi?.stop();
-      setIsActive(false);
-    } else {
-      setIsConnecting(true);
+  const normalized = `${type || ''} ${message}`.toLowerCase();
 
-      // Simulation mode if keys are missing
-      if (!VAPI_PUBLIC_KEY || !VAPI_ASSISTANT_ID || !vapi) {
-        console.info('Using Voice Simulation Mode (API Keys missing or SDK loading)');
-        setTimeout(() => {
-          setIsConnecting(false);
-          setIsActive(true);
-        }, 1200);
-        return;
-      }
+  return {
+    type,
+    stage,
+    statusCode: numericStatus,
+    message,
+    isBadRequest: numericStatus === 400 || normalized.includes('bad request'),
+    isStartMethodError: type === 'start-method-error' || normalized.includes('start-method-error'),
+  };
+}
 
-      try {
-        const householdId = localStorage.getItem('household_id') || '';
-        const language = localStorage.getItem('primary_language') || 'en';
-        
-        const firstMessages: Record<string, string> = {
-          en: "Hello! I'm your WellSync health assistant. How can I help you today?",
-          hi: "नमस्ते! मैं आपका वेलसिंक स्वास्थ्य सहायक हूँ। आज मैं आपकी क्या मदद कर सकता हूँ?",
-          mr: "नमस्कार! मी तुमचा वेलसिंक आरोग्य सहाय्यक आहे. आज मी तुम्हाला कशी मदत करू शकतो?",
-          gu: "નમસ્તે! હું તમારો વેલસિંક સ્વાસ્થ્ય સહાયક છું. આજે હું તમને કેવી રીતે મદદ કરી શકું?",
-          bn: "হ্যালো! আমি আপনার ওয়েলসিঙ্ক স্বাস্থ্য সহকারী। আজ আমি আপনাকে কীভাবে সাহায্য করতে পারি?",
-          ta: "வணக்கம்! நான் உங்கள் வெல்சின்க் சுகாதார உதவியாளர். இன்று நான் உங்களுக்கு எப்படி உதவ முடியும்?",
-          te: "నమస్తే! నేను మీ వెల్సింక్ ఆరోగ్య సహాయకుడిని. ఈరోజు నేను మీకు ఎలా సహాయపడగలను?",
-        };
+function normalizeDeepgramLanguage(language: string): 'en-US' | 'multi' {
+  return language === 'en' ? 'en-US' : 'multi';
+}
 
-        const targetLangName: Record<string, string> = {
-          hi: "Hindi", mr: "Marathi", gu: "Gujarati", bn: "Bengali", ta: "Tamil", te: "Telugu", en: "English"
-        };
-        const langName = targetLangName[language] || "English";
-        const greeting = firstMessages[language] || firstMessages.en;
+function buildAssistantOverrides(context: StartContext) {
+  const { language, langName, greeting, householdId, dependentId } = context;
 
-        console.log('VoiceFAB: Starting Vapi call', { 
-          language, 
-          householdId, 
-          dependentId, 
-          assistantId: VAPI_ASSISTANT_ID 
-        });
-
-        await vapi.start(VAPI_ASSISTANT_ID, {
-          firstMessage: greeting,
-          transcriber: {
-            provider: 'deepgram',
-            language: language === 'en' ? 'en-US' : 'hi',
-          },
-          model: {
-            provider: 'openai',
-            model: 'gpt-4o',
-            messages: [
-              {
-                role: "system",
-                content: `You are the WellSync health assistant for a real family. 
+  return {
+    firstMessage: greeting,
+    transcriber: {
+      provider: 'deepgram',
+      language: normalizeDeepgramLanguage(language),
+    },
+    model: {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: `You are the WellSync health assistant for a real family.
                 STRICT RULE: The user prefers ${langName}. You MUST respond ONLY in ${langName}.
                 ANTI-DEMO RULE: Never mention names like Olivia, Jackson, Emily, Emma, or any names not related to the current user.
-                
+
                 DYNAMIC CONTEXT:
                 - Household ID: ${householdId}
                 - Selected Language: ${langName}
-                
+
                 ACTION: At the very beginning of the call, if you don't already have the names of the children in your prompt, you MUST call 'get_household_dependents' immediately to discover who is in this family.
-                
+
                 When the user asks about vaccines or health, call 'get_child_vaccination_status'.
-                
+
                 Goals:
                 - Identify children by name using tools.
                 - Help parents understand vaccination status.
                 - Provide health education in ${langName}.
-                
+
                 Medical Safety:
                 - NO diagnosis. If emergency, instruct to seek immediate medical care.
                 - Never fabricate data.
-                
-                Style: Simple, short sentences. Confirm actions.`
-              }
-            ],
-            tools: [
-              {
-                type: "function",
-                function: {
-                  name: "get_household_dependents",
-                  description: "List all members/children in the household to know their real names.",
-                  parameters: {
-                    type: "object",
-                    properties: {
-                      household_id: { type: "string", description: "The ID of the family household." }
-                    },
-                    required: ["household_id"]
-                  }
-                }
+
+                Style: Simple, short sentences. Confirm actions.`,
+        },
+      ],
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'get_household_dependents',
+            description: 'List all members/children in the household to know their real names.',
+            parameters: {
+              type: 'object',
+              properties: {
+                household_id: { type: 'string', description: 'The ID of the family household.' },
               },
-              {
-                type: "function",
-                function: {
-                  name: "get_child_vaccination_status",
-                  description: "Get the vaccination and health status for a specific child.",
-                  parameters: {
-                    type: "object",
-                    properties: {
-                      dependent_id: { type: "string", description: "The ID of the child." },
-                      household_id: { type: "string", description: "The ID of the family household." }
-                    },
-                    required: ["household_id"]
-                  }
-                }
-              },
-              {
-                type: "function",
-                function: {
-                  name: "answer_health_question",
-                  description: "Answer complex health questions using full medical history context.",
-                  parameters: {
-                    type: "object",
-                    properties: {
-                      question: { type: "string", description: "The user's question." },
-                      household_id: { type: "string", description: "The ID of the family household." },
-                      dependent_id: { type: "string", description: "The child's ID." },
-                      language: { type: "string", description: "Language code." }
-                    },
-                    required: ["question", "household_id"]
-                  }
-                }
-              }
-            ]
+              required: ['household_id'],
+            },
           },
-          variableValues: {
-            household_id: householdId,
-            dependent_id: dependentId || '',
-            language: language,
-            language_name: langName,
-            first_message: greeting,
+        },
+        {
+          type: 'function',
+          function: {
+            name: 'get_child_vaccination_status',
+            description: 'Get the vaccination and health status for a specific child.',
+            parameters: {
+              type: 'object',
+              properties: {
+                dependent_id: { type: 'string', description: 'The ID of the child.' },
+                household_id: { type: 'string', description: 'The ID of the family household.' },
+              },
+              required: ['household_id'],
+            },
+          },
+        },
+        {
+          type: 'function',
+          function: {
+            name: 'answer_health_question',
+            description: 'Answer complex health questions using full medical history context.',
+            parameters: {
+              type: 'object',
+              properties: {
+                question: { type: 'string', description: "The user's question." },
+                household_id: { type: 'string', description: 'The ID of the family household.' },
+                dependent_id: { type: 'string', description: "The child's ID." },
+                language: { type: 'string', description: 'Language code.' },
+              },
+              required: ['question', 'household_id'],
+            },
+          },
+        },
+      ],
+    },
+    variableValues: {
+      household_id: householdId,
+      dependent_id: dependentId,
+      language,
+      language_name: langName,
+      first_message: greeting,
+    },
+  };
+}
+
+export function VoiceFAB() {
+  const params = useParams();
+  const dependentId = (params?.dependent_id as string | undefined) || '';
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isActive, setIsActive] = useState(false);
+  const [isVapiReady, setIsVapiReady] = useState(false);
+  const [callError, setCallError] = useState<string | null>(null);
+  const vapiRef = useRef<VapiInstance | null>(null);
+
+  const resetCallState = useCallback(() => {
+    setIsConnecting(false);
+    setIsActive(false);
+  }, []);
+
+  const handleStartFailure = useCallback(
+    (error: unknown, source: string, context: Partial<StartContext> = {}) => {
+      const parsed = parseVapiError(error);
+      const isRequestFailure = parsed.isBadRequest || parsed.isStartMethodError;
+
+      const userMessage = isRequestFailure
+        ? 'Voice request was rejected. Please verify household context and Vapi assistant configuration.'
+        : 'Could not start voice assistant. Please try again.';
+
+      console.error('VoiceFAB start failure', {
+        source,
+        type: parsed.type,
+        stage: parsed.stage,
+        statusCode: parsed.statusCode,
+        message: parsed.message,
+        isBadRequest: parsed.isBadRequest,
+        isStartMethodError: parsed.isStartMethodError,
+        assistantId: VAPI_ASSISTANT_ID,
+        hasPublicKey: Boolean(VAPI_PUBLIC_KEY),
+        context,
+      });
+
+      setCallError(userMessage);
+      resetCallState();
+    },
+    [resetCallState]
+  );
+
+  // Dynamic import of Vapi SDK to avoid SSR issues.
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (!VAPI_PUBLIC_KEY) {
+      console.warn('VoiceFAB: NEXT_PUBLIC_VAPI_PUBLIC_KEY is missing. Voice calls are disabled.');
+      return;
+    }
+
+    let disposed = false;
+
+    const initVapi = async () => {
+      if (vapiRef.current) {
+        setIsVapiReady(true);
+        return;
+      }
+
+      try {
+        const VapiModule = await import('@vapi-ai/web');
+        if (disposed) {
+          return;
+        }
+
+        const VapiConstructor = VapiModule.default || VapiModule;
+        // @ts-ignore - Vapi constructor types can be tricky with ESM/CJS interop.
+        const vapiInstance = new VapiConstructor(VAPI_PUBLIC_KEY) as VapiInstance;
+
+        vapiRef.current = vapiInstance;
+        setIsVapiReady(true);
+
+        vapiInstance.on('call-start', () => {
+          setCallError(null);
+          setIsConnecting(false);
+          setIsActive(true);
+        });
+
+        vapiInstance.on('call-end', () => {
+          resetCallState();
+        });
+
+        vapiInstance.on('call-start-failed', (event: unknown) => {
+          handleStartFailure(event, 'event:call-start-failed');
+        });
+
+        vapiInstance.on('error', (event: unknown) => {
+          const parsed = parseVapiError(event);
+          if (parsed.isBadRequest || parsed.isStartMethodError) {
+            handleStartFailure(event, 'event:error');
+            return;
           }
+
+          console.error('VoiceFAB runtime error', {
+            type: parsed.type,
+            stage: parsed.stage,
+            message: parsed.message,
+            statusCode: parsed.statusCode,
+          });
+
+          resetCallState();
         });
       } catch (err) {
-        console.error('Failed to start Vapi call:', err);
-        setIsConnecting(false);
-        setIsActive(false);
+        if (!disposed) {
+          console.warn('Vapi SDK could not be initialized. Voice calls are disabled.', err);
+          setIsVapiReady(false);
+        }
       }
+    };
+
+    initVapi();
+
+    return () => {
+      disposed = true;
+    };
+  }, [handleStartFailure, resetCallState]);
+
+  const readStartContext = useCallback((): StartPreflight => {
+    if (typeof window === 'undefined') {
+      return { ok: false, reason: 'Voice is available only in the browser.' };
     }
-  }, [isActive, vapi, dependentId]);
+
+    if (!VAPI_PUBLIC_KEY || !VAPI_ASSISTANT_ID) {
+      return { ok: false, reason: 'Voice is unavailable because Vapi configuration is missing.' };
+    }
+
+    if (!isVapiReady || !vapiRef.current) {
+      return { ok: false, reason: 'Voice assistant is still loading. Please try again.' };
+    }
+
+    const householdId = (localStorage.getItem('household_id') || '').trim();
+    if (!householdId) {
+      return { ok: false, reason: 'Please select or create a household before starting voice.' };
+    }
+
+    const rawLanguage = (localStorage.getItem('primary_language') || 'en').trim().toLowerCase();
+    const language = Object.prototype.hasOwnProperty.call(FIRST_MESSAGES, rawLanguage)
+      ? rawLanguage
+      : 'en';
+
+    return {
+      ok: true,
+      context: {
+        language,
+        langName: LANGUAGE_NAMES[language] || 'English',
+        greeting: FIRST_MESSAGES[language] || FIRST_MESSAGES.en,
+        householdId,
+        dependentId,
+      },
+    };
+  }, [dependentId, isVapiReady]);
+
+  const startCall = useCallback(async () => {
+    setIsConnecting(true);
+    setCallError(null);
+
+    const preflight = readStartContext();
+    if (!preflight.ok) {
+      console.warn('VoiceFAB preflight failed', { reason: preflight.reason });
+      setCallError(preflight.reason);
+      resetCallState();
+      return;
+    }
+
+    try {
+      console.info('VoiceFAB: Starting Vapi call', {
+        assistantId: VAPI_ASSISTANT_ID,
+        householdId: preflight.context.householdId,
+        dependentId: preflight.context.dependentId,
+        language: preflight.context.language,
+      });
+
+      const call = await vapiRef.current!.start(
+        VAPI_ASSISTANT_ID,
+        buildAssistantOverrides(preflight.context)
+      );
+
+      if (!call) {
+        handleStartFailure(
+          {
+            type: 'start-method-error',
+            stage: 'start-call',
+            message: 'Vapi start returned null call object.',
+            statusCode: 400,
+          },
+          'start:null-call',
+          preflight.context
+        );
+      }
+    } catch (error) {
+      handleStartFailure(error, 'start:exception', preflight.context);
+    }
+  }, [handleStartFailure, readStartContext, resetCallState]);
+
+  const stopCall = useCallback(async () => {
+    try {
+      await vapiRef.current?.stop();
+    } catch (error) {
+      console.error('VoiceFAB stop failure', error);
+    } finally {
+      resetCallState();
+    }
+  }, [resetCallState]);
+
+  const toggleCall = useCallback(async () => {
+    if (isActive) {
+      await stopCall();
+      return;
+    }
+
+    await startCall();
+  }, [isActive, startCall, stopCall]);
 
   return (
     <>
@@ -217,17 +423,34 @@ export function VoiceFAB() {
               </div>
               <motion.div
                 animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                 className="absolute inset-0 bg-blue-400/20 rounded-2xl -z-10"
               />
             </div>
             <div className="pr-2">
-              <p className="text-sm font-black text-slate-800 dark:text-white leading-none mb-1">Health Assistant</p>
+              <p className="text-sm font-black text-slate-800 dark:text-white leading-none mb-1">
+                Health Assistant
+              </p>
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                <p className="text-[10px] font-black text-blue-500 dark:text-blue-400 uppercase tracking-[0.15em]">Listening Now</p>
+                <p className="text-[10px] font-black text-blue-500 dark:text-blue-400 uppercase tracking-[0.15em]">
+                  Listening Now
+                </p>
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {callError && !isActive && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            className="fixed bottom-28 right-8 z-40 max-w-xs rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 shadow-md"
+          >
+            {callError}
           </motion.div>
         )}
       </AnimatePresence>
@@ -237,15 +460,14 @@ export function VoiceFAB() {
         whileTap={{ scale: 0.95 }}
         onClick={toggleCall}
         animate={{
-          boxShadow: isActive 
-            ? "0px 0px 40px rgba(244, 63, 94, 0.4)"
-            : "10px 10px 20px rgba(59, 130, 246, 0.2)",
+          boxShadow: isActive
+            ? '0px 0px 40px rgba(244, 63, 94, 0.4)'
+            : '10px 10px 20px rgba(59, 130, 246, 0.2)',
         }}
         disabled={isConnecting}
+        title={callError || undefined}
         className={`fixed bottom-8 right-8 w-16 h-16 md:w-20 md:h-20 rounded-[2.5rem] flex items-center justify-center z-50 transition-all duration-300 shadow-[inset_4px_4px_10px_rgba(255,255,255,0.4),inset_-4px_-4px_10px_rgba(0,0,0,0.05)] ${
-          isActive 
-          ? 'bg-rose-500 text-white' 
-          : 'bg-blue-500 text-white hover:bg-blue-600'
+          isActive ? 'bg-rose-500 text-white' : 'bg-blue-500 text-white hover:bg-blue-600'
         }`}
       >
         {isConnecting ? (
