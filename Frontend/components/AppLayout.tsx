@@ -117,15 +117,8 @@ export function AppLayout({ children }: AppLayoutProps) {
         <MobileNavItem href="/reminders" icon={Clock} label="Stats" active={isActive('/reminders')} />
       </div>
 
-      {/* Mobile Voice FAB */}
-      <div className="md:hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50">
-        <VoiceFAB />
-      </div>
-
-      {/* Desktop Voice FAB */}
-      <div className="hidden md:block fixed bottom-8 right-8 z-50">
-        <VoiceFAB />
-      </div>
+      {/* Shared Voice FAB */}
+      <VoiceFAB />
     </div>
   );
 }

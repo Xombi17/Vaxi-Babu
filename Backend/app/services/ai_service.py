@@ -113,9 +113,11 @@ async def answer_voice_question(
         user_message = (
             f"Context about this family's health schedule:\n{context}\n\n"
             f"User question: {question}\n\n"
-            f"Respond in {target_lang}. "
-            f"Never ask the user for a technical ID or UUID. Refer to children only by their names. "
-            f"Keep the response short and clear (under 60 words)."
+            f"Respond in {target_lang}. Keep the response short and clear (under 60 words).\n"
+            f"RULES:\n"
+            f"1. Never ask the user for a technical ID or UUID. Refer to children only by their names.\n"
+            f"2. If asked about a specific child (like 'Saanvi') who is NOT listed in the Context above, clearly state 'You do not have a child named [Name] registered on your account' and list the actual children present in the context.\n"
+            f"3. Do not assume names. Base your entire answer strictly on the provided Context."
         )
         chat = await client.chat.completions.create(
             model=settings.github_chat_model,

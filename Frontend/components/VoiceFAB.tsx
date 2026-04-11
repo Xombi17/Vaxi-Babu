@@ -54,7 +54,15 @@ interface VapiInstance {
   start: (assistantId: string, assistantOverrides?: any) => Promise<any>;
   stop: () => Promise<void> | void;
   on: (event: string, callback: (...args: any[]) => void) => void;
+  removeListener?: (event: string, callback: (...args: any[]) => void) => void;
 }
+
+type VapiListeners = {
+  onCallStart: () => void;
+  onCallEnd: () => void;
+  onCallStartFailed: (event: unknown) => void;
+  onError: (event: unknown) => void;
+};
 
 function asRecord(value: unknown): Record<string, any> | null {
   return value && typeof value === 'object' ? (value as Record<string, any>) : null;
@@ -200,8 +208,47 @@ export function VoiceFAB() {
   const [isVapiReady, setIsVapiReady] = useState(false);
   const [callError, setCallError] = useState<string | null>(null);
   const vapiRef = useRef<VapiInstance | null>(null);
+  const listenersRef = useRef<VapiListeners | null>(null);
+  const startInFlightRef = useRef(false);
+  const errorTimerRef = useRef<number | null>(null);
+
+  const panelPositionClass =
+    'bottom-44 left-1/2 -translate-x-1/2 md:bottom-32 md:right-8 md:left-auto md:translate-x-0';
+  const errorPositionClass =
+    'bottom-40 left-1/2 -translate-x-1/2 md:bottom-28 md:right-8 md:left-auto md:translate-x-0';
+  const fabPositionClass =
+    'bottom-24 left-1/2 -translate-x-1/2 md:bottom-8 md:right-8 md:left-auto md:translate-x-0';
+
+  const clearErrorTimer = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (errorTimerRef.current !== null) {
+      window.clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = null;
+    }
+  }, []);
+
+  const setTransientError = useCallback(
+    (message: string) => {
+      setCallError(message);
+
+      if (typeof window === 'undefined') {
+        return;
+      }
+
+      clearErrorTimer();
+      errorTimerRef.current = window.setTimeout(() => {
+        setCallError(null);
+        errorTimerRef.current = null;
+      }, 6000);
+    },
+    [clearErrorTimer]
+  );
 
   const resetCallState = useCallback(() => {
+    startInFlightRef.current = false;
     setIsConnecting(false);
     setIsActive(false);
   }, []);
@@ -228,10 +275,10 @@ export function VoiceFAB() {
         context,
       });
 
-      setCallError(userMessage);
+      setTransientError(userMessage);
       resetCallState();
     },
-    [resetCallState]
+    [resetCallState, setTransientError]
   );
 
   // Dynamic import of Vapi SDK to avoid SSR issues.
@@ -266,21 +313,23 @@ export function VoiceFAB() {
         vapiRef.current = vapiInstance;
         setIsVapiReady(true);
 
-        vapiInstance.on('call-start', () => {
+        const onCallStart = () => {
+          startInFlightRef.current = false;
+          clearErrorTimer();
           setCallError(null);
           setIsConnecting(false);
           setIsActive(true);
-        });
+        };
 
-        vapiInstance.on('call-end', () => {
+        const onCallEnd = () => {
           resetCallState();
-        });
+        };
 
-        vapiInstance.on('call-start-failed', (event: unknown) => {
+        const onCallStartFailed = (event: unknown) => {
           handleStartFailure(event, 'event:call-start-failed');
-        });
+        };
 
-        vapiInstance.on('error', (event: unknown) => {
+        const onError = (event: unknown) => {
           const parsed = parseVapiError(event);
           if (parsed.isBadRequest || parsed.isStartMethodError) {
             handleStartFailure(event, 'event:error');
@@ -295,7 +344,19 @@ export function VoiceFAB() {
           });
 
           resetCallState();
-        });
+        };
+
+        listenersRef.current = {
+          onCallStart,
+          onCallEnd,
+          onCallStartFailed,
+          onError,
+        };
+
+        vapiInstance.on('call-start', onCallStart);
+        vapiInstance.on('call-end', onCallEnd);
+        vapiInstance.on('call-start-failed', onCallStartFailed);
+        vapiInstance.on('error', onError);
       } catch (err) {
         if (!disposed) {
           console.warn('Vapi SDK could not be initialized. Voice calls are disabled.', err);
@@ -308,8 +369,30 @@ export function VoiceFAB() {
 
     return () => {
       disposed = true;
+
+      clearErrorTimer();
+      startInFlightRef.current = false;
+
+      const instance = vapiRef.current;
+      const listeners = listenersRef.current;
+
+      if (instance && listeners && instance.removeListener) {
+        instance.removeListener('call-start', listeners.onCallStart);
+        instance.removeListener('call-end', listeners.onCallEnd);
+        instance.removeListener('call-start-failed', listeners.onCallStartFailed);
+        instance.removeListener('error', listeners.onError);
+      }
+
+      listenersRef.current = null;
+      vapiRef.current = null;
+
+      if (instance) {
+        void instance.stop().catch(() => {
+          // no-op: cleanup should not throw during unmount
+        });
+      }
     };
-  }, [handleStartFailure, resetCallState]);
+  }, [clearErrorTimer, handleStartFailure, resetCallState]);
 
   const readStartContext = useCallback((): StartPreflight => {
     if (typeof window === 'undefined') {
@@ -347,13 +430,18 @@ export function VoiceFAB() {
   }, [dependentId, isVapiReady]);
 
   const startCall = useCallback(async () => {
+    if (startInFlightRef.current || isConnecting || isActive) {
+      return;
+    }
+
+    startInFlightRef.current = true;
     setIsConnecting(true);
     setCallError(null);
 
     const preflight = readStartContext();
     if (!preflight.ok) {
       console.warn('VoiceFAB preflight failed', { reason: preflight.reason });
-      setCallError(preflight.reason);
+      setTransientError(preflight.reason);
       resetCallState();
       return;
     }
@@ -385,10 +473,20 @@ export function VoiceFAB() {
       }
     } catch (error) {
       handleStartFailure(error, 'start:exception', preflight.context);
+    } finally {
+      startInFlightRef.current = false;
     }
-  }, [handleStartFailure, readStartContext, resetCallState]);
+  }, [
+    handleStartFailure,
+    isActive,
+    isConnecting,
+    readStartContext,
+    resetCallState,
+    setTransientError,
+  ]);
 
   const stopCall = useCallback(async () => {
+    startInFlightRef.current = false;
     try {
       await vapiRef.current?.stop();
     } catch (error) {
@@ -399,13 +497,17 @@ export function VoiceFAB() {
   }, [resetCallState]);
 
   const toggleCall = useCallback(async () => {
+    if (isConnecting && !isActive) {
+      return;
+    }
+
     if (isActive) {
       await stopCall();
       return;
     }
 
     await startCall();
-  }, [isActive, startCall, stopCall]);
+  }, [isActive, isConnecting, startCall, stopCall]);
 
   return (
     <>
@@ -415,7 +517,7 @@ export function VoiceFAB() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-32 right-8 z-50 bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] shadow-[20px_20px_40px_rgba(0,0,0,0.1)] dark:shadow-[20px_20px_40px_rgba(0,0,0,0.5)] border border-blue-100 dark:border-slate-700 flex items-center gap-6"
+            className={`fixed ${panelPositionClass} z-50 bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] shadow-[20px_20px_40px_rgba(0,0,0,0.1)] dark:shadow-[20px_20px_40px_rgba(0,0,0,0.5)] border border-blue-100 dark:border-slate-700 flex items-center gap-6`}
           >
             <div className="relative">
               <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -448,7 +550,7 @@ export function VoiceFAB() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
-            className="fixed bottom-28 right-8 z-40 max-w-xs rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 shadow-md"
+            className={`fixed ${errorPositionClass} z-40 max-w-xs rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 shadow-md`}
           >
             {callError}
           </motion.div>
@@ -466,7 +568,7 @@ export function VoiceFAB() {
         }}
         disabled={isConnecting}
         title={callError || undefined}
-        className={`fixed bottom-8 right-8 w-16 h-16 md:w-20 md:h-20 rounded-[2.5rem] flex items-center justify-center z-50 transition-all duration-300 shadow-[inset_4px_4px_10px_rgba(255,255,255,0.4),inset_-4px_-4px_10px_rgba(0,0,0,0.05)] ${
+        className={`fixed ${fabPositionClass} w-16 h-16 md:w-20 md:h-20 rounded-[2.5rem] flex items-center justify-center z-50 transition-all duration-300 shadow-[inset_4px_4px_10px_rgba(255,255,255,0.4),inset_-4px_-4px_10px_rgba(0,0,0,0.05)] ${
           isActive ? 'bg-rose-500 text-white' : 'bg-blue-500 text-white hover:bg-blue-600'
         }`}
       >

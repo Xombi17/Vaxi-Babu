@@ -227,7 +227,9 @@ async def vapi_webhook(
                 
                 res = await session.execute(select(Dependent).where(Dependent.household_id == h_id))
                 children = res.scalars().all()
+                child_info = [f"Name: {c.name}, ID: {c.id}" for c in children]
                 child_names = [c.name for c in children]
+                child_context_str = '; '.join(child_info) if child_info else 'NO CHILDREN REGISTERED'
                 print(f"DEBUG: Found {len(child_names)} children for household {h_id}: {child_names}")
                 break
 
@@ -251,15 +253,18 @@ async def vapi_webhook(
                             "content": (
                                 f"You are the WellSync health assistant for the {household_name} family. "
                                 f"STRICT RULE: The user prefers {target_lang_name}. You MUST respond ONLY in {target_lang_name}. "
-                                f"DYNAMIC CONTEXT: This household has children named: {', '.join(child_names) if child_names else 'NO CHILDREN REGISTERED'}. "
-                                "ANTI-DEMO RULE: Never mention names like Olivia, Jackson, Emma, or any names not found in the DYNAMIC CONTEXT. "
-                                "If the user asks for their children's names, list them: " + (', '.join(child_names) if child_names else "Tell them you don't see any children in their account yet.") + ". "
+                                f"DYNAMIC CONTEXT: This household has children: {child_context_str}. "
+                                "RULES FOR ANSWERING:\n"
+                                "1. If the user asks about their child generally, and they only have ONE child in the DYNAMIC CONTEXT, immediately use that child's ID to check records without asking.\n"
+                                "2. If they have MULTIPLE children and don't specify, politely ask them which child they mean.\n"
+                                "3. If they ask about a specific name (e.g., 'Saanvi'), verify it against the DYNAMIC CONTEXT. If the name is NOT there, politely reply: 'You do not have a child named [Name] registered.' and list their actual children.\n"
+                                "CRITICAL: You DO have access to their health records. Use tools (like `answer_health_question`, `get_timeline_summary`, `get_next_vaccine`) to retrieve real data whenever appropriate.\n"
                                 "\n\nGoals:\n"
-                                "- Help parents understand vaccination status by calling tools.\n"
-                                "- Provide health education.\n"
+                                "- Discuss exact vaccination status by querying tools with the correct dependent ID.\n"
+                                "- Provide clear, simple health education.\n"
                                 "\n\nMedical Safety:\n"
                                 "- NO diagnosis. If emergency (e.g. trouble breathing), instruct to seek immediate medical care.\n"
-                                "- Never fabricate data.\n"
+                                "- Never fabricate data. Rely strictly on the tools and DYNAMIC CONTEXT.\n"
                                 "\n\nStyle: Simple, short sentences. Confirm actions."
                             ),
                         }
@@ -293,6 +298,34 @@ async def vapi_webhook(
                                         "household_id": {"type": "string", "description": "The ID of the family household."}
                                     },
                                     "required": ["household_id"]
+                                }
+                            }
+                        },
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": "get_timeline_summary",
+                                "description": "Get a summary of the vaccination and health timeline for a specific child in the database.",
+                                "parameters": {
+                                    "type": "object",
+                                    "properties": {
+                                        "dependent_id": {"type": "string", "description": "The specific child's ID from the DYNAMIC CONTEXT."}
+                                    },
+                                    "required": ["dependent_id"]
+                                }
+                            }
+                        },
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": "get_next_vaccine",
+                                "description": "Get the most urgent upcoming vaccine or health event for a child from the database.",
+                                "parameters": {
+                                    "type": "object",
+                                    "properties": {
+                                        "dependent_id": {"type": "string", "description": "The specific child's ID from the DYNAMIC CONTEXT."}
+                                    },
+                                    "required": ["dependent_id"]
                                 }
                             }
                         }
