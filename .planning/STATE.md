@@ -12,7 +12,7 @@
 
 ## Current Status
 
-- **Phase:** 1 (of 4)
+- **Phase:** 1 (of 5)
 - **Progress:** 0%
 - **Status:** active
 - **Plans completed:** 0 of ~9
