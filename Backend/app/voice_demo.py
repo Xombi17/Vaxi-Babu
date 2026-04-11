@@ -7,8 +7,6 @@ Supports multiple languages for voice interaction.
 
 import streamlit as st
 import requests
-import json
-import time
 
 st.set_page_config(page_title="WellSync Voice Agent", page_icon="🎙️")
 

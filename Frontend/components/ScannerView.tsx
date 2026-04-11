@@ -66,6 +66,8 @@ export function ScannerView() {
       voice = voices.find(v => v.lang.startsWith('bn'));
     } else if (lang === 'ta') {
       voice = voices.find(v => v.lang.startsWith('ta'));
+    } else if (lang === 'te') {
+      voice = voices.find(v => v.lang.startsWith('te'));
     } else {
       voice = voices.find(v => v.name.includes('Google') && v.lang.startsWith('en')) || 
               voices.find(v => v.lang.startsWith('en'));
@@ -76,7 +78,8 @@ export function ScannerView() {
                      lang === 'mr' ? 'mr-IN' : 
                      lang === 'gu' ? 'gu-IN' :
                      lang === 'bn' ? 'bn-IN' :
-                     lang === 'ta' ? 'ta-IN' : 'en-US';
+                     lang === 'ta' ? 'ta-IN' : 
+                     lang === 'te' ? 'te-IN' : 'en-US';
     utterance.rate = 0.9;
     window.speechSynthesis.speak(utterance);
   };

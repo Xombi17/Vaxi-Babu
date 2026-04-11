@@ -1,12 +1,12 @@
 import asyncio
+import os
 import uuid
 from datetime import date, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
 from app.core.database import engine, create_db_and_tables, drop_db_and_tables
 from app.models.household import Household
 from app.models.dependent import Dependent, DependentType, Sex
-from app.models.health_event import HealthEvent, EventStatus
+from app.models.health_event import EventStatus
 from app.services.health_schedule.engine import generate_and_save_schedule
 from app.core.auth import get_password_hash
 
@@ -15,7 +15,7 @@ async def seed_data():
     
     # Drop and recreate tables to ensure schema matches current models
     print("🧹 Resetting database schema...")
-    await drop_db_and_tables()
+    # await drop_db_and_tables()
     await create_db_and_tables()
 
     async with AsyncSession(engine) as session:
@@ -70,7 +70,8 @@ async def seed_data():
             }
         ]
 
-        password_hash = get_password_hash("wellsync2026")
+        dev_password = os.environ.get("DEV_DEFAULT_PASSWORD", "wellsync2026")
+        password_hash = get_password_hash(dev_password)
 
         for f_data in families:
             household = Household(
@@ -113,11 +114,15 @@ async def seed_data():
                             event.status = EventStatus.completed
                 
                 print(f"  📅 Generated {len(events)} health events for {child.name}")
-
-        await session.commit()
+            
+            await session.commit()
+            print(f"✅ Committed {f_data['name']} to database.")
     
     print("\n✅ Seeding complete!")
-    print("Try logging in with username 'sharma' and password 'wellsync2026'")
+    if os.environ.get("DEV_SHOW_PASSWORD", "false").lower() in ("1", "true", "yes"):
+        print(f"Try logging in with username 'sharma' and password '{dev_password}'")
+    else:
+        print("Try logging in with username 'sharma'. Set DEV_SHOW_PASSWORD=true to display the dev password.")
 
 if __name__ == "__main__":
     asyncio.run(seed_data())

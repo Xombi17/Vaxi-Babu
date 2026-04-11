@@ -1,19 +1,32 @@
 'use client';
 import { Settings, Globe, Bell, Mic, Download, LogOut } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
-  const [language, setLanguage] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('primary_language') || 'en';
+  const router = useRouter();
+  const [language, setLanguage] = useState('en');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const stored = localStorage.getItem('primary_language');
+    if (stored) {
+      setLanguage(stored);
     }
-    return 'en';
-  });
+  }, []);
 
   const handleLanguageChange = (lang: string) => {
     setLanguage(lang);
     localStorage.setItem('primary_language', lang);
     window.dispatchEvent(new Event('languageChange'));
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('household_id');
+    localStorage.removeItem('family_name');
+    router.push('/');
   };
 
   const languages = [
@@ -23,6 +36,7 @@ export default function SettingsPage() {
     { code: 'gu', label: 'ગુજરાતી (Gujarati)' },
     { code: 'bn', label: 'বাংলা (Bengali)' },
     { code: 'ta', label: 'தமிழ் (Tamil)' },
+    { code: 'te', label: 'తెలుగు (Telugu)' },
   ];
 
   return (
@@ -96,7 +110,10 @@ export default function SettingsPage() {
           <button className="w-full bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl py-4 px-6 font-black flex items-center justify-between shadow-[4px_4px_8px_rgba(0,0,0,0.05),inset_2px_2px_4px_rgba(255,255,255,0.9),inset_-2px_-2px_4px_rgba(0,0,0,0.02)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.3),inset_2px_2px_4px_rgba(255,255,255,0.1),inset_-2px_-2px_4px_rgba(0,0,0,0.4)] hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
             <span className="flex items-center gap-3"><Download size={20} /> Export Health Data</span>
           </button>
-          <button className="w-full bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 rounded-2xl py-4 px-6 font-black flex items-center justify-between shadow-[inset_2px_2px_4px_rgba(255,255,255,0.9),inset_-2px_-2px_4px_rgba(0,0,0,0.02)] dark:shadow-[inset_2px_2px_4px_rgba(255,255,255,0.1),inset_-2px_-2px_4px_rgba(0,0,0,0.2)] hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">
+          <button 
+            onClick={handleSignOut}
+            className="w-full bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 rounded-2xl py-4 px-6 font-black flex items-center justify-between shadow-[inset_2px_2px_4px_rgba(255,255,255,0.9),inset_-2px_-2px_4px_rgba(0,0,0,0.02)] dark:shadow-[inset_2px_2px_4px_rgba(255,255,255,0.1),inset_-2px_-2px_4px_rgba(0,0,0,0.2)] hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+          >
             <span className="flex items-center gap-3"><LogOut size={20} /> Sign Out</span>
           </button>
         </div>

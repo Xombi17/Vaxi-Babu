@@ -106,6 +106,8 @@ export function TimelineFeed() {
       text = `${event.name}. এটি ${event.status === 'completed' ? 'সম্পন্ন হয়েছে' : 'বাকি আছে'} ${dateStr} তারিখে. ${event.notes || ''}`;
     } else if (lang === 'ta') {
       text = `${event.name}. இது ${event.status === 'completed' ? 'முடிந்தது' : 'வரப்போகிறது'} ${dateStr} அன்று. ${event.notes || ''}`;
+    } else if (lang === 'te') {
+      text = `${event.name}. ఇది ${event.status === 'completed' ? 'పూర్తయింది' : 'రాబోతోంది'} ${dateStr} నాడు. ${event.notes || ''}`;
     } else {
       text = `${event.name}. ${event.status === 'completed' ? 'Completed' : 'Due on'} ${dateStr}. ${event.notes || ''}`;
     }
@@ -125,6 +127,8 @@ export function TimelineFeed() {
       voice = voices.find(v => v.lang.startsWith('bn'));
     } else if (lang === 'ta') {
       voice = voices.find(v => v.lang.startsWith('ta'));
+    } else if (lang === 'te') {
+      voice = voices.find(v => v.lang.startsWith('te'));
     } else {
       voice = voices.find(v => v.name.includes('Google') && v.lang.startsWith('en')) || 
               voices.find(v => v.lang.startsWith('en'));
@@ -135,7 +139,8 @@ export function TimelineFeed() {
                      lang === 'mr' ? 'mr-IN' : 
                      lang === 'gu' ? 'gu-IN' :
                      lang === 'bn' ? 'bn-IN' :
-                     lang === 'ta' ? 'ta-IN' : 'en-US';
+                     lang === 'ta' ? 'ta-IN' : 
+                     lang === 'te' ? 'te-IN' : 'en-US';
     utterance.rate = 0.9;
     utterance.pitch = 1.1;
     
