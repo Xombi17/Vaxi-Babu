@@ -5,7 +5,6 @@ Endpoint 1: POST /medicine/check-image — upload image, run OCR → classify �
 Endpoint 2: POST /medicine/check-name  — classify by medicine name directly
 """
 
-
 import structlog
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
@@ -25,7 +24,7 @@ def _extract_medicine_name_from_ocr(raw_text: str) -> str:
     Naive heuristic: return the longest word on the first 3 lines of OCR output.
     Replace with smarter NER in v2.
     """
-    lines = [l.strip() for l in raw_text.strip().splitlines() if l.strip()][:3]
+    lines = [line.strip() for line in raw_text.strip().splitlines() if line.strip()][:3]
     words = " ".join(lines).split()
     if not words:
         return raw_text[:50]
@@ -63,9 +62,7 @@ async def check_medicine_from_image(
     log.info("medicine_ocr_complete", medicine_guess=medicine_name, ocr_model=model_used)
 
     # Step 3: Classify
-    bucket, concern_checked, why_caution, next_step, confidence = classify_medicine(
-        medicine_name, concern
-    )
+    bucket, concern_checked, why_caution, next_step, confidence = classify_medicine(medicine_name, concern)
 
     # Step 4: AI simplification (optional, non-blocking)
     try:
@@ -94,9 +91,7 @@ async def check_medicine_by_name(
     Check medicine safety by name (no image needed).
     Useful when the frontend already knows the medicine name.
     """
-    bucket, concern_checked, why_caution, next_step, confidence = classify_medicine(
-        body.medicine_name, body.concern
-    )
+    bucket, concern_checked, why_caution, next_step, confidence = classify_medicine(body.medicine_name, body.concern)
 
     try:
         simplified_why = await simplify_medicine_result(body.medicine_name, bucket, why_caution, language)

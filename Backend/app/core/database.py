@@ -7,12 +7,16 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+url = settings.database_url
+if "sslmode" in url:
+    url = url.replace("?sslmode=require", "").rstrip("?").rstrip("&")
 engine = create_async_engine(
-    settings.database_url,
+    url,
     echo=settings.is_dev,
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10,
+    connect_args={"ssl": "require"},
 )
 
 AsyncSessionLocal = async_sessionmaker(

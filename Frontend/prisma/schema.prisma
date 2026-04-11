@@ -1,5 +1,5 @@
-// This is your Prisma schema file
-// Designed to interop with the FastAPI SQLModel backend.
+// Prisma schema - syncs with Backend SQLModel
+// Match Backend/app/models/* exactly
 
 generator client {
   provider = "prisma-client-js"
@@ -9,78 +9,118 @@ datasource db {
   provider = "postgresql"
 }
 
-model Household {
-  id                    String      @id @default(uuid())
-  primary_contact_name  String?
-  primary_contact_phone String
-  created_at            DateTime    @default(now())
-  updated_at            DateTime    @updatedAt
-
-  dependents            Dependent[]
-  health_events         HealthEvent[]
-  reminders             Reminder[]
-
-  @@map("household")
+enum DependentType {
+  child
+  adult
+  elder
+  pregnant
 }
 
-model Dependent {
-  id              String      @id @default(uuid())
-  household_id    String
-  name            String
-  date_of_birth   DateTime    @db.Date
-  gender          String?
-  relationship    String?
-  created_at      DateTime    @default(now())
-  updated_at      DateTime    @updatedAt
+enum Sex {
+  male
+  female
+  other
+}
 
-  household       Household   @relation(fields: [household_id], references: [id], onDelete: Cascade)
+enum EventCategory {
+  vaccination
+  checkup
+  vitamin
+  reminder
+}
+
+enum EventStatus {
+  upcoming
+  due
+  overdue
+  completed
+}
+
+enum ReminderStatus {
+  pending
+  snoozed
+  acknowledged
+  completed
+}
+
+model Household {
+  id               String   @id @default(uuid())
+  name             String   @map("name") @db.VarChar(200)
+  primary_language String  @map("primary_language") @db.VarChar(10)
+  village_town     String?  @map("village_town") @db.VarChar(200)
+  state            String?  @db.VarChar(100)
+  district         String?  @db.VarChar(100)
+  created_at       DateTime @default(now()) @map("created_at")
+  updated_at       DateTime @updatedAt @map("updated_at")
+
+  dependents      Dependent[]
   health_events   HealthEvent[]
   reminders       Reminder[]
 
-  @@map("dependent")
+  @@map("households")
+}
+
+model Dependent {
+  id                  String         @id @default(uuid())
+  household_id        String         @map("household_id")
+  name                String        @db.VarChar(200)
+  type                DependentType @map("type")
+  date_of_birth       DateTime       @map("date_of_birth") @db.Date
+  sex                 Sex          @map("sex")
+  expected_delivery_date DateTime?   @map("expected_delivery_date") @db.Date
+  notes               String?       @db.VarChar(500)
+  created_at          DateTime      @default(now()) @map("created_at")
+  updated_at          DateTime      @updatedAt @map("updated_at")
+
+  household          Household    @relation(fields: [household_id], references: [id], onDelete: Cascade)
+  health_events     HealthEvent[]
+  reminders        Reminder[]
+
+  @@map("dependents")
 }
 
 model HealthEvent {
-  id              String      @id @default(uuid())
-  dependent_id    String
-  household_id    String
-  schedule_key    String
-  name            String
-  category        String
-  due_date        DateTime    @db.Date
-  window_start    DateTime    @db.Date
-  window_end      DateTime    @db.Date
-  status          String
-  completed_at    DateTime?
-  completed_by    String?
-  location        String?
-  notes           String?
-  created_at      DateTime    @default(now())
-  updated_at      DateTime    @updatedAt
+  id                String        @id @default(uuid())
+  dependent_id      String        @map("dependent_id")
+  household_id      String        @map("household_id")
+  name              String        @db.VarChar(300)
+  schedule_key      String        @map("schedule_key") @db.VarChar(100)
+  category          EventCategory @map("category")
+  dose_number       Int?
+  due_date          DateTime      @map("due_date") @db.Date
+  window_start      DateTime?     @map("window_start") @db.Date
+  window_end        DateTime?     @map("window_end") @db.Date
+  status            EventStatus  @map("status")
+  completed_at     DateTime?     @map("completed_at")
+  completed_by     String?       @map("completed_by") @db.VarChar(200)
+  location         String?        @map("location") @db.VarChar(200)
+  notes             String?        @db.VarChar(500)
+  schedule_version String        @map("schedule_version") @db.VarChar(50)
+  created_at        DateTime     @default(now()) @map("created_at")
+  updated_at        DateTime     @updatedAt @map("updated_at")
 
-  dependent       Dependent   @relation(fields: [dependent_id], references: [id], onDelete: Cascade)
-  household       Household   @relation(fields: [household_id], references: [id], onDelete: Cascade)
-  reminders       Reminder[]
+  dependent        Dependent    @relation(fields: [dependent_id], references: [id], onDelete: Cascade)
+  household        Household    @relation(fields: [household_id], references: [id], onDelete: Cascade)
+  reminders        Reminder[]
 
-  @@map("healthevent")
+  @@map("health_events")
 }
 
 model Reminder {
-  id              String      @id @default(uuid())
-  health_event_id String
-  dependent_id    String
-  household_id    String
-  event_name      String
-  due_date        DateTime    @db.Date
-  status          String
-  snoozed_until   DateTime?   @db.Date
-  reminder_type   String
-  created_at      DateTime    @default(now())
-  updated_at      DateTime    @updatedAt
+  id              String          @id @default(uuid())
+  health_event_id String          @map("health_event_id")
+  dependent_id   String          @map("dependent_id")
+  household_id   String          @map("household_id")
+  event_name     String          @db.VarChar(300)
+  due_date      DateTime        @map("due_date") @db.Date
+  status        ReminderStatus  @map("status")
+  snoozed_until  DateTime?       @map("snoozed_until") @db.Date
+  created_at    DateTime       @default(now()) @map("created_at")
+  updated_at    DateTime       @updatedAt @map("updated_at")
 
-  health_event    HealthEvent @relation(fields: [health_event_id], references: [id], onDelete: Cascade)
-  dependent       Dependent   @relation(fields: [dependent_id], references: [id], onDelete: Cascade)
-  household       Household   @relation(fields: [household_id], references: [id], onDelete: Cascade)
+  health_event  HealthEvent   @relation(fields: [health_event_id], references: [id], onDelete: Cascade)
+  dependent   Dependent    @relation(fields: [dependent_id], references: [id], onDelete: Cascade)
+  household   Household    @relation(fields: [household_id], references: [id], onDelete: Cascade)
 
-  @@map("reminder")
+  @@map("reminders")
 }
