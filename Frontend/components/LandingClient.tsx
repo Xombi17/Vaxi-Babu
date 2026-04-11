@@ -45,7 +45,7 @@ export default function LandingClient() {
           
           <p className="text-xl md:text-2xl text-slate-400 font-medium max-w-2xl mx-auto mb-12">
             No typing. No complex menus. Just talk to your digital health assistant. 
-            WellSync organizes your family's medical timeline instantly.
+            WellSync organizes your family&apos;s medical timeline instantly.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -79,7 +79,7 @@ export default function LandingClient() {
             {[
               { icon: Mic, title: "Just Speak", desc: "Native Voice OS powered by Vapi. Sub-second latency. Feels like talking to a human." },
               { icon: Globe2, title: "Multi-Lingual", desc: "Fluent in English, Hindi, Marathi, Bengali, Tamil, and Telugu. Reaches the unreached." },
-              { icon: BrainCircuit, title: "Smart Memory", desc: "Remembers your children's names, upcoming immunizations, and past health events organically." }
+              { icon: BrainCircuit, title: "Smart Memory", desc: "Remembers your children&apos;s names, upcoming immunizations, and past health events organically." }
             ].map((feature, i) => (
               <motion.div 
                 key={i}
@@ -170,7 +170,7 @@ export default function LandingClient() {
               <div className="relative z-10">
                 <HeartPulse className="text-rose-400 mb-6" size={40} />
                 <h3 className="text-3xl font-black mb-4">Holistic Analytics</h3>
-                <p className="text-slate-400 text-lg max-w-md">Gain macro-level insights into your family's health patterns. Visual dashboards track everything from growth curves to vaccination density.</p>
+                <p className="text-slate-400 text-lg max-w-md">Gain macro-level insights into your family&apos;s health patterns. Visual dashboards track everything from growth curves to vaccination density.</p>
               </div>
             </motion.div>
           </div>
@@ -187,7 +187,7 @@ export default function LandingClient() {
             viewport={{ once: true }}
             className="text-4xl md:text-5xl font-black tracking-tighter mb-8"
           >
-            Bank-grade encryption for <br/> your family's data.
+            Bank-grade encryption for <br/> your family&apos;s data.
           </motion.h2>
           
           <div className="grid sm:grid-cols-2 gap-6 text-left mt-16">
@@ -205,6 +205,69 @@ export default function LandingClient() {
                 <p className="text-slate-400">We never use LLMs to calculate medical schedules. Core health logic is perfectly deterministic and fully test-driven.</p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* NEW: TESTIMONIALS SECTION */}
+      <section className="py-32 bg-slate-900/20 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl font-black mb-4 tracking-tighter">Trusted by Caregivers</h2>
+            <p className="text-slate-400">Join 10,000+ families managing health with WellSync AI.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { name: "Priya S.", role: "Mother of 2", text: "WellSync changed how I manage Saanvi&apos;s vaccinations. The voice assistant is shockingly helpful when I have my hands full." },
+              { name: "Advait K.", role: "Health Worker", text: "The medicine scanning feature is a game changer for remote care. It prevents dangerous medicine mixups in seconds." },
+              { name: "Rohan M.", role: "Software Engineer", text: "Finally, a health app that doesn&apos;t feel like a 1990s database. The UI is gorgeous and the voice latency is incredible." }
+            ].map((t, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="p-8 rounded-[2.5rem] bg-slate-800/30 border border-white/5 backdrop-blur-sm"
+              >
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => <Zap key={i} size={14} className="fill-amber-400 text-amber-400" />)}
+                </div>
+                <p className="text-lg text-slate-300 mb-6 italic">&quot;{t.text}&quot;</p>
+                <div>
+                  <div className="font-bold text-white">{t.name}</div>
+                  <div className="text-sm text-slate-500">{t.role}</div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* NEW: FAQ SECTION (INTERACTIVE ACCORDION-STYLE) */}
+      <section className="py-32 border-t border-white/5">
+        <div className="max-w-3xl mx-auto px-6">
+          <h2 className="text-4xl font-black mb-16 tracking-tighter text-center">Frequently Asked</h2>
+          <div className="space-y-4">
+            {[
+              { q: "Is WellSync a medical advice service?", a: "No. WellSync is a health tracking and intelligence platform. We provide deterministic scheduling and AI-assisted data entry, but you should always consult a licensed medical professional." },
+              { q: "How secure is my family&apos;s data?", a: "We use AES-256 at rest and TLS 1.3 in transit. Your data is stored in isolated Neon Postgres instances with strict encryption protocols." },
+              { q: "Does it work without internet?", a: "Yes. Our mobile-first design includes an offline synchronization engine that queues your voice logs and scans, pushing them to the cloud once you regain connectivity." },
+              { q: "Which languages are supported?", a: "We currently support high-fidelity voice interactions in English, Hindi, Marathi, Bengali, Tamil, and Telugu." }
+            ].map((item, i) => (
+              <motion.details 
+                key={i}
+                className="group p-6 rounded-3xl bg-white/5 border border-white/10 cursor-pointer overflow-hidden transition-all hover:bg-white/10"
+              >
+                <summary className="list-none flex justify-between items-center font-bold text-xl">
+                  {item.q}
+                  <ArrowRight size={20} className="group-open:rotate-90 transition-transform text-indigo-400" />
+                </summary>
+                <div className="mt-4 text-slate-400 leading-relaxed text-lg">
+                  {item.a}
+                </div>
+              </motion.details>
+            ))}
           </div>
         </div>
       </section>
