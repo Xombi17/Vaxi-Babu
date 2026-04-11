@@ -16,7 +16,7 @@ export default function RemindersPage() {
         </div>
         <div>
           <h1 className="text-4xl font-black text-slate-800 dark:text-white tracking-tight mb-1">Reminders</h1>
-          <p className="text-slate-500 dark:text-slate-400 font-bold text-lg">Don't miss important health tasks.</p>
+          <p className="text-slate-500 dark:text-slate-400 font-bold text-lg">Don&apos;t miss important health tasks.</p>
         </div>
       </div>
 

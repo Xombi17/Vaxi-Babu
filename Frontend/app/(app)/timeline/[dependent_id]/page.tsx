@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import Image from 'next/image';
 import { Syringe, Stethoscope, Pill, Volume2, Calendar, CheckCircle2, User, MapPin, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getTimeline, getDependents, type HealthEvent, type Dependent } from '@/lib/api';
@@ -77,7 +78,7 @@ export default function TimelinePage() {
           setDependent(dep);
         }
         const healthEvents = await getTimeline(dependentId);
-        setEvents(healthEvents.map(e => toUiEvent(e, dep)));
+        setEvents(healthEvents.events.map((e) => toUiEvent(e, dep)));
       } catch (err) {
         setError('Unable to load timeline');
         console.error('Failed to load timeline:', err);
@@ -125,8 +126,13 @@ export default function TimelinePage() {
       ) : (
         <>
           <div className="flex items-center gap-6 mb-8 bg-[#f3f6fd] dark:bg-slate-800 rounded-[2.5rem] p-6 shadow-[10px_10px_20px_rgba(0,0,0,0.05),-10px_-10px_20px_rgba(255,255,255,0.8)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.4),-10px_-10px_20px_rgba(255,255,255,0.05)]">
-            <div className="w-24 h-24 rounded-[1.5rem] bg-white dark:bg-slate-700 p-1 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5)]">
-              <img src={`https://picsum.photos/seed/${dependentId}/100/100`} alt={dependent?.name} className="w-full h-full object-cover rounded-xl" />
+            <div className="w-24 h-24 rounded-[1.5rem] bg-white dark:bg-slate-700 p-1 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5)] overflow-hidden relative">
+              <Image 
+                src={`https://picsum.photos/seed/${dependentId}/100/100`} 
+                alt={dependent?.name || 'Dependent'} 
+                fill
+                className="object-cover rounded-xl" 
+              />
             </div>
             <div>
               <h1 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight mb-1">{dependent?.name || 'Dependent'}</h1>

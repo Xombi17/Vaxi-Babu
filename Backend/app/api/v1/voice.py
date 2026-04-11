@@ -183,30 +183,29 @@ async def vapi_webhook(
         return {"results": results}
 
     elif event_type == "assistant-request":
-        # Robust variable extraction (Vapi payloads vary by event type)
+        # Robust variable extraction
         msg = payload.get("message", {})
         call = msg.get("call", {})
         
-        # Search all possible locations for variableValues
         vars = msg.get("variableValues") or \
                msg.get("assistantOverrides", {}).get("variableValues") or \
                call.get("assistantOverrides", {}).get("variableValues") or \
                payload.get("assistant", {}).get("variableValues") or {}
 
         h_id = vars.get("household_id")
-        
-        # 🔥 DEBUG FALLBACK: If ID is missing, find the seed household (Verma Family)
-        if not h_id:
-            from app.models.household import Household
-            stmt = select(Household).where(Household.username == "verma")
-            res = await session.execute(stmt)
-            fallback_h = res.scalar_one_or_none()
-            if fallback_h:
-                h_id = fallback_h.id
-                log.info("voice_fallback_id_used", household=fallback_h.name)
-
         lang = vars.get("language", "en")
         
+        # 🔥 FIX: Ensure session is defined for fallback lookup
+        if not h_id:
+            async for session in get_session():
+                h_stmt = select(Household).where(Household.username == "verma")
+                h_res = await session.execute(h_stmt)
+                fallback_h = h_res.scalar_one_or_none()
+                if fallback_h:
+                    h_id = fallback_h.id
+                    log.info("voice_fallback_id_used", household=fallback_h.name)
+                break
+
         print(f"DEBUG: Vapi Webhook [{event_type}]. household_id: {h_id}, lang: {lang}")
         
         first_messages = {
@@ -339,6 +338,22 @@ async def _handle_tool_call(
     if tool_name == "get_next_vaccine":
         dependent_id = args.get("dependent_id", "")
         return await _get_next_vaccine(dependent_id, session)
+
+    if tool_name == "get_child_vaccination_status":
+        dependent_id = args.get("dependent_id", "")
+        # If no child specified but the family only has one child, use that
+        if not dependent_id:
+            household_id = args.get("household_id", "")
+            if household_id:
+                res = await session.execute(select(Dependent).where(Dependent.household_id == household_id))
+                deps = res.scalars().all()
+                if len(deps) == 1:
+                    dependent_id = deps[0].id
+        
+        if not dependent_id:
+            return "I need to know which child you are asking about. I see more than one child or none at all."
+            
+        return await _get_timeline_summary(dependent_id, session)
 
     log.warning("vapi_unknown_tool", tool_name=tool_name)
     return "I'm sorry, I couldn't process that request. Please consult a healthcare worker."

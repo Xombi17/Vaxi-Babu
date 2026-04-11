@@ -3,6 +3,7 @@ import React from 'react';
 import { Home, Camera, User, Activity, Bell, Search, Mic, Sparkles, Settings, Clock, LogOut, MapPin, Users } from 'lucide-react';
 import { VoiceFAB } from './VoiceFAB';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -88,8 +89,13 @@ export function AppLayout({ children }: AppLayoutProps) {
               <Bell size={22} strokeWidth={2.5} />
               <span className="absolute top-3 right-3 w-3 h-3 bg-red-400 rounded-full border-2 border-white shadow-[0_0_10px_rgba(248,113,113,0.5)]"></span>
             </Link>
-            <Link href="/settings" className="w-12 h-12 rounded-[1.25rem] bg-white shadow-[4px_4px_10px_rgba(0,0,0,0.05),inset_2px_2px_6px_rgba(255,255,255,0.9),inset_-2px_-2px_6px_rgba(0,0,0,0.02)] p-1 overflow-hidden block">
-              <img src="https://picsum.photos/seed/family/100/100" alt="Profile" className="w-full h-full object-cover rounded-xl" />
+            <Link href="/settings" className="w-12 h-12 rounded-[1.25rem] bg-white shadow-[4px_4px_10px_rgba(0,0,0,0.05),inset_2px_2px_6px_rgba(255,255,255,0.9),inset_-2px_-2px_6px_rgba(0,0,0,0.02)] p-1 overflow-hidden block relative">
+              <Image 
+                src="https://picsum.photos/seed/family/100/100" 
+                alt="Profile" 
+                fill
+                className="object-cover rounded-xl" 
+              />
             </Link>
           </div>
         </header>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'motion/react';
 import { 
   Activity, Mic, ShieldAlert, WifiOff, Calendar, 
@@ -135,8 +136,13 @@ export default function LandingPage() {
             transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
             className="absolute top-12 -right-4 lg:-right-8 w-64 bg-white dark:bg-slate-800 rounded-[2rem] shadow-[15px_15px_30px_rgba(0,0,0,0.05),inset_4px_4px_10px_rgba(255,255,255,0.9),inset_-4px_-4px_10px_rgba(0,0,0,0.02)] dark:shadow-[15px_15px_30px_rgba(0,0,0,0.4),inset_4px_4px_10px_rgba(255,255,255,0.1),inset_-4px_-4px_10px_rgba(0,0,0,0.5)] p-5 z-20 flex items-center gap-4"
           >
-            <div className="w-16 h-16 rounded-[1.25rem] bg-slate-100 dark:bg-slate-700 overflow-hidden shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5)] p-1">
-              <img src="https://picsum.photos/seed/aarav/100/100" alt="Aarav" className="w-full h-full object-cover rounded-xl" />
+            <div className="w-16 h-16 rounded-[1.25rem] bg-slate-100 dark:bg-slate-700 overflow-hidden shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5)] p-1 relative">
+              <Image 
+                src="https://picsum.photos/seed/aarav/100/100" 
+                alt="Aarav" 
+                fill
+                className="object-cover rounded-xl" 
+              />
             </div>
             <div>
               <p className="text-lg font-black text-slate-800 dark:text-white">Aarav Sharma</p>

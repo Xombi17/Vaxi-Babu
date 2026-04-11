@@ -106,6 +106,83 @@ export function VoiceFAB() {
             provider: 'deepgram',
             language: language === 'en' ? 'en-US' : language,
           },
+          model: {
+            messages: [
+              {
+                role: "system",
+                content: `You are the WellSync health assistant for a real family. 
+                STRICT RULE: The user prefers ${langName}. You MUST respond ONLY in ${langName}.
+                ANTI-DEMO RULE: Never mention names like Olivia, Jackson, Emily, Emma, or any names not related to the current user.
+                
+                DYNAMIC CONTEXT:
+                - Household ID: ${householdId}
+                - Selected Language: ${langName}
+                
+                ACTION: At the very beginning of the call, if you don't already have the names of the children in your prompt, you MUST call 'get_household_dependents' immediately to discover who is in this family.
+                
+                When the user asks about vaccines or health, call 'get_child_vaccination_status'.
+                
+                Goals:
+                - Identify children by name using tools.
+                - Help parents understand vaccination status.
+                - Provide health education in ${langName}.
+                
+                Medical Safety:
+                - NO diagnosis. If emergency, instruct to seek immediate medical care.
+                - Never fabricate data.
+                
+                Style: Simple, short sentences. Confirm actions.`
+              }
+            ],
+            tools: [
+              {
+                type: "function",
+                function: {
+                  name: "get_household_dependents",
+                  description: "List all members/children in the household to know their real names.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      household_id: { type: "string", description: "The ID of the family household." }
+                    },
+                    required: ["household_id"]
+                  }
+                }
+              },
+              {
+                type: "function",
+                function: {
+                  name: "get_child_vaccination_status",
+                  description: "Get the vaccination and health status for a specific child.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      dependent_id: { type: "string", description: "The ID of the child." },
+                      household_id: { type: "string", description: "The ID of the family household." }
+                    },
+                    required: ["household_id"]
+                  }
+                }
+              },
+              {
+                type: "function",
+                function: {
+                  name: "answer_health_question",
+                  description: "Answer complex health questions using full medical history context.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      question: { type: "string", description: "The user's question." },
+                      household_id: { type: "string", description: "The ID of the family household." },
+                      dependent_id: { type: "string", description: "The child's ID." },
+                      language: { type: "string", description: "Language code." }
+                    },
+                    required: ["question", "household_id"]
+                  }
+                }
+              }
+            ]
+          },
           variableValues: {
             household_id: householdId,
             dependent_id: dependentId || '',
