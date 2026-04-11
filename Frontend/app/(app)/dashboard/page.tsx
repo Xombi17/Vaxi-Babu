@@ -1,3 +1,4 @@
+'use client';
 import { useQuery } from '@tanstack/react-query';
 import { FamilyOverview } from '@/components/FamilyOverview';
 import { TimelineFeed } from '@/components/TimelineFeed';
