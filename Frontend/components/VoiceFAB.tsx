@@ -387,7 +387,7 @@ export function VoiceFAB() {
       vapiRef.current = null;
 
       if (instance) {
-        void instance.stop().catch(() => {
+        void Promise.resolve(instance.stop()).catch(() => {
           // no-op: cleanup should not throw during unmount
         });
       }
