@@ -376,17 +376,23 @@ async def _handle_tool_call(
 
     if tool_name == "get_child_vaccination_status":
         dependent_id = args.get("dependent_id", "")
-        # If no child specified but the family only has one child, use that
-        if not dependent_id:
+        # If no child specified or not a valid UUID length, try to resolve by name
+        if not dependent_id or len(dependent_id) < 10:
             household_id = args.get("household_id", "")
             if household_id:
                 res = await session.execute(select(Dependent).where(Dependent.household_id == household_id))
                 deps = res.scalars().all()
                 if len(deps) == 1:
                     dependent_id = deps[0].id
+                else:
+                    # Match by name exactly if the AI sent a short name instead of a UUID
+                    for d in deps:
+                        if d.name.lower() in str(dependent_id).lower():
+                            dependent_id = d.id
+                            break
         
-        if not dependent_id:
-            return "I need to know which child you are asking about. I see more than one child or none at all."
+        if not dependent_id or len(dependent_id) < 10:
+            return "I need to know which child you are asking about. Please provide their exact ID or name."
             
         return await _get_timeline_summary(dependent_id, session)
 
@@ -522,7 +528,7 @@ async def _get_dependents_for_household(household_id: str, session) -> str:
         else:
             years = age_days // 365
             age_str = f"{years} years"
-        lines.append(f"  - {d.name}, {age_str}, {d.type.value}")
+        lines.append(f"  - Name: {d.name}, Age: {age_str}, ID: {d.id}")
 
     return "\n".join(lines)
 
