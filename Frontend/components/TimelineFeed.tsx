@@ -1,10 +1,10 @@
 'use client';
-import { Calendar, User, Syringe, Stethoscope, Pill, Volume2, CheckCircle2, Clock, MoreVertical, Circle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Calendar, User, Syringe, Stethoscope, Pill, Volume2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { getTimeline, HealthEvent } from '../lib/api';
+import { getTimeline, getDependents, type HealthEvent } from '../lib/api';
 
 const DEFAULT_DEPENDENT_ID = 'ece5d2ee-ea49-47cd-8e47-7448d0ea2b25'; // Rahul
 
@@ -38,52 +38,29 @@ const iconStyles = {
 
 export function TimelineFeed() {
   const searchParams = useSearchParams();
-  const dependentId = searchParams.get('dependent') || DEFAULT_DEPENDENT_ID;
-  const [events, setEvents] = useState<HealthEvent[]>([]);
-  const [dependentName, setDependentName] = useState('');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      try {
-        let actualId = dependentId;
-        
-        // If we are using the hardcoded default or have no id, try to find the first member of the household
-        if (actualId === DEFAULT_DEPENDENT_ID || !actualId) {
-          const storedId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
-          const { getDependents } = await import('../lib/api');
-          const dependents = await getDependents(storedId || undefined);
-          if (dependents.length > 0) {
-            actualId = dependents[0].id;
-          } else {
-            // No members in this household, set empty stats
-            setEvents([]);
-            setDependentName('');
-            setLoading(false);
-            return;
-          }
+  const householdId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
+  
+  const { data: timelineData, isLoading } = useQuery({
+    queryKey: ['timeline', searchParams.get('dependent'), householdId],
+    queryFn: async () => {
+      let actualId = searchParams.get('dependent');
+      
+      if (!actualId || actualId === DEFAULT_DEPENDENT_ID) {
+        const dependents = await getDependents(householdId || undefined);
+        if (dependents.length > 0) {
+          actualId = dependents[0].id;
+        } else {
+          return { events: [], dependent_name: '' };
         }
-
-        // Final safety check: if we're still pointing to the placeholder which doesn't exist
-        if (actualId === DEFAULT_DEPENDENT_ID) {
-           setEvents([]);
-           setDependentName('');
-           setLoading(false);
-           return;
-        }
-
-        const data = await getTimeline(actualId);
-        setEvents(data.events);
-        setDependentName(data.dependent_name);
-      } catch (error) {
-        console.error('Failed to load timeline:', error);
-      } finally {
-        setLoading(false);
       }
-    }
-    load();
-  }, [dependentId]);
+
+      return getTimeline(actualId);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const events = timelineData?.events || [];
+  const dependentName = timelineData?.dependent_name || '';
 
   const speak = (event: HealthEvent) => {
     if (typeof window === 'undefined') return;
@@ -147,7 +124,7 @@ export function TimelineFeed() {
     window.speechSynthesis.speak(utterance);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <section>
         <div className="flex items-center justify-between mb-6">

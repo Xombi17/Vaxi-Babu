@@ -1,27 +1,14 @@
-'use client';
-import { Plus, User as UserIcon } from 'lucide-react';
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { getDependents, Dependent } from '../lib/api';
+import { useQuery } from '@tanstack/react-query';
+import { getDependents } from '../lib/api';
 
 export function FamilyOverview() {
-  const [dependents, setDependents] = useState<Dependent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const householdId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const storedId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
-        const data = await getDependents(storedId || undefined);
-        setDependents(data);
-      } catch (error) {
-        console.error('Failed to load dependents:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  const { data: dependents = [], isLoading } = useQuery({
+    queryKey: ['dependents', householdId],
+    queryFn: () => getDependents(householdId || undefined),
+    staleTime: 5 * 60 * 1000,
+  });
 
   return (
     <section>
@@ -32,7 +19,7 @@ export function FamilyOverview() {
         </Link>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        {loading ? (
+        {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="bg-[#f3f6fd] dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm animate-pulse min-h-[180px]" />
           ))

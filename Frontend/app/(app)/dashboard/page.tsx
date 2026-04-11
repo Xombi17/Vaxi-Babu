@@ -1,43 +1,32 @@
-'use client';
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FamilyOverview } from '@/components/FamilyOverview';
 import { TimelineFeed } from '@/components/TimelineFeed';
 import { ActivitySummary } from '@/components/ActivitySummary';
-import { getHouseholds, getHousehold, type Household } from '@/lib/api';
+import { getHouseholds, getHousehold } from '@/lib/api';
 
 export default function DashboardPage() {
-  const [household, setHousehold] = useState<Household | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function loadHousehold() {
-      try {
-        const storedId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
-        
-        if (storedId) {
-          const data = await getHousehold(storedId);
-          setHousehold(data);
-        } else {
-          // Fallback to first household if no specific one selected
-          const households = await getHouseholds();
-          if (households.length > 0) {
-            setHousehold(households[0]);
-          } else {
-            setError('No household found');
-          }
-        }
-      } catch (err) {
-        setError('Unable to load data');
-        console.error('Failed to load household:', err);
-      } finally {
-        setLoading(false);
+  const { data: household, isLoading, error } = useQuery({
+    queryKey: ['household', typeof window !== 'undefined' ? localStorage.getItem('household_id') : 'active'],
+    queryFn: async () => {
+      const storedId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
+      if (storedId) {
+        return getHousehold(storedId);
       }
-    }
-    loadHousehold();
-  }, []);
+      const households = await getHouseholds();
+      if (households.length > 0) {
+        // Auto-select first household if none selected
+        if (typeof window !== 'undefined') {
+           localStorage.setItem('household_id', households[0].id);
+        }
+        return households[0];
+      }
+      throw new Error('No household found');
+    },
+    // Keep data fresh for 5 mins, but allow immediate reuse from cache
+    staleTime: 5 * 60 * 1000,
+  });
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="animate-pulse">

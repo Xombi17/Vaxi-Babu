@@ -1,71 +1,45 @@
 'use client';
+import { useQuery } from '@tanstack/react-query';
 import { Activity, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { getTimeline, HealthEvent } from '../lib/api';
+import { getTimeline, getDependents } from '../lib/api';
 
 const DEFAULT_DEPENDENT_ID = 'ece5d2ee-ea49-47cd-8e47-7448d0ea2b25'; // Rahul
 
 export function ActivitySummary() {
   const searchParams = useSearchParams();
-  const dependentId = searchParams.get('dependent') || DEFAULT_DEPENDENT_ID;
-  const [stats, setStats] = useState({
-    overdue: 0,
-    upcoming: 0,
-    completed: 0,
-    adherence: 0
-  });
-  const [loading, setLoading] = useState(true);
+  const householdId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      try {
-        let actualId = dependentId;
-
-        // If using default ID or no ID, try to find the first member of the household
-        if (actualId === DEFAULT_DEPENDENT_ID || !actualId) {
-          const storedId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
-          const { getDependents } = await import('../lib/api');
-          const dependents = await getDependents(storedId || undefined);
-          if (dependents.length > 0) {
-            actualId = dependents[0].id;
-          } else {
-            // No members in this household, set empty stats
-            setStats({ overdue: 0, upcoming: 0, completed: 0, adherence: 0 });
-            setLoading(false);
-            return;
-          }
+  const { data: timelineData, isLoading } = useQuery({
+    queryKey: ['timeline', searchParams.get('dependent'), householdId],
+    queryFn: async () => {
+      let actualId = searchParams.get('dependent');
+      if (!actualId || actualId === DEFAULT_DEPENDENT_ID) {
+        const dependents = await getDependents(householdId || undefined);
+        if (dependents.length > 0) {
+          actualId = dependents[0].id;
+        } else {
+          return { events: [], dependent_name: '' };
         }
-
-        // Final safety check: if we're still pointing to the placeholder which doesn't exist
-        if (actualId === DEFAULT_DEPENDENT_ID) {
-           setStats({ overdue: 0, upcoming: 0, completed: 0, adherence: 0 });
-           setLoading(false);
-           return;
-        }
-
-        const data = await getTimeline(actualId);
-        const events = data.events;
-        
-        const overdue = events.filter(e => e.status === 'overdue').length;
-        const upcoming = events.filter(e => e.status === 'due' || e.status === 'upcoming').length;
-        const completed = events.filter(e => e.status === 'completed').length;
-        
-        const total = overdue + upcoming + completed;
-        const adherence = total > 0 ? Math.round((completed / total) * 100) : 0;
-        
-        setStats({ overdue, upcoming, completed, adherence });
-      } catch (error) {
-        console.error('Failed to load activity summary:', error);
-      } finally {
-        setLoading(false);
       }
-    }
-    load();
-  }, [dependentId]);
+      return getTimeline(actualId);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-  if (loading) {
+  const events = timelineData?.events || [];
+  
+  const stats = {
+    overdue: events.filter(e => e.status === 'overdue').length,
+    upcoming: events.filter(e => e.status === 'due' || e.status === 'upcoming').length,
+    completed: events.filter(e => e.status === 'completed').length,
+    adherence: 0
+  };
+  
+  const total = stats.overdue + stats.upcoming + stats.completed;
+  stats.adherence = total > 0 ? Math.round((stats.completed / total) * 100) : 0;
+
+  if (isLoading) {
     return (
       <section className="bg-[#f3f6fd] dark:bg-slate-800 rounded-[2.5rem] p-8 animate-pulse h-[400px]" />
     );
