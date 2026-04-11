@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # CORS
-    frontend_url: str = "http://localhost:3000"
+    frontend_url: str = "http://localhost:3000,http://localhost:3001,https://well-sync-nine.vercel.app"
 
     # Database
     database_url: str
