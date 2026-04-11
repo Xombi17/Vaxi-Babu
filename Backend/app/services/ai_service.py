@@ -53,6 +53,17 @@ Rules you must always follow:
 """
 
 
+LANGUAGE_MAP = {
+    "hi": "Hindi",
+    "en": "English",
+    "mr": "Marathi",
+    "bn": "Bengali",
+    "ta": "Tamil",
+    "te": "Telugu",
+    "gu": "Gujarati",
+}
+
+
 async def explain_health_event(
     event_name: str,
     why_it_matters: str,
@@ -60,17 +71,17 @@ async def explain_health_event(
     language: str = "en",
 ) -> str:
     """
-    Use Groq to produce a simplified, user-friendly explanation of a health event.
-    Falls back to a static template if Groq fails.
+    Use AI to produce a simplified, user-friendly explanation of a health event.
     """
     try:
         client = get_ai_client()
+        target_lang = LANGUAGE_MAP.get(language, "English")
         user_message = (
             f"Please explain this health event to a parent in simple language:\n\n"
             f"Event: {event_name}\n"
             f"Why it matters: {why_it_matters}\n"
             f"What to expect: {what_to_expect}\n\n"
-            f"Respond in {'Hindi' if language == 'hi' else 'English'}."
+            f"Respond in {target_lang}."
         )
         chat = await client.chat.completions.create(
             model=settings.github_chat_model,
@@ -85,7 +96,6 @@ async def explain_health_event(
 
     except Exception as exc:
         log.warning("ai_explain_failed", error=str(exc), event_name=event_name)
-        # Fallback: return structured static text
         return f"{event_name}: {why_it_matters} {what_to_expect}"
 
 
@@ -96,14 +106,14 @@ async def answer_voice_question(
 ) -> str:
     """
     Answer a user's voice question using their health timeline context.
-    Called by the Vapi webhook handler.
     """
     try:
         client = get_ai_client()
+        target_lang = LANGUAGE_MAP.get(language, "English")
         user_message = (
             f"Context about this family's health schedule:\n{context}\n\n"
             f"User question: {question}\n\n"
-            f"Respond in {'Hindi' if language == 'hi' else 'English'}. "
+            f"Respond in {target_lang}. "
             f"Keep the response short and clear (under 60 words)."
         )
         chat = await client.chat.completions.create(
@@ -119,7 +129,7 @@ async def answer_voice_question(
 
     except Exception as exc:
         log.warning("ai_voice_failed", error=str(exc))
-        return "I'm sorry, I couldn't process that question right now. Please try again."
+        return "I'm sorry, I couldn't process that question right now."
 
 
 async def simplify_medicine_result(
@@ -133,13 +143,14 @@ async def simplify_medicine_result(
     """
     try:
         client = get_ai_client()
+        target_lang = LANGUAGE_MAP.get(language, "English")
         user_message = (
             f"A medicine safety checker found this result:\n"
             f"Medicine: {medicine_name}\n"
             f"Safety level: {bucket}\n"
             f"Reason: {why_caution}\n\n"
             f"Explain this to a patient in 2-3 very simple sentences. "
-            f"Language: {'Hindi' if language == 'hi' else 'English'}."
+            f"Language: {target_lang}."
         )
         chat = await client.chat.completions.create(
             model=settings.github_chat_model,
@@ -147,7 +158,7 @@ async def simplify_medicine_result(
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user", "content": user_message},
             ],
-            max_tokens=120,
+            max_tokens=150,
             temperature=0.2,
         )
         return chat.choices[0].message.content.strip()

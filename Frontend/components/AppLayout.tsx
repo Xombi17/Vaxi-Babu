@@ -1,9 +1,9 @@
 'use client';
 import React from 'react';
-import { Home, Camera, User, Activity, Bell, Search, Mic, Sparkles, Users, Settings, Clock } from 'lucide-react';
+import { Home, Camera, User, Activity, Bell, Search, Mic, Sparkles, Settings, Clock, LogOut, MapPin, Users } from 'lucide-react';
 import { VoiceFAB } from './VoiceFAB';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ThemeToggle } from './ThemeToggle';
 
 interface AppLayoutProps {
@@ -12,6 +12,14 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleSignOut = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('household_id');
+    localStorage.removeItem('family_name');
+    router.push('/');
+  };
 
   const isActive = (path: string) => {
     if (path === '/dashboard' && pathname === '/dashboard') return true;
@@ -32,11 +40,19 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         <nav className="flex-1 space-y-3 overflow-y-auto pb-4">
           <NavItem href="/dashboard" icon={Home} label="Dashboard" active={isActive('/dashboard')} />
-          <NavItem href="/households" icon={Users} label="Households" active={isActive('/households')} />
+          <NavItem href="/care" icon={MapPin} label="Nearby Care" active={isActive('/care')} />
           <NavItem href="/dependents" icon={User} label="Dependents" active={isActive('/dependents')} />
           <NavItem href="/medicine" icon={Camera} label="Medicine Scanner" active={isActive('/medicine')} />
           <NavItem href="/reminders" icon={Clock} label="Reminders" active={isActive('/reminders')} />
           <NavItem href="/settings" icon={Settings} label="Settings" active={isActive('/settings')} />
+          
+          <button 
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-black text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all mt-auto"
+          >
+            <LogOut size={24} strokeWidth={2.5} />
+            Sign Out
+          </button>
         </nav>
 
         <div className="mt-auto pt-4 bg-blue-400 dark:bg-blue-500 rounded-[2rem] p-6 text-center shadow-[10px_10px_20px_rgba(96,165,250,0.2),inset_4px_4px_10px_rgba(255,255,255,0.4),inset_-4px_-4px_10px_rgba(0,0,0,0.1)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.4),inset_4px_4px_10px_rgba(255,255,255,0.2),inset_-4px_-4px_10px_rgba(0,0,0,0.3)] relative overflow-hidden group shrink-0">
@@ -89,9 +105,10 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Mobile Bottom Nav */}
       <div className="md:hidden fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur-2xl border-t border-slate-100 px-6 py-4 flex justify-between items-center z-40 pb-safe shadow-[0_-10px_20px_rgba(0,0,0,0.05)] rounded-t-[2rem]">
         <MobileNavItem href="/dashboard" icon={Home} label="Home" active={isActive('/dashboard')} />
+        <MobileNavItem href="/care" icon={MapPin} label="Care" active={isActive('/care')} />
         <MobileNavItem href="/dependents" icon={User} label="Family" active={isActive('/dependents')} />
         <MobileNavItem href="/medicine" icon={Camera} label="Scan" active={isActive('/medicine')} />
-        <MobileNavItem href="/reminders" icon={Clock} label="Reminders" active={isActive('/reminders')} />
+        <MobileNavItem href="/reminders" icon={Clock} label="Stats" active={isActive('/reminders')} />
       </div>
 
       {/* Mobile Voice FAB */}

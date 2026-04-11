@@ -15,8 +15,9 @@ export function ScannerView() {
   const handleTextCheck = async () => {
     if (!medicineName) return;
     setLoading(true);
+    const lang = localStorage.getItem('primary_language') || 'en';
     try {
-      const data = await checkMedicineByName(medicineName);
+      const data = await checkMedicineByName(medicineName, undefined, lang);
       setResult(data);
       setShowResult(true);
     } catch (error) {
@@ -32,8 +33,9 @@ export function ScannerView() {
     if (!file) return;
 
     setLoading(true);
+    const lang = localStorage.getItem('primary_language') || 'en';
     try {
-      const data = await checkMedicineByImage(file);
+      const data = await checkMedicineByImage(file, undefined, lang);
       setResult(data);
       setShowResult(true);
     } catch (error) {
@@ -42,6 +44,41 @@ export function ScannerView() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const speakResult = (text: string) => {
+    if (typeof window === 'undefined') return;
+    window.speechSynthesis.cancel();
+    
+    const lang = localStorage.getItem('primary_language') || 'en';
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+    
+    // Select correct regional voice
+    let voice;
+    if (lang === 'hi') {
+      voice = voices.find(v => v.lang.startsWith('hi'));
+    } else if (lang === 'mr') {
+      voice = voices.find(v => v.lang.startsWith('mr'));
+    } else if (lang === 'gu') {
+      voice = voices.find(v => v.lang.startsWith('gu'));
+    } else if (lang === 'bn') {
+      voice = voices.find(v => v.lang.startsWith('bn'));
+    } else if (lang === 'ta') {
+      voice = voices.find(v => v.lang.startsWith('ta'));
+    } else {
+      voice = voices.find(v => v.name.includes('Google') && v.lang.startsWith('en')) || 
+              voices.find(v => v.lang.startsWith('en'));
+    }
+
+    if (voice) utterance.voice = voice;
+    utterance.lang = lang === 'hi' ? 'hi-IN' : 
+                     lang === 'mr' ? 'mr-IN' : 
+                     lang === 'gu' ? 'gu-IN' :
+                     lang === 'bn' ? 'bn-IN' :
+                     lang === 'ta' ? 'ta-IN' : 'en-US';
+    utterance.rate = 0.9;
+    window.speechSynthesis.speak(utterance);
   };
 
   const triggerCamera = () => {
@@ -120,13 +157,18 @@ export function ScannerView() {
 
           <div className="flex-1" />
 
-          <div className="pb-12 flex justify-center z-20">
+          <div className="pb-12 flex flex-col items-center gap-4 z-20">
             <button
               onClick={triggerCamera}
-              className="w-24 h-24 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center active:scale-95 transition-all shadow-[10px_10px_20px_rgba(0,0,0,0.1),-10px_-10px_20px_rgba(255,255,255,0.8),inset_4px_4px_10px_rgba(255,255,255,0.9),inset_-4px_-4px_10px_rgba(0,0,0,0.02)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.4),-10px_-10px_20px_rgba(255,255,255,0.05),inset_4px_4px_10px_rgba(255,255,255,0.1),inset_-4px_-4px_10px_rgba(0,0,0,0.5)] group"
+              className="w-28 h-28 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center active:scale-95 transition-all shadow-[10px_10px_20px_rgba(0,0,0,0.1),-10px_-10px_20px_rgba(255,255,255,0.8),inset_4px_4px_10px_rgba(255,255,255,0.9),inset_-4px_-4px_10px_rgba(0,0,0,0.02)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.4),-10px_-10px_20px_rgba(255,255,255,0.05),inset_4px_4px_10px_rgba(255,255,255,0.1),inset_-4px_-4px_10px_rgba(0,0,0,0.5)] group"
             >
-              <div className="w-16 h-16 rounded-full bg-blue-400 dark:bg-blue-500 group-hover:scale-95 transition-transform shadow-[inset_2px_2px_6px_rgba(255,255,255,0.5),inset_-2px_-2px_6px_rgba(0,0,0,0.1)] dark:shadow-[inset_2px_2px_6px_rgba(255,255,255,0.1),inset_-2px_-2px_6px_rgba(0,0,0,0.4)]" />
+              <div className="w-20 h-20 rounded-full bg-blue-400 dark:bg-blue-500 group-hover:bg-blue-600 transition-colors flex items-center justify-center shadow-[inset_2px_2px_6px_rgba(255,255,255,0.5),inset_-2px_-2px_6px_rgba(0,0,0,0.1)] dark:shadow-[inset_2px_2px_6px_rgba(255,255,255,0.1),inset_-2px_-2px_6px_rgba(0,0,0,0.4)]">
+                <Camera className="text-white" size={40} strokeWidth={3} />
+              </div>
             </button>
+            <p className="text-slate-500 dark:text-slate-400 font-black text-xs uppercase tracking-widest bg-white/50 dark:bg-slate-800/50 px-4 py-2 rounded-full backdrop-blur-sm">
+              Capture or Upload
+            </p>
           </div>
         </>
       ) : (
@@ -152,71 +194,92 @@ export function ScannerView() {
         </div>
       )}
 
-      {/* Result Modal */}
+      {/* Result Modal - Fixed to be above everything including header/sidebar */}
       <AnimatePresence>
         {showResult && result && (
-          <motion.div
-            initial={{ opacity: 0, y: '100%' }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: '100%' }}
-            className="absolute inset-x-0 bottom-0 bg-[#f3f6fd] dark:bg-slate-900 rounded-t-[3rem] p-8 shadow-[0_-20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_-20px_50px_rgba(0,0,0,0.5)] z-50 md:max-w-md md:mx-auto md:mb-8 md:rounded-[3rem] border-t-8 border-blue-400 dark:border-blue-500"
-          >
-            <div className="w-16 h-2 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-8 md:hidden shadow-inner" />
-
-            <div className="flex flex-col items-center text-center">
-              <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mb-6 shadow-xl ${
-                result.bucket === 'consult_doctor_urgently' 
-                ? 'bg-rose-500 text-white shadow-rose-200' 
-                : result.bucket === 'use_with_caution'
-                ? 'bg-amber-400 text-white shadow-amber-200'
-                : 'bg-emerald-500 text-white shadow-emerald-200'
-              }`}>
-                {result.bucket === 'common_use' ? <CheckCircle2 size={48} strokeWidth={3} /> : <AlertTriangle size={48} strokeWidth={3} />}
-              </div>
-
-              <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-1 truncate w-full px-4">
-                {result.detected_medicine}
-              </h3>
-              <p className={`text-sm font-black uppercase tracking-widest mb-4 ${
-                result.bucket === 'consult_doctor_urgently' ? 'text-rose-500' :
-                result.bucket === 'use_with_caution' ? 'text-amber-500' : 'text-emerald-500'
-              }`}>
-                {result.bucket.replace(/_/g, ' ')}
-              </p>
-
-              <div className="bg-white dark:bg-slate-800 w-full p-6 rounded-[2rem] shadow-inner mb-8 text-left border border-white dark:border-slate-700">
-                <p className="text-slate-700 dark:text-slate-300 font-bold text-lg mb-4 leading-tight">
-                  {result.why_caution}
-                </p>
-                <div className="flex items-start gap-2 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl border-l-4 border-blue-400">
-                  <span className="text-blue-500 font-black text-xs uppercase mt-1">NEXT:</span>
-                  <p className="text-blue-700 dark:text-blue-300 text-sm font-bold">
-                    {result.next_step}
-                  </p>
-                </div>
-              </div>
-
-              <button className="w-full bg-blue-400 dark:bg-blue-500 text-white rounded-[1.5rem] py-5 font-black text-lg flex items-center justify-center gap-3 transition-all shadow-lg active:translate-y-1">
-                <Volume2 size={24} strokeWidth={3} />
-                Listen to Guide
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowResult(false);
-                  setMedicineName('');
-                  setResult(null);
-                }}
-                className="mt-6 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-bold py-3 px-6 rounded-2xl transition-colors"
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowResult(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md cursor-pointer"
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-[3rem] p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-t-8 border-blue-400 dark:border-blue-500 overflow-hidden"
+            >
+              <button 
+                onClick={() => setShowResult(false)}
+                className="absolute top-8 right-8 w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors shadow-inner"
               >
-                Check Another
+                <X size={24} strokeWidth={3} />
               </button>
-              
-              <p className="mt-4 text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
-                {result.disclaimer}
-              </p>
-            </div>
-          </motion.div>
+
+              <div className="flex flex-col items-center text-center">
+                <div className={`w-28 h-28 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl relative ${
+                  result.bucket === 'consult_doctor_urgently' 
+                  ? 'bg-rose-500 text-white shadow-rose-200 dark:shadow-rose-900/40' 
+                  : result.bucket === 'use_with_caution'
+                  ? 'bg-amber-400 text-white shadow-amber-200 dark:shadow-amber-900/40'
+                  : 'bg-emerald-500 text-white shadow-emerald-200 dark:shadow-emerald-900/40'
+                }`}>
+                  <div className="absolute inset-0 rounded-[2rem] animate-pulse opacity-50 bg-inherit filter blur-xl"></div>
+                  {result.bucket === 'common_use' ? <CheckCircle2 size={56} strokeWidth={3} className="relative z-10" /> : <AlertTriangle size={56} strokeWidth={3} className="relative z-10" />}
+                </div>
+
+                <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white mb-2 truncate w-full px-4 tracking-tight">
+                  {result.detected_medicine}
+                </h3>
+                <p className={`text-base font-black uppercase tracking-[0.2em] mb-8 ${
+                  result.bucket === 'consult_doctor_urgently' ? 'text-rose-500' :
+                  result.bucket === 'use_with_caution' ? 'text-amber-500' : 'text-emerald-500'
+                }`}>
+                  {result.bucket.replace(/_/g, ' ')}
+                </p>
+
+                <div className="bg-[#f3f6fd] dark:bg-slate-800/50 w-full p-8 rounded-[2.5rem] shadow-inner mb-10 text-left border border-white dark:border-slate-800 transition-colors">
+                  <p className="text-slate-700 dark:text-slate-300 font-bold text-xl mb-6 leading-tight">
+                    {result.why_caution}
+                  </p>
+                  <div className="flex items-start gap-4 bg-blue-50 dark:bg-blue-900/20 p-6 rounded-2xl border-l-[6px] border-blue-400 shadow-sm">
+                    <div className="bg-blue-400 p-1 rounded-lg text-white font-black text-[10px] uppercase mt-1 shrink-0">NEXT</div>
+                    <p className="text-blue-800 dark:text-blue-200 text-lg font-black leading-tight">
+                      {result.next_step}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col w-full gap-4">
+                  <button 
+                    onClick={() => speakResult(`${result.detected_medicine}. ${result.why_caution}. Next step: ${result.next_step}. ${result.disclaimer}`)}
+                    className="w-full bg-blue-400 dark:bg-blue-500 text-white rounded-[2rem] py-6 font-black text-xl flex items-center justify-center gap-4 transition-all shadow-[6px_6px_12px_rgba(96,165,250,0.3),inset_2px_2px_6px_rgba(255,255,255,0.4)] hover:-translate-y-1 active:translate-y-0.5 active:shadow-inner"
+                  >
+                    <Volume2 size={32} strokeWidth={3} />
+                    Listen to Guide
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setShowResult(false);
+                      setMedicineName('');
+                      setResult(null);
+                    }}
+                    className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white font-black py-4 transition-colors"
+                  >
+                    Check Another
+                  </button>
+                </div>
+                
+                <p className="mt-6 text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed font-bold max-w-md mx-auto">
+                  {result.disclaimer}
+                </p>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

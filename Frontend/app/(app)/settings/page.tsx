@@ -1,7 +1,30 @@
 'use client';
 import { Settings, Globe, Bell, Mic, Download, LogOut } from 'lucide-react';
+import React, { useState } from 'react';
 
 export default function SettingsPage() {
+  const [language, setLanguage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('primary_language') || 'en';
+    }
+    return 'en';
+  });
+
+  const handleLanguageChange = (lang: string) => {
+    setLanguage(lang);
+    localStorage.setItem('primary_language', lang);
+    window.dispatchEvent(new Event('languageChange'));
+  };
+
+  const languages = [
+    { code: 'en', label: 'English' },
+    { code: 'hi', label: 'हिंदी (Hindi)' },
+    { code: 'mr', label: 'मराठी (Marathi)' },
+    { code: 'gu', label: 'ગુજરાતી (Gujarati)' },
+    { code: 'bn', label: 'বাংলা (Bengali)' },
+    { code: 'ta', label: 'தமிழ் (Tamil)' },
+  ];
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto">
       <div className="flex items-center gap-4 mb-8">
@@ -20,13 +43,20 @@ export default function SettingsPage() {
           <h2 className="text-xl font-black text-slate-800 dark:text-white mb-6 flex items-center gap-2">
             <Globe className="text-blue-500 dark:text-blue-400" /> Language
           </h2>
-          <div className="flex gap-4">
-            <button className="flex-1 bg-white dark:bg-slate-700 border-2 border-blue-400 dark:border-blue-500 text-blue-500 dark:text-blue-400 rounded-2xl py-4 font-black shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.3)]">
-              English
-            </button>
-            <button className="flex-1 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-2xl py-4 font-black shadow-[4px_4px_8px_rgba(0,0,0,0.05),inset_2px_2px_4px_rgba(255,255,255,0.9),inset_-2px_-2px_4px_rgba(0,0,0,0.02)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.3),inset_2px_2px_4px_rgba(255,255,255,0.1),inset_-2px_-2px_4px_rgba(0,0,0,0.4)] hover:text-slate-800 dark:hover:text-white transition-colors">
-              हिंदी (Hindi)
-            </button>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            {languages.map((lang) => (
+              <button 
+                key={lang.code}
+                onClick={() => handleLanguageChange(lang.code)}
+                className={`flex-1 rounded-2xl py-4 font-black transition-all ${
+                  language === lang.code 
+                  ? 'bg-blue-500 text-white shadow-lg scale-[1.02]' 
+                  : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 shadow-[4px_4px_8px_rgba(0,0,0,0.05)] hover:bg-slate-50 dark:hover:bg-slate-600'
+                }`}
+              >
+                {lang.label}
+              </button>
+            ))}
           </div>
         </div>
 

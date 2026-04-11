@@ -34,10 +34,10 @@ export default function LandingPage() {
               </select>
             </div>
             <ThemeToggle />
-            <Link href="/dashboard" className="hidden md:block text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+            <Link href="/login" className="hidden md:block text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
               Sign in
             </Link>
-            <Link href="/households/new" className="bg-blue-400 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl text-sm font-bold transition-all shadow-[4px_4px_10px_rgba(96,165,250,0.4),inset_2px_2px_6px_rgba(255,255,255,0.6),inset_-2px_-2px_6px_rgba(0,0,0,0.1)] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[inset_2px_2px_6px_rgba(0,0,0,0.1)]">
+            <Link href="/login" className="bg-blue-400 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl text-sm font-bold transition-all shadow-[4px_4px_10px_rgba(96,165,250,0.4),inset_2px_2px_6px_rgba(255,255,255,0.6),inset_-2px_-2px_6px_rgba(0,0,0,0.1)] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[inset_2px_2px_6px_rgba(0,0,0,0.1)]">
               Get Started
             </Link>
           </div>
@@ -84,7 +84,7 @@ export default function LandingPage() {
             transition={{ duration: 0.7, delay: 0.3 }}
             className="flex flex-wrap items-center gap-4"
           >
-            <Link href="/households/new" className="group bg-gradient-to-r from-blue-400 to-indigo-400 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-4 rounded-[1.5rem] text-lg font-black transition-all shadow-[8px_8px_16px_rgba(96,165,250,0.3),inset_2px_2px_8px_rgba(255,255,255,0.5),inset_-2px_-2px_8px_rgba(0,0,0,0.1)] hover:-translate-y-1 active:translate-y-0.5 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1)] flex items-center gap-2">
+            <Link href="/login" className="group bg-gradient-to-r from-blue-400 to-indigo-400 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-4 rounded-[1.5rem] text-lg font-black transition-all shadow-[8px_8px_16px_rgba(96,165,250,0.3),inset_2px_2px_8px_rgba(255,255,255,0.5),inset_-2px_-2px_8px_rgba(0,0,0,0.1)] hover:-translate-y-1 active:translate-y-0.5 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1)] flex items-center gap-2">
               Get Started <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
             </Link>
             <a href="#how-it-works" className="px-8 py-4 rounded-[1.5rem] text-lg font-bold text-slate-600 dark:text-slate-300 bg-[#f3f6fd] dark:bg-slate-800 shadow-[8px_8px_16px_rgba(0,0,0,0.05),-8px_-8px_16px_rgba(255,255,255,0.8),inset_2px_2px_8px_rgba(255,255,255,0.9),inset_-2px_-2px_8px_rgba(0,0,0,0.02)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.3),-8px_-8px_16px_rgba(255,255,255,0.05),inset_2px_2px_8px_rgba(255,255,255,0.1),inset_-2px_-2px_8px_rgba(0,0,0,0.4)] hover:-translate-y-1 hover:shadow-[12px_12px_20px_rgba(0,0,0,0.08),-12px_-12px_20px_rgba(255,255,255,0.9),inset_2px_2px_8px_rgba(255,255,255,0.9),inset_-2px_-2px_8px_rgba(0,0,0,0.02)] dark:hover:shadow-[12px_12px_20px_rgba(0,0,0,0.4),-12px_-12px_20px_rgba(255,255,255,0.05),inset_2px_2px_8px_rgba(255,255,255,0.1),inset_-2px_-2px_8px_rgba(0,0,0,0.4)] active:translate-y-0.5 transition-all">
@@ -151,7 +151,7 @@ export default function LandingPage() {
             transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
             className="absolute -bottom-10 right-10 w-80 bg-blue-400 dark:bg-blue-500 rounded-[2rem] shadow-[15px_15px_30px_rgba(96,165,250,0.3),inset_4px_4px_10px_rgba(255,255,255,0.4),inset_-4px_-4px_10px_rgba(0,0,0,0.1)] dark:shadow-[15px_15px_30px_rgba(0,0,0,0.4),inset_4px_4px_10px_rgba(255,255,255,0.2),inset_-4px_-4px_10px_rgba(0,0,0,0.3)] p-6 z-30 flex items-center gap-5"
           >
-            <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center shrink-0 shadow-[4px_4px_8px_rgba(0,0,0,0.1),inset_2px_2px_4px_rgba(255,255,255,0.9),inset_-2px_-2px_4px_rgba(0,0,0,0.05)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.3),inset_2px_2px_4px_rgba(255,255,255,0.1),inset_-2px_-2px_4px_rgba(0,0,0,0.4)]">
+            <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center shrink-0 shadow-[4px_4px_8px_rgba(0,0,0,0.1),inset_2px_2px_4px_rgba(255,255,255,0.9),inset_-2px_-2px_4px_rgba(0,0,0,0.05)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.3),inset_2px_2px_6px_rgba(255,255,255,0.1),inset_-2px_-2px_6px_rgba(0,0,0,0.4)]">
               <Mic className="text-blue-500 dark:text-blue-400" size={28} strokeWidth={2.5} />
             </div>
             <div>
@@ -184,7 +184,6 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 auto-rows-[320px]">
-            {/* Feature 1: Timeline (Spans 2 cols) */}
             <div className="md:col-span-2 bg-[#f3f6fd] dark:bg-slate-800 rounded-[2.5rem] p-10 shadow-[10px_10px_20px_rgba(0,0,0,0.05),-10px_-10px_20px_rgba(255,255,255,0.8),inset_4px_4px_10px_rgba(255,255,255,0.9),inset_-4px_-4px_10px_rgba(0,0,0,0.02)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.4),-10px_-10px_20px_rgba(255,255,255,0.05),inset_4px_4px_10px_rgba(255,255,255,0.1),inset_-4px_-4px_10px_rgba(0,0,0,0.5)] flex flex-col justify-between group overflow-hidden relative">
               <div className="relative z-10 max-w-md">
                 <div className="w-16 h-16 bg-blue-400 rounded-2xl flex items-center justify-center mb-8 shadow-[4px_4px_10px_rgba(96,165,250,0.4),inset_2px_2px_6px_rgba(255,255,255,0.6),inset_-2px_-2px_6px_rgba(0,0,0,0.1)] dark:shadow-[4px_4px_10px_rgba(96,165,250,0.2),inset_2px_2px_6px_rgba(255,255,255,0.2),inset_-2px_-2px_6px_rgba(0,0,0,0.4)]">
@@ -193,7 +192,6 @@ export default function LandingPage() {
                 <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-4">Automated Health Timeline</h3>
                 <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed text-lg">We automatically generate a structured, visual timeline of required vaccines and checkups based on age and local health guidelines.</p>
               </div>
-              {/* Decorative Clay element */}
               <div className="absolute right-0 bottom-0 translate-x-1/4 translate-y-1/4 w-80 h-80 bg-white dark:bg-slate-700 rounded-tl-[3rem] shadow-[10px_10px_20px_rgba(0,0,0,0.05),inset_4px_4px_10px_rgba(255,255,255,0.9),inset_-4px_-4px_10px_rgba(0,0,0,0.02)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.4),inset_4px_4px_10px_rgba(255,255,255,0.1),inset_-4px_-4px_10px_rgba(0,0,0,0.5)] p-8 opacity-80 group-hover:-translate-y-4 group-hover:-translate-x-4 transition-transform duration-500">
                 <div className="w-full h-8 bg-[#f3f6fd] dark:bg-slate-800 rounded-full mb-6 shadow-[inset_2px_2px_6px_rgba(0,0,0,0.05),inset_-2px_-2px_6px_rgba(255,255,255,0.8)] dark:shadow-[inset_2px_2px_6px_rgba(0,0,0,0.4),inset_-2px_-2px_6px_rgba(255,255,255,0.05)]"></div>
                 <div className="w-3/4 h-8 bg-[#f3f6fd] dark:bg-slate-800 rounded-full mb-10 shadow-[inset_2px_2px_6px_rgba(0,0,0,0.05),inset_-2px_-2px_6px_rgba(255,255,255,0.8)] dark:shadow-[inset_2px_2px_6px_rgba(0,0,0,0.4),inset_-2px_-2px_6px_rgba(255,255,255,0.05)]"></div>
@@ -201,7 +199,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Feature 2: Voice */}
             <div className="bg-purple-400 dark:bg-purple-500 rounded-[2.5rem] p-10 shadow-[10px_10px_20px_rgba(168,85,247,0.2),inset_4px_4px_10px_rgba(255,255,255,0.4),inset_-4px_-4px_10px_rgba(0,0,0,0.1)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.4),inset_4px_4px_10px_rgba(255,255,255,0.2),inset_-4px_-4px_10px_rgba(0,0,0,0.3)] flex flex-col justify-between text-white relative overflow-hidden group">
               <div className="relative z-10">
                 <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-8 shadow-[4px_4px_10px_rgba(0,0,0,0.1),inset_2px_2px_6px_rgba(255,255,255,0.9),inset_-2px_-2px_6px_rgba(0,0,0,0.05)] dark:shadow-[4px_4px_10px_rgba(0,0,0,0.3),inset_2px_2px_6px_rgba(255,255,255,0.1),inset_-2px_-2px_6px_rgba(0,0,0,0.4)]">
@@ -212,7 +209,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Feature 3: Offline */}
             <div className="bg-[#f3f6fd] dark:bg-slate-800 rounded-[2.5rem] p-10 shadow-[10px_10px_20px_rgba(0,0,0,0.05),-10px_-10px_20px_rgba(255,255,255,0.8),inset_4px_4px_10px_rgba(255,255,255,0.9),inset_-4px_-4px_10px_rgba(0,0,0,0.02)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.4),-10px_-10px_20px_rgba(255,255,255,0.05),inset_4px_4px_10px_rgba(255,255,255,0.1),inset_-4px_-4px_10px_rgba(0,0,0,0.5)] flex flex-col justify-between">
               <div>
                 <div className="w-16 h-16 bg-white dark:bg-slate-700 rounded-2xl flex items-center justify-center mb-8 shadow-[4px_4px_10px_rgba(0,0,0,0.05),inset_2px_2px_6px_rgba(255,255,255,0.9),inset_-2px_-2px_6px_rgba(0,0,0,0.02)] dark:shadow-[4px_4px_10px_rgba(0,0,0,0.3),inset_2px_2px_6px_rgba(255,255,255,0.1),inset_-2px_-2px_6px_rgba(0,0,0,0.4)]">
@@ -223,7 +219,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Feature 4: Medicine Caution (Spans 2 cols) */}
             <div className="md:col-span-2 bg-emerald-400 dark:bg-emerald-500 rounded-[2.5rem] p-10 shadow-[10px_10px_20px_rgba(52,211,153,0.2),inset_4px_4px_10px_rgba(255,255,255,0.4),inset_-4px_-4px_10px_rgba(0,0,0,0.1)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.4),inset_4px_4px_10px_rgba(255,255,255,0.2),inset_-4px_-4px_10px_rgba(0,0,0,0.3)] flex flex-col justify-between overflow-hidden relative group">
               <div className="relative z-10 max-w-md">
                 <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-8 shadow-[4px_4px_10px_rgba(0,0,0,0.1),inset_2px_2px_6px_rgba(255,255,255,0.9),inset_-2px_-2px_6px_rgba(0,0,0,0.05)] dark:shadow-[4px_4px_10px_rgba(0,0,0,0.3),inset_2px_2px_6px_rgba(255,255,255,0.1),inset_-2px_-2px_6px_rgba(0,0,0,0.4)]">
@@ -251,7 +246,6 @@ export default function LandingPage() {
             </div>
             
             <div className="relative z-10 max-w-2xl mx-auto">
-              {/* User Query */}
               <div className="flex items-start gap-4 mb-10">
                 <div className="w-14 h-14 rounded-[1.25rem] bg-white dark:bg-slate-800 flex items-center justify-center shrink-0 shadow-[6px_6px_12px_rgba(0,0,0,0.05),inset_2px_2px_6px_rgba(255,255,255,0.9),inset_-2px_-2px_6px_rgba(0,0,0,0.02)] dark:shadow-[6px_6px_12px_rgba(0,0,0,0.3),inset_2px_2px_6px_rgba(255,255,255,0.1),inset_-2px_-2px_6px_rgba(0,0,0,0.4)]">
                   <User size={24} className="text-slate-400 dark:text-slate-500" />
@@ -261,7 +255,6 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* AI Response */}
               <div className="flex items-start gap-4 flex-row-reverse">
                 <div className="w-14 h-14 rounded-[1.25rem] bg-blue-400 dark:bg-blue-500 flex items-center justify-center shrink-0 shadow-[6px_6px_12px_rgba(96,165,250,0.3),inset_2px_2px_6px_rgba(255,255,255,0.5),inset_-2px_-2px_6px_rgba(0,0,0,0.1)] dark:shadow-[6px_6px_12px_rgba(0,0,0,0.4),inset_2px_2px_6px_rgba(255,255,255,0.2),inset_-2px_-2px_6px_rgba(0,0,0,0.3)]">
                   <Activity size={24} className="text-white" />
@@ -275,7 +268,6 @@ export default function LandingPage() {
                     Aarav is due for his Polio booster this week. It is important to protect him against the polio virus. Would you like me to set a reminder for tomorrow morning?
                   </p>
                   
-                  {/* Contextual UI Pop-in */}
                   <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 flex items-center gap-5 shadow-[inset_2px_2px_6px_rgba(0,0,0,0.05)] dark:shadow-[inset_2px_2px_6px_rgba(0,0,0,0.4)]">
                     <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-500 dark:text-amber-400 flex items-center justify-center shadow-[inset_2px_2px_4px_rgba(255,255,255,0.5),inset_-2px_-2px_4px_rgba(0,0,0,0.05)] dark:shadow-[inset_2px_2px_4px_rgba(255,255,255,0.1),inset_-2px_-2px_4px_rgba(0,0,0,0.2)]">
                       <Calendar size={24} />
@@ -297,7 +289,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-5xl font-black text-slate-800 dark:text-white tracking-tight mb-8">Ready to simplify family health?</h2>
           <p className="text-xl font-medium text-slate-500 dark:text-slate-400 mb-12">Explore the prototype and see how soft, playful, voice-first design makes preventive care accessible for everyone.</p>
-          <Link href="/dashboard" className="group inline-flex items-center gap-3 bg-gradient-to-r from-blue-400 to-indigo-400 hover:from-blue-500 hover:to-indigo-500 text-white px-10 py-5 rounded-[2rem] text-xl font-black transition-all shadow-[10px_10px_20px_rgba(96,165,250,0.3),inset_4px_4px_10px_rgba(255,255,255,0.5),inset_-4px_-4px_10px_rgba(0,0,0,0.1)] hover:-translate-y-1 active:translate-y-1 active:shadow-[inset_4px_4px_10px_rgba(0,0,0,0.1)]">
+          <Link href="/login" className="group inline-flex items-center gap-3 bg-gradient-to-r from-blue-400 to-indigo-400 hover:from-blue-500 hover:to-indigo-500 text-white px-10 py-5 rounded-[2rem] text-xl font-black transition-all shadow-[10px_10px_20px_rgba(96,165,250,0.3),inset_4px_4px_10px_rgba(255,255,255,0.5),inset_-4px_-4px_10px_rgba(0,0,0,0.1)] hover:-translate-y-1 active:translate-y-1 active:shadow-[inset_4px_4px_10px_rgba(0,0,0,0.1)]">
             Launch Dashboard <ChevronRight size={24} className="group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>

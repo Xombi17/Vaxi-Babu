@@ -30,6 +30,7 @@ from app.core.database import get_session
 from app.models.dependent import Dependent
 from app.models.health_event import EventStatus, HealthEvent
 from app.models.household import Household
+from app.models.conversation import Conversation
 from app.services.ai_service import answer_voice_question
 
 log = structlog.get_logger()
@@ -173,9 +174,17 @@ async def vapi_webhook(
                 )
                 continue
 
+            result_text = ""
+
             # Get DB session for fetching personalized data
             async for session in get_session():
                 result_text = await _handle_tool_call(tool_name, tool_args, session)
+
+                # Record the interaction for memory
+                household_id = tool_args.get("household_id", "")
+                question = tool_args.get("question", "")
+                if household_id and question:
+                    await _record_interaction(household_id, question, result_text, session)
                 break  # Only need one session
 
             results.append(
@@ -336,7 +345,47 @@ async def _build_health_context(
     if completed_count > 0:
         context_parts.append(f"\n--- Completed: {completed_count} events ---")
 
+    # [NEW] Health Memory History
+    history = await _get_conversation_history(household_id, session)
+    if history:
+        context_parts.append("\n--- Recent Conversation History (Health Memory) ---")
+        for h in history:
+            context_parts.append(f"  - {h['role'].upper()}: {h['content']}")
+
     return "\n".join(context_parts)
+
+
+async def _record_interaction(household_id: str, question: str, answer: str, session) -> None:
+    """Save a conversation turn to the database for future context."""
+    try:
+        user_turn = Conversation(household_id=household_id, role="user", content=question)
+        assistant_turn = Conversation(household_id=household_id, role="assistant", content=answer)
+        session.add(user_turn)
+        session.add(assistant_turn)
+        await session.commit()
+        log.info("conversation_recorded", household_id=household_id)
+    except Exception as e:
+        log.error("conversation_record_failed", error=str(e))
+
+
+async def _get_conversation_history(household_id: str, session, limit: int = 6) -> list[dict[str, str]]:
+    """Fetch recent conversation turns for health memory context."""
+    if not household_id:
+        return []
+        
+    try:
+        result = await session.execute(
+            select(Conversation)
+            .where(Conversation.household_id == household_id)
+            .order_by(Conversation.created_at.desc())
+            .limit(limit)
+        )
+        conversations = result.scalars().all()
+        # Return in chronological order
+        return [{"role": c.role, "content": c.content} for c in reversed(conversations)]
+    except Exception as e:
+        log.error("conversation_history_fetch_failed", error=str(e))
+        return []
 
 
 async def _get_dependents_for_household(household_id: str, session) -> str:

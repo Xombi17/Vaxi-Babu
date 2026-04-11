@@ -1,9 +1,20 @@
 from fastapi import APIRouter
 
-from app.api.v1 import ai, dependents, households, medicine, reminders, sync, timeline, voice
+from app.api.v1 import (
+    ai,
+    auth,
+    dependents,
+    households,
+    medicine,
+    reminders,
+    sync,
+    timeline,
+    voice,
+)
 
 router = APIRouter(prefix="/api/v1")
 
+router.include_router(auth.router)
 router.include_router(households.router)
 router.include_router(dependents.router)
 router.include_router(timeline.router)

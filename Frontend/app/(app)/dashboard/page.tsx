@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { FamilyOverview } from '@/components/FamilyOverview';
 import { TimelineFeed } from '@/components/TimelineFeed';
 import { ActivitySummary } from '@/components/ActivitySummary';
-import { getHouseholds, type Household } from '@/lib/api';
+import { getHouseholds, getHousehold, type Household } from '@/lib/api';
 
 export default function DashboardPage() {
   const [household, setHousehold] = useState<Household | null>(null);
@@ -13,11 +13,19 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadHousehold() {
       try {
-        const households = await getHouseholds();
-        if (households.length > 0) {
-          setHousehold(households[0]);
+        const storedId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
+        
+        if (storedId) {
+          const data = await getHousehold(storedId);
+          setHousehold(data);
         } else {
-          setError('No household found');
+          // Fallback to first household if no specific one selected
+          const households = await getHouseholds();
+          if (households.length > 0) {
+            setHousehold(households[0]);
+          } else {
+            setError('No household found');
+          }
         }
       } catch (err) {
         setError('Unable to load data');

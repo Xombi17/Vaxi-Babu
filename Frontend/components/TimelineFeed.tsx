@@ -47,7 +47,33 @@ export function TimelineFeed() {
     async function load() {
       setLoading(true);
       try {
-        const data = await getTimeline(dependentId);
+        let actualId = dependentId;
+        
+        // If we are using the hardcoded default or have no id, try to find the first member of the household
+        if (actualId === DEFAULT_DEPENDENT_ID || !actualId) {
+          const storedId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
+          const { getDependents } = await import('../lib/api');
+          const dependents = await getDependents(storedId || undefined);
+          if (dependents.length > 0) {
+            actualId = dependents[0].id;
+          } else {
+            // No members in this household, set empty stats
+            setEvents([]);
+            setDependentName('');
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Final safety check: if we're still pointing to the placeholder which doesn't exist
+        if (actualId === DEFAULT_DEPENDENT_ID) {
+           setEvents([]);
+           setDependentName('');
+           setLoading(false);
+           return;
+        }
+
+        const data = await getTimeline(actualId);
         setEvents(data.events);
         setDependentName(data.dependent_name);
       } catch (error) {
@@ -58,6 +84,63 @@ export function TimelineFeed() {
     }
     load();
   }, [dependentId]);
+
+  const speak = (event: HealthEvent) => {
+    if (typeof window === 'undefined') return;
+    
+    // Stop any current speech
+    window.speechSynthesis.cancel();
+
+    const lang = localStorage.getItem('primary_language') || 'en';
+    const dateStr = new Date(event.due_date).toLocaleDateString(lang === 'en' ? 'en-IN' : lang === 'hi' ? 'hi-IN' : 'mr-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    
+    // Multi-lingual structure
+    let text = '';
+    if (lang === 'hi') {
+      text = `${event.name}. यह ${event.status === 'completed' ? 'पूरा हो गया है' : 'होने वाला है'} ${dateStr} को. ${event.notes || ''}`;
+    } else if (lang === 'mr') {
+      text = `${event.name}. हे ${event.status === 'completed' ? 'पूर्ण झाले आहे' : 'येणार आहे'} ${dateStr} ला. ${event.notes || ''}`;
+    } else if (lang === 'gu') {
+      text = `${event.name}. આ ${event.status === 'completed' ? 'પૂર્ણ થઈ ગયું છે' : 'બાકી છે'} ${dateStr} ના રોજ. ${event.notes || ''}`;
+    } else if (lang === 'bn') {
+      text = `${event.name}. এটি ${event.status === 'completed' ? 'সম্পন্ন হয়েছে' : 'বাকি আছে'} ${dateStr} তারিখে. ${event.notes || ''}`;
+    } else if (lang === 'ta') {
+      text = `${event.name}. இது ${event.status === 'completed' ? 'முடிந்தது' : 'வரப்போகிறது'} ${dateStr} அன்று. ${event.notes || ''}`;
+    } else {
+      text = `${event.name}. ${event.status === 'completed' ? 'Completed' : 'Due on'} ${dateStr}. ${event.notes || ''}`;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+    
+    // Find best voice for language
+    let voice;
+    if (lang === 'hi') {
+      voice = voices.find(v => v.lang.startsWith('hi'));
+    } else if (lang === 'mr') {
+      voice = voices.find(v => v.lang.startsWith('mr'));
+    } else if (lang === 'gu') {
+      voice = voices.find(v => v.lang.startsWith('gu'));
+    } else if (lang === 'bn') {
+      voice = voices.find(v => v.lang.startsWith('bn'));
+    } else if (lang === 'ta') {
+      voice = voices.find(v => v.lang.startsWith('ta'));
+    } else {
+      voice = voices.find(v => v.name.includes('Google') && v.lang.startsWith('en')) || 
+              voices.find(v => v.lang.startsWith('en'));
+    }
+    
+    if (voice) utterance.voice = voice;
+    utterance.lang = lang === 'hi' ? 'hi-IN' : 
+                     lang === 'mr' ? 'mr-IN' : 
+                     lang === 'gu' ? 'gu-IN' :
+                     lang === 'bn' ? 'bn-IN' :
+                     lang === 'ta' ? 'ta-IN' : 'en-US';
+    utterance.rate = 0.9;
+    utterance.pitch = 1.1;
+    
+    window.speechSynthesis.speak(utterance);
+  };
 
   if (loading) {
     return (
@@ -126,7 +209,10 @@ export function TimelineFeed() {
                   </div>
                 </div>
 
-                <button className="w-full sm:w-auto mt-4 sm:mt-0 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-500 dark:hover:text-blue-400 rounded-2xl py-4 px-8 font-black flex items-center justify-center gap-2 transition-all shadow-[4px_4px_8px_rgba(0,0,0,0.05),inset_2px_2px_4px_rgba(255,255,255,0.9),inset_-2px_-2px_4px_rgba(0,0,0,0.02)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.3),inset_2px_2px_4px_rgba(255,255,255,0.1),inset_-2px_-2px_4px_rgba(0,0,0,0.4)] active:translate-y-0.5 active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] dark:active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]">
+                <button 
+                  onClick={() => speak(event)}
+                  className="w-full sm:w-auto mt-4 sm:mt-0 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-500 dark:hover:text-blue-400 rounded-2xl py-4 px-8 font-black flex items-center justify-center gap-2 transition-all shadow-[4px_4px_8px_rgba(0,0,0,0.05),inset_2px_2px_4px_rgba(255,255,255,0.9),inset_-2px_-2px_4px_rgba(0,0,0,0.02)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.3),inset_2px_2px_4px_rgba(255,255,255,0.1),inset_-2px_-2px_4px_rgba(0,0,0,0.4)] active:translate-y-0.5 active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] dark:active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+                >
                   <Volume2 size={20} strokeWidth={3} />
                   <span>Listen</span>
                 </button>

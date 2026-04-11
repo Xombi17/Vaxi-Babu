@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "Backend/.env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -31,6 +31,11 @@ class Settings(BaseSettings):
 
     # Vapi webhook
     vapi_webhook_secret: str = ""
+
+    # Auth
+    secret_key: str = "very-secret-dev-key-wellsync-ai"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
 
     @property
     def is_dev(self) -> bool:

@@ -32,6 +32,12 @@ async def create_db_and_tables() -> None:
         await conn.run_sync(SQLModel.metadata.create_all)
 
 
+async def drop_db_and_tables() -> None:
+    """Drop all tables (used for fresh development resets)."""
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.drop_all)
+
+
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency: yields an async database session."""
     async with AsyncSessionLocal() as session:

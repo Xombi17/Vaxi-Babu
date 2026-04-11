@@ -11,8 +11,8 @@ export function FamilyOverview() {
   useEffect(() => {
     async function load() {
       try {
-        // Using the demo household ID provided
-        const data = await getDependents('8afbdd83-eb50-4624-850b-0ccf9b68bcee');
+        const storedId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
+        const data = await getDependents(storedId || undefined);
         setDependents(data);
       } catch (error) {
         console.error('Failed to load dependents:', error);

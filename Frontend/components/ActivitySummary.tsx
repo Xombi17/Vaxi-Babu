@@ -21,7 +21,31 @@ export function ActivitySummary() {
     async function load() {
       setLoading(true);
       try {
-        const data = await getTimeline(dependentId);
+        let actualId = dependentId;
+
+        // If using default ID or no ID, try to find the first member of the household
+        if (actualId === DEFAULT_DEPENDENT_ID || !actualId) {
+          const storedId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
+          const { getDependents } = await import('../lib/api');
+          const dependents = await getDependents(storedId || undefined);
+          if (dependents.length > 0) {
+            actualId = dependents[0].id;
+          } else {
+            // No members in this household, set empty stats
+            setStats({ overdue: 0, upcoming: 0, completed: 0, adherence: 0 });
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Final safety check: if we're still pointing to the placeholder which doesn't exist
+        if (actualId === DEFAULT_DEPENDENT_ID) {
+           setStats({ overdue: 0, upcoming: 0, completed: 0, adherence: 0 });
+           setLoading(false);
+           return;
+        }
+
+        const data = await getTimeline(actualId);
         const events = data.events;
         
         const overdue = events.filter(e => e.status === 'overdue').length;
