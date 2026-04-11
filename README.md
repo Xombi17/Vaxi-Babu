@@ -94,9 +94,8 @@ WellSync AI is being built to solve this with a structured, voice-first, easy-to
 - **SQLModel** (SQLAlchemy + Pydantic) for typed ORM models
 - **asyncpg** for async Postgres driver
 - **Alembic** for database migrations
-- **Groq API** (`llama-3.3-70b-versatile`) for low-latency LLM responses
-- **Ollama** for local vision model OCR (`gemma4` primary, `llama3.2-vision` fallback)
-- **Google Cloud Vision** as optional 3rd-tier OCR fallback
+- **GitHub Models** (`openai/gpt-4o` via `https://models.github.ai/inference`)
+- **OpenAI gpt-4o multimodal** for medicine OCR
 - **Pydantic Settings** for typed config management
 - **structlog** for structured logging
 - **httpx** for async HTTP calls
@@ -109,10 +108,9 @@ WellSync AI is being built to solve this with a structured, voice-first, easy-to
 - Schema: `households`, `dependents`, `health_events`, `reminders`
 
 ### AI / Voice
-- **Groq API** — health event explanations, voice Q&A, medicine result simplification
+- **GitHub Models** (`openai/gpt-4o`) — health event explanations, voice Q&A, medicine result simplification
+- **OpenAI gpt-4o multimodal** — medicine OCR via image upload
 - **Vapi AI** — live voice agent orchestration (webhook integration)
-- **Ollama (Gemma 4 + Llama 3.2 Vision)** — local OCR for medicine packaging
-- **Google Cloud Vision** — optional hosted OCR fallback
 - Deterministic rule-based health and medicine safety logic (AI never decides safety)
 
 ### Tooling
@@ -217,7 +215,7 @@ The application may:
 
 ### Backend — Implemented
 - ✅ FastAPI project structure with `pyproject.toml` and `hatchling`
-- ✅ Async Neon Postgres connection via `asyncpg` + SQLModel
+- ✅ Async Neon Postgres connection via `asyncpg` + SQLModel (SSL fixed)
 - ✅ `Household`, `Dependent`, `HealthEvent`, `Reminder` models
 - ✅ `DependentType` enum: `child`, `adult`, `elder`, `pregnant`
 - ✅ India NIS schedule engine (`rules.py` + `engine.py`)
@@ -225,12 +223,13 @@ The application may:
   - Computes event due dates deterministically from DOB
   - Persists events idempotently, skipping duplicates by `schedule_key`
   - Recomputes `upcoming/due/overdue` status dynamically on fetch
-- ✅ Groq AI service for event explanations, voice Q&A, medicine simplification (with static fallback)
-- ✅ Multi-tier OCR service: Gemma 4 (Ollama) → Llama 3.2 Vision (Ollama) → Google Cloud Vision
+- ✅ GitHub Models AI service (`openai/gpt-4o` via https://models.github.ai/inference)
+- ✅ OCR service with OpenAI gpt-4o multimodal (no local Ollama required)
 - ✅ Medicine safety classification engine
 - ✅ API routes: `/v1/households`, `/v1/dependents`
 - ✅ Pydantic Settings config with `.env.example`
 - ✅ structlog structured logging throughout
+- ✅ 29/29 pytest assertions passing
 
 ### Frontend — In Progress
 - Next.js 16 base setup
@@ -238,7 +237,6 @@ The application may:
 ### Pending
 - Vapi webhook endpoint (`/v1/voice/vapi-webhook`)
 - Alembic migration setup
-- Full test suite (Pytest)
 - Frontend integration
 - Offline-first PWA features
 
@@ -249,8 +247,7 @@ The application may:
 ### Prerequisites
 - Python 3.11+
 - Neon Postgres database
-- Groq API key
-- Ollama running locally with `gemma4` and `llama3.2-vision` models (for OCR)
+- GitHub Personal Access Token (with `models` scope for GitHub Models access)
 - Vapi account (for voice features)
 - Node.js + pnpm (for frontend)
 
@@ -267,7 +264,7 @@ uv sync --extra dev  # includes pytest, ruff, mypy
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your Neon DATABASE_URL and GROQ_API_KEY
+# Edit .env with your Neon DATABASE_URL and GITHUB_TOKEN
 
 # Run development server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -277,12 +274,9 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 | Variable | Required | Description |
 |---|---|---|
 | `DATABASE_URL` | ✅ | Neon Postgres `postgresql+asyncpg://...` URL |
-| `GROQ_API_KEY` | ✅ | Groq API key for LLM explanations |
-| `GROQ_MODEL` | ❌ | Default: `llama-3.3-70b-versatile` |
-| `OLLAMA_BASE_URL` | ❌ | Default: `http://localhost:11434` |
-| `OLLAMA_PRIMARY_MODEL` | ❌ | Default: `gemma4` |
-| `OLLAMA_FALLBACK_MODEL` | ❌ | Default: `llama3.2-vision` |
-| `GOOGLE_CLOUD_VISION_API_KEY` | ❌ | Optional 3rd-tier OCR fallback |
+| `GITHUB_TOKEN` | ✅ | GitHub PAT with `models` scope |
+| `GITHUB_CHAT_MODEL` | ❌ | Default: `openai/gpt-4o` |
+| `GITHUB_VISION_MODEL` | ❌ | Default: `openai/gpt-4o` |
 | `VAPI_WEBHOOK_SECRET` | ❌ | For validating Vapi voice webhooks |
 | `FRONTEND_URL` | ❌ | CORS origin, default: `http://localhost:3000` |
 

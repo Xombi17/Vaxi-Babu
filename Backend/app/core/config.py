@@ -23,17 +23,11 @@ class Settings(BaseSettings):
     # Database
     database_url: str
 
-    # Groq AI
-    groq_api_key: str = ""
-    groq_model: str = "llama-3.3-70b-versatile"
-
-    # Ollama OCR
-    ollama_base_url: str = "http://localhost:11434"
-    ollama_primary_model: str = "gemma4"
-    ollama_fallback_model: str = "llama3.2-vision"
-
-    # Google Cloud Vision (optional OCR fallback)
-    google_cloud_vision_api_key: str = ""
+    # GitHub Models for AI and OCR
+    github_token: str = ""
+    github_models_base_url: str = "https://models.github.ai/inference"
+    github_chat_model: str = "openai/gpt-4o"
+    github_vision_model: str = "openai/gpt-4o"
 
     # Vapi webhook
     vapi_webhook_secret: str = ""

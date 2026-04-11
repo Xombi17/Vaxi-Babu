@@ -1,7 +1,7 @@
 """
-AI Service — Groq wrapper
+AI Service — GitHub Models wrapper
 --------------------------
-All Groq LLM calls go through this service.
+All AI calls go through this service.
 AI is used ONLY for:
   - Explaining health events in plain language
   - Answering voice questions about a dependent's health timeline
@@ -14,20 +14,23 @@ It must NEVER be used for:
 """
 
 import structlog
-from groq import AsyncGroq
+from openai import AsyncOpenAI
 
 from app.core.config import get_settings
 
 log = structlog.get_logger()
 settings = get_settings()
 
-_client: AsyncGroq | None = None
+_client: AsyncOpenAI | None = None
 
 
-def get_groq_client() -> AsyncGroq:
+def get_ai_client() -> AsyncOpenAI:
     global _client
     if _client is None:
-        _client = AsyncGroq(api_key=settings.groq_api_key)
+        _client = AsyncOpenAI(
+            api_key=settings.github_token,
+            base_url=settings.github_models_base_url,
+        )
     return _client
 
 
@@ -61,7 +64,7 @@ async def explain_health_event(
     Falls back to a static template if Groq fails.
     """
     try:
-        client = get_groq_client()
+        client = get_ai_client()
         user_message = (
             f"Please explain this health event to a parent in simple language:\n\n"
             f"Event: {event_name}\n"
@@ -70,7 +73,7 @@ async def explain_health_event(
             f"Respond in {'Hindi' if language == 'hi' else 'English'}."
         )
         chat = await client.chat.completions.create(
-            model=settings.groq_model,
+            model=settings.github_chat_model,
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user", "content": user_message},
@@ -81,7 +84,7 @@ async def explain_health_event(
         return chat.choices[0].message.content.strip()
 
     except Exception as exc:
-        log.warning("groq_explain_failed", error=str(exc), event_name=event_name)
+        log.warning("ai_explain_failed", error=str(exc), event_name=event_name)
         # Fallback: return structured static text
         return f"{event_name}: {why_it_matters} {what_to_expect}"
 
@@ -96,7 +99,7 @@ async def answer_voice_question(
     Called by the Vapi webhook handler.
     """
     try:
-        client = get_groq_client()
+        client = get_ai_client()
         user_message = (
             f"Context about this family's health schedule:\n{context}\n\n"
             f"User question: {question}\n\n"
@@ -104,7 +107,7 @@ async def answer_voice_question(
             f"Keep the response short and clear (under 60 words)."
         )
         chat = await client.chat.completions.create(
-            model=settings.groq_model,
+            model=settings.github_chat_model,
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user", "content": user_message},
@@ -115,7 +118,7 @@ async def answer_voice_question(
         return chat.choices[0].message.content.strip()
 
     except Exception as exc:
-        log.warning("groq_voice_failed", error=str(exc))
+        log.warning("ai_voice_failed", error=str(exc))
         return "I'm sorry, I couldn't process that question right now. Please try again."
 
 
@@ -129,7 +132,7 @@ async def simplify_medicine_result(
     Simplify a medicine safety result into plain language for the user.
     """
     try:
-        client = get_groq_client()
+        client = get_ai_client()
         user_message = (
             f"A medicine safety checker found this result:\n"
             f"Medicine: {medicine_name}\n"
@@ -139,7 +142,7 @@ async def simplify_medicine_result(
             f"Language: {'Hindi' if language == 'hi' else 'English'}."
         )
         chat = await client.chat.completions.create(
-            model=settings.groq_model,
+            model=settings.github_chat_model,
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user", "content": user_message},
@@ -150,5 +153,5 @@ async def simplify_medicine_result(
         return chat.choices[0].message.content.strip()
 
     except Exception as exc:
-        log.warning("groq_medicine_simplify_failed", error=str(exc))
+        log.warning("ai_medicine_simplify_failed", error=str(exc))
         return f"{medicine_name}: {why_caution}"

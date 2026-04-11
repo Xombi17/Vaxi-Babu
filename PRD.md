@@ -74,11 +74,10 @@ This is the locked stack unless explicitly changed in this document.
 - Session strategy should remain simple for MVP.
 
 ### AI and intelligence
-- **Groq API** (`llama-3.3-70b-versatile`) for low-latency LLM responses.
+- **GitHub Models** (`openai/gpt-4o`) for low-latency LLM responses via OpenAI-compatible endpoint.
 - LLM use is limited to explanation, simplification, translation, and conversational response generation.
 - Deterministic schedule logic must never be delegated to the LLM.
-- **Ollama** (local) with **Gemma 4** as primary and **Llama 3.2 Vision** as fallback for medicine OCR.
-- **Google Cloud Vision API** as optional 3rd-tier OCR fallback.
+- **OpenAI gpt-4o multimodal** for medicine OCR (image text extraction from packaging/precriptions).
 
 ### Voice stack
 - Vapi AI for live voice agent orchestration.[web:134][web:136]
@@ -462,16 +461,16 @@ This module can later support handwritten prescription parsing, allergy cross-ch
   - `rules.py`: Loads `data/india_nis_schedule.json` at startup. Provides `generate_child_schedule(dob)` which computes all NIS event due dates deterministically from DOB. Schedule version is stored with each event.
   - `engine.py`: Orchestrates schedule persistence (idempotent — skips existing schedule_key+dependent_id pairs). Recomputes `upcoming/due/overdue` status dynamically on every fetch. Provides `get_next_due_event()` for voice assistant priority.
   - DUE_WINDOW_DAYS = 7 (events within 7 days of due date are marked `due`).
-- **Groq AI Service (`ai_service.py`):**
-  - Singleton `AsyncGroq` client with lazy init.
+- **AI Service (`ai_service.py`):**
+  - Singleton OpenAI client using GitHub Models endpoint (`https://models.github.ai/inference`).
   - `explain_health_event()` — plain-language event explanations.
   - `answer_voice_question()` — voice Q&A using health timeline context.
   - `simplify_medicine_result()` — converts safety bucket to simple language.
-  - All Groq calls have static-text fallback on exception.
+  - All AI calls have static-text fallback on exception.
   - Language support: English and Hindi.
 - **OCR Service (`ocr_service.py`):**
-  - 3-tier fallback chain: Gemma 4 (Ollama) → Llama 3.2 Vision (Ollama) → Google Cloud Vision API.
-  - Image preprocessing: converts to RGB, resizes to max 1024px on longest edge, saves as JPEG 85% quality before sending to model.
+  - Uses OpenAI `gpt-4o` multimodal model via GitHub Models endpoint.
+  - Image preprocessing: converts to RGB, resizes to max 1024px on longest edge, saves as JPEG 85% quality.
   - Returns `(text, model_used_label)` tuple for traceability.
 - **Medicine Safety Service (`medicine_safety.py`):** Rule-based classifier with 4 safety buckets.
 - **API routes:** `/api/v1/households` (CRUD), `/api/v1/dependents` (CRUD + timeline generation).
