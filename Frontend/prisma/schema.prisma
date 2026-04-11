@@ -1,0 +1,86 @@
+// This is your Prisma schema file
+// Designed to interop with the FastAPI SQLModel backend.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Household {
+  id                    String      @id @default(uuid())
+  primary_contact_name  String?
+  primary_contact_phone String
+  created_at            DateTime    @default(now())
+  updated_at            DateTime    @updatedAt
+
+  dependents            Dependent[]
+  health_events         HealthEvent[]
+  reminders             Reminder[]
+
+  @@map("household")
+}
+
+model Dependent {
+  id              String      @id @default(uuid())
+  household_id    String
+  name            String
+  date_of_birth   DateTime    @db.Date
+  gender          String?
+  relationship    String?
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  household       Household   @relation(fields: [household_id], references: [id], onDelete: Cascade)
+  health_events   HealthEvent[]
+  reminders       Reminder[]
+
+  @@map("dependent")
+}
+
+model HealthEvent {
+  id              String      @id @default(uuid())
+  dependent_id    String
+  household_id    String
+  schedule_key    String
+  name            String
+  category        String
+  due_date        DateTime    @db.Date
+  window_start    DateTime    @db.Date
+  window_end      DateTime    @db.Date
+  status          String
+  completed_at    DateTime?
+  completed_by    String?
+  location        String?
+  notes           String?
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  dependent       Dependent   @relation(fields: [dependent_id], references: [id], onDelete: Cascade)
+  household       Household   @relation(fields: [household_id], references: [id], onDelete: Cascade)
+  reminders       Reminder[]
+
+  @@map("healthevent")
+}
+
+model Reminder {
+  id              String      @id @default(uuid())
+  health_event_id String
+  dependent_id    String
+  household_id    String
+  event_name      String
+  due_date        DateTime    @db.Date
+  status          String
+  snoozed_until   DateTime?   @db.Date
+  reminder_type   String
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  health_event    HealthEvent @relation(fields: [health_event_id], references: [id], onDelete: Cascade)
+  dependent       Dependent   @relation(fields: [dependent_id], references: [id], onDelete: Cascade)
+  household       Household   @relation(fields: [household_id], references: [id], onDelete: Cascade)
+
+  @@map("reminder")
+}
