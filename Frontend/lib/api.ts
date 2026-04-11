@@ -49,6 +49,26 @@ export interface HealthEvent {
   updated_at: string;
 }
 
+export interface TimelineResponse {
+  dependent_id: string;
+  dependent_name: string;
+  generated_at: string;
+  events: HealthEvent[];
+  next_due: HealthEvent | null;
+}
+
+export interface MedicineSafetyResponse {
+  detected_medicine: string;
+  confidence: number;
+  bucket: 'common_use' | 'use_with_caution' | 'insufficient_info' | 'consult_doctor_urgently';
+  concern_checked: string;
+  why_caution: string;
+  next_step: string;
+  disclaimer: string;
+  raw_ocr_text?: string;
+  ocr_model_used?: string;
+}
+
 // Error handling helper
 class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -58,7 +78,9 @@ class ApiError extends Error {
 }
 
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const url = `${API_URL}${endpoint}`;
+  // Ensure the endpoint starts with / and we don't have double slashes
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${API_URL}${cleanEndpoint}`;
   
   const response = await fetch(url, {
     ...options,
@@ -105,6 +127,38 @@ export async function getDependents(householdId?: string): Promise<Dependent[]> 
 /**
  * Fetch timeline/health events for a dependent
  */
-export async function getTimeline(dependentId: string): Promise<HealthEvent[]> {
-  return fetchApi<HealthEvent[]>(`/api/v1/timeline/${dependentId}`);
+export async function getTimeline(dependentId: string): Promise<TimelineResponse> {
+  return fetchApi<TimelineResponse>(`/api/v1/timeline/${dependentId}`);
+}
+
+/**
+ * Check medicine safety by name
+ */
+export async function checkMedicineByName(medicineName: string, concern?: string): Promise<MedicineSafetyResponse> {
+  return fetchApi<MedicineSafetyResponse>('/api/v1/medicine/check-name', {
+    method: 'POST',
+    body: JSON.stringify({ medicine_name: medicineName, concern }),
+  });
+}
+
+/**
+ * Check medicine safety by image upload
+ */
+export async function checkMedicineByImage(file: File, concern?: string): Promise<MedicineSafetyResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (concern) formData.append('concern', concern);
+
+  // Note: For FormData, we must NOT set Content-Type header manually as the browser needs to set boundaries
+  const url = `${API_URL}/api/v1/medicine/check-image`;
+  const response = await fetch(url, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, `HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json() as Promise<MedicineSafetyResponse>;
 }
