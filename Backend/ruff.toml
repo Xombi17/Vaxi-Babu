@@ -1,0 +1,12 @@
+line-length = 120
+
+[lint]
+ignore = [
+    "B008",  # Depends in argument defaults - FastAPI pattern
+    "E501",  # Line too long - will fix manually
+    "UP042", # StrEnum - SQLModel compatibility
+]
+
+[lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"demo_ui.py" = ["E501"]
