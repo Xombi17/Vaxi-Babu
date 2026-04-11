@@ -75,9 +75,14 @@ else:
 
 def _populate_metadata():
     """Force SQLModel to discover all models."""
-    from app.models import Household, Dependent, HealthEvent, Reminder  # noqa: F401
-
-    return Household, Dependent, HealthEvent, Reminder
+    from app.models import (
+        Household, 
+        Dependent, 
+        HealthEvent, 
+        Reminder, 
+        Conversation, 
+        HealthNote
+    ) # noqa: F401
 
 
 _populate_metadata()

@@ -141,8 +141,8 @@ async def vapi_webhook(
     """
     body = await request.body()
 
-    # if not _verify_vapi_signature(body, x_vapi_signature):
-    #     raise HTTPException(status_code=401, detail="Invalid webhook signature")
+    if not _verify_vapi_signature(body, x_vapi_signature):
+        raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
     payload = await request.json()
     event_type = payload.get("message", {}).get("type", "")

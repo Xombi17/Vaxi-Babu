@@ -48,10 +48,17 @@ async def sync_batch(
                     skipped += 1
                     continue
 
+                # Forward the original authentication token to internal calls
+                auth_header = request.headers.get("Authorization")
+                headers = {}
+                if auth_header:
+                    headers["Authorization"] = auth_header
+
                 response = await client.request(
                     method=mutation.method,
                     url=mutation.endpoint,
                     json=mutation.payload if mutation.payload else None,
+                    headers=headers,
                 )
 
                 if response.status_code < 400:

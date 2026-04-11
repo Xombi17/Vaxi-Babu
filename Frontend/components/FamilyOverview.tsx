@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getDependents } from '../lib/api';
+import Link from 'next/link';
+import { Plus, User as UserIcon } from 'lucide-react';
 
 export function FamilyOverview() {
   const householdId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;

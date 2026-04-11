@@ -21,13 +21,29 @@ _MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 
 def _extract_medicine_name_from_ocr(raw_text: str) -> str:
     """
-    Naive heuristic: return the longest word on the first 3 lines of OCR output.
-    Replace with smarter NER in v2.
+    Improved heuristic: looks for capitalised words or common medicine name indicators.
     """
-    lines = [line.strip() for line in raw_text.strip().splitlines() if line.strip()][:3]
-    words = " ".join(lines).split()
+    clean_text = raw_text.strip()
+    if not clean_text:
+        return ""
+        
+    lines = [line.strip() for line in clean_text.splitlines() if line.strip()]
+    
+    # 1. Prefer lines with common medicine keywords (tablet, cap, syrup)
+    indicators = ['mg', 'tablet', 'capsule', 'syrup', 'suspension', 'injection', 'cream', 'ointment']
+    for line in lines[:5]:
+        lower_line = line.lower()
+        if any(ind in lower_line for ind in indicators):
+            # Extract potential brand name (usually before the strength or keyword)
+            parts = line.split()
+            if parts:
+                return parts[0]
+
+    # 2. Fallback to longest word in first 3 lines
+    words = " ".join(lines[:3]).split()
     if not words:
-        return raw_text[:50]
+        return clean_text[:30]
+        
     return max(words, key=len)
 
 
