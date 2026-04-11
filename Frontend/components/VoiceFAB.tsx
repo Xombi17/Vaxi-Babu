@@ -7,13 +7,17 @@ import { useState, useEffect, useCallback } from 'react';
 const VAPI_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY || '';
 const VAPI_ASSISTANT_ID = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID || '';
 
+import { useParams } from 'next/navigation';
+
 interface VapiInstance {
-  start: (assistantId: string) => Promise<any>;
+  start: (assistantId: string, assistantOverrides?: any) => Promise<any>;
   stop: () => void;
   on: (event: any, callback: (...args: any[]) => void) => any;
 }
 
 export function VoiceFAB() {
+  const params = useParams();
+  const dependentId = params?.dependent_id as string;
   const [isConnecting, setIsConnecting] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const [vapi, setVapi] = useState<VapiInstance | null>(null);
@@ -70,14 +74,53 @@ export function VoiceFAB() {
       }
 
       try {
-        await vapi.start(VAPI_ASSISTANT_ID);
+        const householdId = localStorage.getItem('household_id') || '';
+        const language = localStorage.getItem('primary_language') || 'en';
+        
+        const firstMessages: Record<string, string> = {
+          en: "Hello! I'm your WellSync health assistant. How can I help you today?",
+          hi: "नमस्ते! मैं आपका वेलसिंक स्वास्थ्य सहायक हूँ। आज मैं आपकी क्या मदद कर सकता हूँ?",
+          mr: "नमस्कार! मी तुमचा वेलसिंक आरोग्य सहाय्यक आहे. आज मी तुम्हाला कशी मदत करू शकतो?",
+          gu: "નમસ્તે! હું તમારો વેલસિંક સ્વાસ્થ્ય સહાયક છું. આજે હું તમને કેવી રીતે મદદ કરી શકું?",
+          bn: "হ্যালো! আমি আপনার ওয়েলসিঙ্ক স্বাস্থ্য সহকারী। আজ আমি আপনাকে কীভাবে সাহায্য করতে পারি?",
+          ta: "வணக்கம்! நான் உங்கள் வெல்சின்க் சுகாதார உதவியாளர். இன்று நான் உங்களுக்கு எப்படி உதவ முடியும்?",
+          te: "నమస్తే! నేను మీ వెల్సింక్ ఆరోగ్య సహాయకుడిని. ఈరోజు నేను మీకు ఎలా సహాయపడగలను?",
+        };
+
+        const targetLangName: Record<string, string> = {
+          hi: "Hindi", mr: "Marathi", gu: "Gujarati", bn: "Bengali", ta: "Tamil", te: "Telugu", en: "English"
+        };
+        const langName = targetLangName[language] || "English";
+        const greeting = firstMessages[language] || firstMessages.en;
+
+        console.log('VoiceFAB: Starting Vapi call', { 
+          language, 
+          householdId, 
+          dependentId, 
+          assistantId: VAPI_ASSISTANT_ID 
+        });
+
+        await vapi.start(VAPI_ASSISTANT_ID, {
+          firstMessage: greeting,
+          transcriber: {
+            provider: 'deepgram',
+            language: language === 'en' ? 'en-US' : language,
+          },
+          variableValues: {
+            household_id: householdId,
+            dependent_id: dependentId || '',
+            language: language,
+            language_name: langName,
+            first_message: greeting,
+          }
+        });
       } catch (err) {
         console.error('Failed to start Vapi call:', err);
         setIsConnecting(false);
         setIsActive(false);
       }
     }
-  }, [isActive, vapi]);
+  }, [isActive, vapi, dependentId]);
 
   return (
     <>

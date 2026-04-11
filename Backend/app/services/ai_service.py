@@ -49,7 +49,7 @@ Rules you must always follow:
 4. Never say a medicine or vaccine is definitely safe or unsafe.
 5. Always encourage consulting a doctor or healthcare worker when in doubt.
 6. If you don't know something, say so and suggest seeing a doctor.
-7. Respond in the same language the user is writing in (Hindi or English).
+7. Respond in the language specified in the prompt or the same language the user is writing in.
 """
 
 
@@ -114,6 +114,7 @@ async def answer_voice_question(
             f"Context about this family's health schedule:\n{context}\n\n"
             f"User question: {question}\n\n"
             f"Respond in {target_lang}. "
+            f"Never ask the user for a technical ID or UUID. Refer to children only by their names. "
             f"Keep the response short and clear (under 60 words)."
         )
         chat = await client.chat.completions.create(
