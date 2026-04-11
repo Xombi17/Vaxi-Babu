@@ -44,7 +44,7 @@ export function VoiceFAB() {
           });
 
           vapiInstance.on('error', (e: any) => {
-            console.error('Vapi Error:', e);
+            console.error('Vapi Error:', JSON.stringify(e, Object.getOwnPropertyNames(e)), e);
             setIsConnecting(false);
             setIsActive(false);
           });
@@ -104,9 +104,11 @@ export function VoiceFAB() {
           firstMessage: greeting,
           transcriber: {
             provider: 'deepgram',
-            language: language === 'en' ? 'en-US' : language,
+            language: language === 'en' ? 'en-US' : 'hi',
           },
           model: {
+            provider: 'openai',
+            model: 'gpt-4o',
             messages: [
               {
                 role: "system",

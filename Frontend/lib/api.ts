@@ -78,13 +78,44 @@ class ApiError extends Error {
   }
 }
 
+const CACHE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   // Ensure the endpoint starts with / and we don't have double slashes
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = `${API_URL}${cleanEndpoint}`;
+  const isGet = !options || !options.method || options.method === 'GET';
   
   // Get token from localStorage if available
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const cacheKey = `api_cache_${url}_${token || 'guest'}`;
+
+  // Check cache for GET requests
+  if (isGet && typeof window !== 'undefined') {
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Date.now() - parsed.timestamp < CACHE_EXPIRY_MS) {
+          return parsed.data as T;
+        }
+      } catch (e) {
+        // Invalid JSON, safe to ignore and refetch
+      }
+    }
+  }
+
+  // If not GET, clear all local API caches to prevent stale data
+  if (!isGet && typeof window !== 'undefined') {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key && key.startsWith('api_cache_')) {
+            keysToRemove.push(key);
+        }
+    }
+    keysToRemove.forEach(k => sessionStorage.removeItem(k));
+  }
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -119,7 +150,21 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
     );
   }
 
-  return response.json() as Promise<T>;
+  const data = await response.json() as Promise<T>;
+
+  // Save to cache for GET requests
+  if (isGet && typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem(cacheKey, JSON.stringify({
+        timestamp: Date.now(),
+        data
+      }));
+    } catch (e) {
+      // Safe to ignore quota exceeded errors
+    }
+  }
+
+  return data;
 }
 
 // API functions

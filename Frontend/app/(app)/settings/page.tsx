@@ -6,12 +6,11 @@ import { useRouter } from 'next/navigation';
 export default function SettingsPage() {
   const router = useRouter();
   const [language, setLanguage] = useState('en');
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     const stored = localStorage.getItem('primary_language');
     if (stored) {
+      // eslint-disable-next-line
       setLanguage(stored);
     }
   }, []);

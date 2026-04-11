@@ -240,9 +240,11 @@ async def vapi_webhook(
                 "firstMessage": first_message,
                 "transcriber": {
                     "provider": "deepgram",
-                    "language": "en-US" if lang == "en" else lang
+                    "language": "en-US" if lang == "en" else "hi"
                 },
                 "model": {
+                    "provider": "openai",
+                    "model": "gpt-4o",
                     "messages": [
                         {
                             "role": "system",
