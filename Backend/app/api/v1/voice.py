@@ -166,7 +166,12 @@ async def vapi_webhook(
     if not _verify_vapi_signature(body, x_vapi_signature):
         raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
-    payload = await request.json()
+    try:
+        payload = await request.json()
+    except Exception as e:
+        log.error("webhook_json_parse_failed", error=str(e))
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
     event_type = payload.get("message", {}).get("type", "")
 
     call_id = payload.get("message", {}).get("callId", "unknown")
@@ -801,6 +806,8 @@ async def _get_dependents_for_household(household_id: str, session, call_id: str
 
         if not dependents:
             log.warning("no_dependents_found", household_id=household_id, call_id=call_id)
+            # Debug: try a fresh query to see if it's a session issue
+            print(f"DEBUG: No dependents found for {household_id}. Session type: {type(session).__name__}")
             return json.dumps({"dependents": [], "message": "No children found in this household."})
 
         children = []
@@ -826,7 +833,7 @@ async def _get_dependents_for_household(household_id: str, session, call_id: str
         return result_json
 
     except Exception as e:
-        log.error("dependents_fetch_failed", call_id=call_id, household_id=household_id, error=str(e))
+        log.error("dependents_fetch_failed", call_id=call_id, household_id=household_id, error=str(e), traceback=str(e.__traceback__))
         return json.dumps({"dependents": [], "error": "Failed to fetch children"})
 
 
