@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { Activity, ArrowRight, ArrowLeft, Home, ShieldCheck, User, Lock, Mail, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { setAuthTokens } from '@/lib/auth';
 
 const demoFamilies = [
   { id: 'sharma', name: 'Sharma Family', color: 'bg-blue-400', icon: '🏠', city: 'Noida' },
@@ -46,8 +47,7 @@ export default function LoginPage() {
 
       if (!response.ok) throw new Error('Login failed');
       const data = await response.json();
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('household_id', data.household_id);
+      setAuthTokens(data.access_token, data.household_id);
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Demo login failed');
@@ -70,8 +70,7 @@ export default function LoginPage() {
 
       if (!response.ok) throw new Error('Invalid credentials');
       const data = await response.json();
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('household_id', data.household_id);
+      setAuthTokens(data.access_token, data.household_id);
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Login failed');
@@ -125,8 +124,7 @@ export default function LoginPage() {
 
       if (!loginRes.ok) throw new Error('Login after signup failed');
       const data = await loginRes.json();
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('household_id', data.household_id);
+      setAuthTokens(data.access_token, data.household_id);
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Registration failed');

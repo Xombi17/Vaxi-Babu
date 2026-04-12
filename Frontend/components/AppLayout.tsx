@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { ThemeToggle } from './ThemeToggle';
+import { useAuthGuard, useLogout } from '@/hooks/use-auth';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -14,29 +15,24 @@ interface AppLayoutProps {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getHousehold, type Household } from '@/lib/api';
 
-interface AppLayoutProps {
-  children: React.ReactNode;
-}
-
 export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { isLoading: isAuthLoading, isAuthed } = useAuthGuard();
+  const { logout } = useLogout();
 
   const householdId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
 
   const { data: household, isLoading: isHouseholdLoading } = useQuery({
     queryKey: ['household', householdId],
     queryFn: () => householdId ? getHousehold(householdId) : Promise.reject('No ID'),
-    enabled: !!householdId,
+    enabled: !!householdId && isAuthed,
     staleTime: 5 * 60 * 1000,
   });
 
   const handleSignOut = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('household_id');
-    localStorage.removeItem('family_name');
-    router.push('/');
+    logout();
   };
 
   const showOnboarding = false;

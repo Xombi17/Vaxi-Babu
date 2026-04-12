@@ -20,8 +20,8 @@ export default function LandingPage() {
             <span className="text-2xl font-lora font-black tracking-tight text-primary dark:text-secondary">WellSync</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-bold text-slate-600 dark:text-slate-400">
-            <a href="#features" className="hover:text-primary dark:hover:text-secondary transition-colors focus-visible:ring-3 rounded-sm outline-hidden">Features</a>
-            <a href="#reviews" className="hover:text-primary dark:hover:text-secondary transition-colors focus-visible:ring-3 rounded-sm outline-hidden">Reviews</a>
+            <Link href="/features/voice-engine" className="hover:text-primary dark:hover:text-secondary transition-colors focus-visible:ring-3 rounded-sm outline-hidden">Voice UI</Link>
+            <Link href="/features/medicine-safety" className="hover:text-primary dark:hover:text-secondary transition-colors focus-visible:ring-3 rounded-sm outline-hidden">Safety</Link>
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
