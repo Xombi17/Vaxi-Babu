@@ -258,7 +258,7 @@ async def vapi_webhook(
             "transcriber": {
                 "provider": "deepgram",
                 "model": "nova-2",
-                "language": "multi",  # Auto-detect language for regional support
+                "language": "en-US" if lang == "en" else "multi",
             },
             "model": {
                 "provider": "openai",
