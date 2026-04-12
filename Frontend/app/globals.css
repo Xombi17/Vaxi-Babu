@@ -1,2 +1,51 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #0891B2;
+  --color-secondary: #22D3EE;
+  --color-cta: #059669;
+
+  --color-text-primary-light: #164E63;
+  --color-bg-primary-light: #ECFEFF;
+
+  --color-text-primary-dark: #ECFEFF;
+  --color-bg-primary-dark: #164E63;
+  
+  --font-lora: "Lora", var(--font-lora), serif;
+  --font-raleway: "Raleway", var(--font-raleway), sans-serif;
+}
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  
+  body {
+    @apply text-base antialiased;
+    color: var(--color-text-primary-light);
+    background-color: var(--color-bg-primary-light);
+  }
+
+  .dark body {
+    color: var(--color-text-primary-dark);
+    background-color: var(--color-bg-primary-dark);
+  }
+
+  /* Accessible focus states globally (3px rings) */
+  :focus-visible {
+    @apply outline-hidden ring-3 ring-secondary ring-offset-2 ring-offset-white dark:ring-offset-slate-900;
+  }
+
+  /* Support reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

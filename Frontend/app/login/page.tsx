@@ -92,15 +92,21 @@ export default function LoginPage() {
       return;
     }
 
+    if (!signupForm.email || !signupForm.email.includes('@')) {
+      setError('Valid email is required');
+      return;
+    }
+
     setLoading('signup');
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const username = signupForm.email.split('@')[0];
       const createRes = await fetch(`${API_URL}/api/v1/households`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: signupForm.name,
-          username: signupForm.email.split('@')[0],
+          username: username,
           password: signupForm.password,
           primary_language: signupForm.language,
         }),
@@ -111,7 +117,7 @@ export default function LoginPage() {
       const loginRes = await fetch(`${API_URL}/api/v1/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ username: signupForm.email.split('@')[0], password: signupForm.password }),
+        body: new URLSearchParams({ username: username, password: signupForm.password }),
       });
 
       if (!loginRes.ok) throw new Error('Login after signup failed');
