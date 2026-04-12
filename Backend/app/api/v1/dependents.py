@@ -6,8 +6,16 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.database import get_session
 from app.models.dependent import Dependent, DependentType
+from app.models.health_event import HealthEvent, EventStatus
 from app.models.household import Household
-from app.schemas.dependent import DependentCreate, DependentResponse, DependentUpdate
+from app.schemas.dependent import (
+    DependentCreate,
+    DependentResponse,
+    DependentUpdate,
+    HealthPassResponse,
+    HealthPassStats,
+    HealthPassNextDue,
+)
 from app.services.health_schedule.engine import generate_and_save_schedule, generate_pregnancy_schedule
 
 router = APIRouter(prefix="/dependents", tags=["Dependents"])
@@ -91,3 +99,55 @@ async def delete_dependent(
     if not dep:
         raise HTTPException(status_code=404, detail="Dependent not found")
     await session.delete(dep)
+
+
+@router.get("/{dependent_id}/pass", response_model=HealthPassResponse)
+async def get_health_pass(
+    dependent_id: str,
+    session: AsyncSession = Depends(get_session),
+) -> HealthPassResponse:
+    dep = await session.get(Dependent, dependent_id)
+    if not dep:
+        raise HTTPException(status_code=404, detail="Dependent not found")
+
+    # Fetch health events for stats
+    query = select(HealthEvent).where(HealthEvent.dependent_id == dependent_id)
+    result = await session.execute(query)
+    events = result.scalars().all()
+
+    total_events = len(events)
+    completed_events = len([e for e in events if e.status == EventStatus.completed])
+    overdue_count = len([e for e in events if e.status == EventStatus.overdue])
+
+    # Calculate status and score
+    # Simple logic: 100 if all done, less if overdue or many upcoming
+    health_score = (completed_events / total_events * 100) if total_events > 0 else 100
+    status_color = "green"
+    if overdue_count > 0:
+        status_color = "red"
+    elif completed_events < total_events * 0.5:
+        status_color = "yellow"
+
+    # Find next due
+    upcoming_events = [
+        e
+        for e in events
+        if e.status in (EventStatus.upcoming, EventStatus.due, EventStatus.overdue)
+    ]
+    upcoming_events.sort(key=lambda x: x.due_date)
+    next_event = upcoming_events[0] if upcoming_events else None
+
+    return HealthPassResponse(
+        dependent=dep,
+        stats=HealthPassStats(
+            total_events=total_events,
+            completed_events=completed_events,
+            overdue_count=overdue_count,
+            health_score=int(health_score),
+            status_color=status_color,
+        ),
+        next_due=HealthPassNextDue(
+            name=next_event.name if next_event else None,
+            date=next_event.due_date if next_event else None,
+        ),
+    )

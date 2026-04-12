@@ -1,10 +1,12 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, User, Syringe, Stethoscope, Pill, Volume2 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Calendar, User, Syringe, Stethoscope, Pill, Volume2, ShieldCheck, X, Award } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useState } from 'react';
 import { getTimeline, getDependents, type HealthEvent } from '../lib/api';
+import { HealthPassCard } from './HealthPassCard';
 
 const DEFAULT_DEPENDENT_ID = 'ece5d2ee-ea49-47cd-8e47-7448d0ea2b25'; // Rahul
 
@@ -38,7 +40,9 @@ const iconStyles = {
 
 export function TimelineFeed() {
   const searchParams = useSearchParams();
+  const [showPass, setShowPass] = useState(false);
   const householdId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
+  const currentDependentId = searchParams.get('dependent');
   
   const { data: timelineData, isLoading } = useQuery({
     queryKey: ['timeline', searchParams.get('dependent'), householdId],
@@ -140,13 +144,50 @@ export function TimelineFeed() {
   }
 
   return (
-    <section>
+    <section className="relative">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">
-          {dependentName ? `${dependentName}'s Timeline` : 'Health Timeline'}
-        </h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">
+            {dependentName ? `${dependentName}'s Timeline` : 'Health Timeline'}
+          </h2>
+          {dependentName && (
+            <button 
+              onClick={() => setShowPass(true)}
+              className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-xl shadow-lg transition-all active:scale-90 flex items-center gap-2 px-4 shadow-blue-500/20"
+            >
+              <Award size={18} strokeWidth={3} />
+              <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Health Pass</span>
+            </button>
+          )}
+        </div>
         <Link href="/timeline" className="text-blue-500 dark:text-blue-400 font-black text-sm hover:text-blue-600 dark:hover:text-blue-300 transition-colors">View All</Link>
       </div>
+
+      <AnimatePresence>
+        {showPass && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-2xl"
+            >
+              <button 
+                onClick={() => setShowPass(false)}
+                className="absolute -top-4 -right-4 z-[110] bg-white dark:bg-slate-800 p-4 rounded-[1.5rem] shadow-2xl text-slate-500 hover:text-rose-500 transition-all border border-slate-100 dark:border-slate-700 active:scale-90"
+              >
+                <X size={24} strokeWidth={3} />
+              </button>
+              <HealthPassCard dependentId={currentDependentId!} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="space-y-5">
         {events.length === 0 ? (

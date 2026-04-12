@@ -70,6 +70,21 @@ export interface MedicineSafetyResponse {
   ocr_model_used?: string;
 }
 
+export interface HealthPassResponse {
+  dependent: Dependent;
+  stats: {
+    total_events: number;
+    completed_events: number;
+    overdue_count: number;
+    health_score: number;
+    status_color: string;
+  };
+  next_due: {
+    name: string | null;
+    date: string | null;
+  };
+}
+
 // Error handling helper
 class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -195,4 +210,11 @@ export async function checkMedicineByImage(file: File, concern?: string, languag
   }
 
   return response.json() as Promise<MedicineSafetyResponse>;
+}
+
+/**
+ * Fetch health pass for a dependent
+ */
+export async function getHealthPass(dependentId: string): Promise<HealthPassResponse> {
+  return fetchApi<HealthPassResponse>(`/api/v1/dependents/${dependentId}/pass`);
 }
