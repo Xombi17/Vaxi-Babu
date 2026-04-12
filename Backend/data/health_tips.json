@@ -1,0 +1,240 @@
+{
+  "version": "health_tips_v1",
+  "source": "WellSync AI - Age-based health tips for child development",
+  "tips_by_age": [
+    {
+      "min_age_months": 0,
+      "max_age_months": 1,
+      "tips": [
+        {
+          "category": "nutrition",
+          "title": "Breastfeeding",
+          "content": "Breast milk is the best food for your newborn. Feed your baby on demand, usually 8-12 times in 24 hours.",
+          "hinodi": "स्तनपान आपके नवजात के लिए सबसे अच्छा भोजन है। जब भी बच्चा भूखा हो, दूध पिलाएं।"
+        },
+        {
+          "category": "safety",
+          "title": "Safe Sleep",
+          "content": "Always place your baby on their back to sleep. Keep the crib free of blankets and pillows.",
+          "hinodi": "हमेशा अपने बच्चे को सोने के लिए पीठ के बल रखें। बिस्तर और तकिये दूर रखें।"
+        },
+        {
+          "category": "immunization",
+          "title": "BCG & Hepatitis B",
+          "content": "Your baby needs BCG and Hepatitis B vaccines at birth. Visit the nearest health center.",
+          "hinodi": "आपके बच्चे को जन्म पर BCG और हेपेटाइटिस बी के टीके चाहिए। निकटतम स्वास्थ्य केंद्र जाएं।"
+        }
+      ]
+    },
+    {
+      "min_age_months": 1,
+      "max_age_months": 2,
+      "tips": [
+        {
+          "category": "nutrition",
+          "title": "Continue Breastfeeding",
+          "content": "Continue exclusive breastfeeding. Your baby needs about 6-8 feeds per day.",
+          "hinodi": "सिर्फ स्तनपान जारी रखें। आपके बच्चे को दिन में 6-8 बार दूध की जरूरत है।"
+        },
+        {
+          "category": "development",
+          "title": "Tummy Time",
+          "content": "Give your baby short tummy time sessions to strengthen neck muscles. Start with 3-5 minutes.",
+          "hinodi": "अपने बच्चे को गर्दन की मांसपेशियां मजबूत करने के लिए थोड़ा पेट के बल रखें। 3-5 मिनट से शुरू करें।"
+        },
+        {
+          "category": "safety",
+          "title": "Cord Care",
+          "content": "Keep the umbilical cord clean and dry. It usually falls off within 1-2 weeks.",
+          "hinodi": "नाभि को साफ और सूखा रखें। यह आमतौर पर 1-2 हफ्ते में गिर जाती है।"
+        }
+      ]
+    },
+    {
+      "min_age_months": 2,
+      "max_age_months": 4,
+      "tips": [
+        {
+          "category": "immunization",
+          "title": "2-Month Vaccines",
+          "content": "Your baby needs Pentavalent, Rotavirus, IPV, and PCV vaccines at 6 weeks. Don't miss them!",
+          "hinodi": "आपके बच्चे को 6 सप्ताह पर पेंटावैलेंट, रोटावायरस, IPV और PCV के टीके चाहिए। मिस न करें!"
+        },
+        {
+          "category": "development",
+          "title": "Tracking Objects",
+          "content": "Your baby can now track moving objects with their eyes. Hold bright toys to encourage this.",
+          "hinodi": "आपका बच्चा अब चलती वस्तुओं को आंखों से देख सकता है। चमकीले खिलौने पकड़ाएं।"
+        },
+        {
+          "category": "nutrition",
+          "title": "Vitamin D",
+          "content": "If exclusively breastfeeding, ask your doctor about Vitamin D drops for your baby.",
+          "hinodi": "अगर सिर्फ स्तनपान करा रहे हैं, तो डॉक्टर से बच्चे के लिए विटामिन डी की बूंदों के बारे में पूछें।"
+        }
+      ]
+    },
+    {
+      "min_age_months": 4,
+      "max_age_months": 6,
+      "tips": [
+        {
+          "category": "nutrition",
+          "title": "Starting Solids",
+          "content": "At 6 months, start introducing solid foods. Begin with rice cereal, mashed banana, or pureed vegetables.",
+          "hinodi": "6 महीने पर, ठोस भोजन शुरू करें। चावल की गिणड़, केले की प्यूरी या सब्ज़ी की प्यूरी से शुरू करें।"
+        },
+        {
+          "category": "immunization",
+          "title": "4-Month Vaccines",
+          "content": "Second dose of vaccines is due. Complete all doses for full protection.",
+          "hinodi": "दूसरी खुराक के टीके बाकी हैं। पूरी सुरक्षा के लिए सभी खुराकें पूरी करें।"
+        },
+        {
+          "category": "development",
+          "title": "Sitting Up",
+          "content": "Your baby is learning to sit with support. Always supervise during tummy time.",
+          "hinodi": "आपका बच्चा सहारे के साथ बैठना सीख रहा है। हमेशा निगरानी करें।"
+        }
+      ]
+    },
+    {
+      "min_age_months": 6,
+      "max_age_months": 9,
+      "tips": [
+        {
+          "category": "immunization",
+          "title": "9-Month Vaccines",
+          "content": "Measles-Rubella and Vitamin A doses are due at 9 months. Visit your health center.",
+          "hinodi": "मीजल्स-रूबेला और विटामिन ए की खुराक 9 महीने पर बाकी है। स्वास्थ्य केंद्र जाएं।"
+        },
+        {
+          "category": "nutrition",
+          "title": "Diverse Foods",
+          "content": "Offer variety in solid foods - dal water, mashed vegetables, fruit purees. One new food at a time.",
+          "hinodi": "भोजन में विविधता दें - दाल का पानी, मैश्ड सब्जियां, फल की प्यूरी। एक नया खाना एक बार में।"
+        },
+        {
+          "category": "development",
+          "title": "Crawling",
+          "content": "Most babies start crawling around 9 months. Create a safe space for exploration.",
+          "hindi": "अधिकांश बच्चे 9 महीने के आसपास रेंगना शुरू करते हैं। खोज के लिए सुरक्षित जगह बनाएं।"
+        },
+        {
+          "category": "safety",
+          "title": "Water Safety",
+          "content": "Never leave your baby unattended near water. Even shallow water can be dangerous.",
+          "hinodi": "पानी के पास कभी अपने बच्चे को अकेला न छोड़ें। उथला पानी भी खतरनाक हो सकता है।"
+        }
+      ]
+    },
+    {
+      "min_age_months": 9,
+      "max_age_months": 12,
+      "tips": [
+        {
+          "category": "development",
+          "title": "First Words",
+          "content": "Your baby may say their first words like 'mama' or 'dada'. Talk to them often!",
+          "hinodi": "आपका बच्चा 'मम' या 'दादा' जैसे पहले शब्द कह सकता है। उनसे बात करते रहें!"
+        },
+        {
+          "category": "immunization",
+          "title": "Complete Immunization",
+          "content": "Ensure all 9-month vaccines are completed. Keep the immunization card safe.",
+          "hinodi": "9 महीने के सभी टीके पूरे करें। टीकाकार्ड सुरक्षित रखें।"
+        },
+        {
+          "category": "nutrition",
+          "title": "Family Foods",
+          "content": "Your baby can eat most family foods now. Avoid added salt and sugar.",
+          "hinodi": "आपका बच्चा अब ज्यादातर परिवार के खाने खा सकता है। नमक और चीनी न जोड़ें।"
+        },
+        {
+          "category": "safety",
+          "title": "Childproofing",
+          "content": "Baby-proof your home as they start moving. Cover sharp corners and lock cabinets.",
+          "hinodi": "जब वे चलने लगें, घर को बच्चे-सुरक्षित बनाएं। तेज कोनों को ढकें और अलमारियां बंद करें।"
+        }
+      ]
+    },
+    {
+      "min_age_months": 12,
+      "max_age_months": 18,
+      "tips": [
+        {
+          "category": "nutrition",
+          "title": "Weaning",
+          "content": "Continue breastfeeding along with family foods. Aim for 3 meals plus 2 snacks daily.",
+          "hinodi": "परिवार के खाने के साथ स्तनपान जारी रखें। 3 भोजन और 2 स्नैक्स का लक्ष्य रखें।"
+        },
+        {
+          "category": "immunization",
+          "title": "15-Month Vaccines",
+          "content": "Vaccines for Japanese Encephalitis, Hepatitis A, and Varicella may be available. Ask your doctor.",
+          "hinodi": "जापानी इंसेफलाइटिस, हेपेटाइटिस ए और चिकनपॉक्स के टीके उपलब्ध हो सकते हैं। डॉक्टर से पूछें।"
+        },
+        {
+          "category": "development",
+          "title": "Walking",
+          "content": "Many babies start walking between 12-18 months. Hold their hands while they practice.",
+          "hinodi": "कई बच्चे 12-18 महीने के बीच चलना शुरू करते हैं। अभ्यास के दौरान उनका हाथ पकड़ें।"
+        }
+      ]
+    },
+    {
+      "min_age_months": 18,
+      "max_age_months": 24,
+      "tips": [
+        {
+          "category": "immunization",
+          "title": "18-Month Vaccines",
+          "content": "Booster doses for DPT, OPV, and Vitamin A are due. Don't miss the immunization visit.",
+          "hinodi": "DPT, OPV और विटामिन ए की बूस्टर खुराक बाकी है। टीकाकारण का समय न चूकें।"
+        },
+        {
+          "category": "nutrition",
+          "title": "Iron-Rich Foods",
+          "content": "Include iron-rich foods like green leafy vegetables, jaggery, and lentils in meals.",
+          "hinodi": "हरी पत्तेदार सब्जियां, गुड़ और दालों जैसे लोहा युक्त खाने को भोजन में शामिल करें।"
+        },
+        {
+          "category": "development",
+          "title": "Talking",
+          "content": "Your child should say several words now. Read books and name objects to help language development.",
+          "hinodi": "आपके बच्चे को अब कई शब्द बोलने चाहिए। किताबें पढ़ें और चीजों के नाम बताएं।"
+        }
+      ]
+    },
+    {
+      "min_age_months": 24,
+      "max_age_months": 36,
+      "tips": [
+        {
+          "category": "immunization",
+          "title": "5-Year Vaccines",
+          "content": "DPT and polio boosters are due around 5 years. School entry may require verification.",
+          "hinodi": "5 साल के आसपास DPT और पोलियो बूस्टर बाकी हैं। स्कूल प्रवेश के लिए जरूरी हो सकता है।"
+        },
+        {
+          "category": "nutrition",
+          "title": "Balanced Diet",
+          "content": "Offer a balanced diet with proteins, carbohydrates, fruits, and vegetables. Limit junk food.",
+          "hinodi": "प्रोटीन, कार्बोहाइड्रेट, फल और सब्जियों के साथ संतुलित आहार दें। जंक फूड सीमित करें।"
+        },
+        {
+          "category": "development",
+          "title": "Toilet Training",
+          "content": "Start toilet training when your child shows signs of readiness, usually around 2-3 years.",
+          "hinodi": "जब बच्चा तैयारी के संकेत दिखाए तो टॉयलेट ट्रेनिंग शुरू करें, आमतौर पर 2-3 साल के आसपास।"
+        },
+        {
+          "category": "safety",
+          "title": "Road Safety",
+          "content": "Teach road safety early. Always hold hands when near roads.",
+          "hinodi": "जल्दी से सड़क सुरक्षा सिखाएं। सड़कों के पास हमेशा हाथ पकड़ें।"
+        }
+      ]
+    }
+  ]
+}

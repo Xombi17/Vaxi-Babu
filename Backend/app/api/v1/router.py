@@ -4,6 +4,7 @@ from app.api.v1 import (
     ai,
     auth,
     dependents,
+    health_tips,
     households,
     medicine,
     reminders,
@@ -26,3 +27,4 @@ router.include_router(medicine.router)
 router.include_router(ai.router)
 router.include_router(voice.router)
 router.include_router(sync.router)
+router.include_router(health_tips.router)
