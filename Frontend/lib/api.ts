@@ -58,6 +58,26 @@ export interface TimelineResponse {
   next_due: HealthEvent | null;
 }
 
+export interface HealthPassResponse {
+  dependent_id: string;
+  name: string;
+  type: string;
+  score: number;
+  status_color: 'green' | 'yellow' | 'red';
+  stats: HealthPassStats;
+  next_due: HealthPassNextDue | null;
+}
+
+export interface HealthScheme {
+  id: string;
+  name: string;
+  description: string;
+  benefits: string;
+  eligibility_reason: string;
+  category: 'maternal' | 'child' | 'general' | 'senior';
+  icon: string;
+}
+
 export interface MedicineSafetyResponse {
   detected_medicine: string;
   confidence: number;
@@ -68,21 +88,6 @@ export interface MedicineSafetyResponse {
   disclaimer: string;
   raw_ocr_text?: string;
   ocr_model_used?: string;
-}
-
-export interface HealthPassResponse {
-  dependent: Dependent;
-  stats: {
-    total_events: number;
-    completed_events: number;
-    overdue_count: number;
-    health_score: number;
-    status_color: string;
-  };
-  next_due: {
-    name: string | null;
-    date: string | null;
-  };
 }
 
 // Error handling helper
@@ -216,5 +221,9 @@ export async function checkMedicineByImage(file: File, concern?: string, languag
  * Fetch health pass for a dependent
  */
 export async function getHealthPass(dependentId: string): Promise<HealthPassResponse> {
-  return fetchApi<HealthPassResponse>(`/api/v1/dependents/${dependentId}/pass`);
+  return fetchApi<HealthPassResponse>(`/dependents/${dependentId}/pass`);
+}
+
+export async function getRecommendedSchemes(householdId: string): Promise<HealthScheme[]> {
+  return fetchApi<HealthScheme[]>(`/households/${householdId}/schemes`);
 }

@@ -169,3 +169,40 @@ async def simplify_medicine_result(
     except Exception as exc:
         log.warning("ai_medicine_simplify_failed", error=str(exc))
         return f"{medicine_name}: {why_caution}"
+    
+
+async def detect_completion_intent(
+    text: str,
+    context: str,
+) -> dict | None:
+    """
+    Look for a health event completion intent in user text.
+    Returns { "event_name": "...", "dependent_name": "..." } or None.
+    """
+    try:
+        client = get_ai_client()
+        system_prompt = (
+            "You are a structured intent extractor for health events. "
+            "Your job is to detect if a user is reporting that a health event (vaccine, checkup) is COMPLETED or DONE. "
+            "Context provided lists children and their pending events. "
+            "ONLY extract if the user is clearly stating it is DONE or COMPLETED by them or the child. "
+            "Return JSON in format: {'event_name': string, 'dependent_name': string} or null if no clear completion reported."
+        )
+        user_message = f"Context:\n{context}\n\nUser text: {text}"
+        
+        chat = await client.chat.completions.create(
+            model=settings.github_chat_model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=100,
+            temperature=0.0,
+        )
+        import json
+        return json.loads(chat.choices[0].message.content)
+
+    except Exception as exc:
+        log.warning("intent_detection_failed", error=str(exc))
+        return None

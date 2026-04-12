@@ -7,6 +7,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.core.database import get_session
 from app.models.household import Household
 from app.schemas.household import HouseholdCreate, HouseholdResponse, HouseholdUpdate
+from app.services.scheme_service import get_eligible_schemes, HealthScheme
+from app.core.auth import get_password_hash
 
 router = APIRouter(prefix="/households", tags=["Households"])
 
@@ -16,7 +18,23 @@ async def create_household(
     body: HouseholdCreate,
     session: AsyncSession = Depends(get_session),
 ) -> Household:
-    household = Household(**body.model_dump())
+    username = body.username
+    password = body.password
+
+    body_data = body.model_dump(exclude_unset=True)
+
+    if username and password:
+        result = await session.execute(select(Household).where(Household.username == username))
+        if result.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Username already exists")
+        body_data["password_hash"] = get_password_hash(password)
+    elif username or password:
+        raise HTTPException(status_code=400, detail="Both username and password required, or neither")
+
+    del body_data["username"]
+    del body_data["password"]
+
+    household = Household(**body_data)
     session.add(household)
     await session.flush()
     await session.refresh(household)
@@ -87,3 +105,16 @@ async def list_assigned_households(
         select(Household).where(Household.user_type == user_type_enum).order_by(Household.created_at.desc())
     )
     return result.scalars().all()
+
+
+@router.get("/{household_id}/schemes", response_model=list[HealthScheme])
+async def list_household_schemes(
+    household_id: str,
+    session: AsyncSession = Depends(get_session),
+) -> list[HealthScheme]:
+    """Get government health schemes eligible for this household."""
+    household = await session.get(Household, household_id)
+    if not household:
+        raise HTTPException(status_code=404, detail="Household not found")
+
+    return await get_eligible_schemes(household, session)

@@ -290,6 +290,7 @@ async def vapi_webhook(
                             "CRITICAL: You DO have access to their health records. Use tools to retrieve real data.\n"
                             "\n\nGoals:\n"
                             "- Discuss exact vaccination status by querying tools with the correct dependent ID.\n"
+                            "- Record when a health event or vaccine has been completed by the user.\n"
                             "- Provide clear, simple health education.\n"
                             "\n\nMedical Safety:\n"
                             "- NO diagnosis. If emergency (e.g. trouble breathing), instruct to seek immediate medical care.\n"
@@ -379,6 +380,27 @@ async def vapi_webhook(
                             },
                         },
                     },
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "mark_health_event_completed",
+                            "description": "Record that a health event (vaccine, vitamin, checkup) has been successfully completed for a child.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "dependent_id": {
+                                        "type": "string",
+                                        "description": "The specific child's ID.",
+                                    },
+                                    "event_name": {
+                                        "type": "string",
+                                        "description": "The name of the event (e.g., 'BCG', 'Polio 1').",
+                                    }
+                                },
+                                "required": ["dependent_id", "event_name"],
+                            },
+                        },
+                    },
                 ],
             },
             "assistantOverrides": {
@@ -451,6 +473,11 @@ async def _handle_tool_call(
     if tool_name == "get_next_vaccine":
         dependent_id = args.get("dependent_id", "")
         return await _get_next_vaccine(dependent_id, session)
+
+    if tool_name == "mark_health_event_completed":
+        dependent_id = args.get("dependent_id", "")
+        event_name = args.get("event_name", "")
+        return await _mark_event_completed(dependent_id, event_name, session)
 
     if tool_name == "get_child_vaccination_status":
         dependent_id = args.get("dependent_id", "")
@@ -673,3 +700,49 @@ async def _get_next_vaccine(dependent_id: str, session) -> str:
         response += ". Please get this done this week."
 
     return response
+
+
+async def _mark_event_completed(
+    dependent_id: str,
+    event_name: str,
+    session,
+) -> str:
+    """Find a pending event by name and mark it as completed."""
+    if not dependent_id:
+        return "I need a child's ID to record their health completion."
+    
+    # Try fuzzy matching or exact match on pending events
+    stmt = (
+        select(HealthEvent)
+        .where(HealthEvent.dependent_id == dependent_id)
+        .where(HealthEvent.status != EventStatus.completed)
+    )
+    res = await session.execute(stmt)
+    pending_events = res.scalars().all()
+    
+    target = None
+    event_name_lower = event_name.lower()
+    
+    # 1. Exact match
+    for e in pending_events:
+        if e.name.lower() == event_name_lower:
+            target = e
+            break
+            
+    # 2. Fuzzy/Sub-string match
+    if not target:
+        for e in pending_events:
+            if event_name_lower in e.name.lower() or e.name.lower() in event_name_lower:
+                target = e
+                break
+                
+    if not target:
+        return f"I couldn't find a pending health event named '{event_name}' for this child. Please check the name or the timeline."
+        
+    target.status = EventStatus.completed
+    target.completed_at = date.today()
+    session.add(target)
+    await session.commit()
+    
+    log.info("health_event_completed_via_voice", event=target.name, dependent=dependent_id)
+    return f"Excellent! I have marked {target.name} as completed. Their health history is now updated."
