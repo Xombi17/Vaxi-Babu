@@ -17,7 +17,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from app.models.household import Household
 from app.models.dependent import Dependent
-from app.models.health_event import HealthEvent, EventStatus
+from app.models.health_event import HealthEvent, EventStatus, VerificationStatus
 
 # Supabase setup
 SUPABASE_URL = "https://azvvmmekxfcuzdadxlub.supabase.co"
@@ -140,10 +140,11 @@ async def seed_health_events(dependents):
     print("\n💉 Seeding health events...")
 
     events_count = 0
+    asha_workers = ["Priya", "Anjali", "Meera"]
 
     for dependent in dependents:
         async with AsyncSessionLocal() as session:
-            # BCG - Birth
+            # BCG - Birth (verified by ASHA)
             bcg = HealthEvent(
                 dependent_id=dependent.id,
                 household_id=dependent.household_id,
@@ -152,12 +153,19 @@ async def seed_health_events(dependents):
                 category="vaccination",
                 dose_number=1,
                 due_date=dependent.date_of_birth,
-                status=EventStatus.overdue,
+                status=EventStatus.completed,
+                completed_at=dependent.date_of_birth + timedelta(hours=2),
+                completed_by="Dr. Sharma",
+                location="District Hospital",
+                verification_status=VerificationStatus.verified,
+                verified_by=asha_workers[0],
+                verification_notes="Verified at health camp on birth date",
+                marked_given_at=dependent.date_of_birth + timedelta(hours=1),
                 schedule_version="1.0",
             )
             session.add(bcg)
 
-            # Polio 0 - Birth
+            # Polio 0 - Birth (verified by ASHA)
             polio0 = HealthEvent(
                 dependent_id=dependent.id,
                 household_id=dependent.household_id,
@@ -166,12 +174,19 @@ async def seed_health_events(dependents):
                 category="vaccination",
                 dose_number=0,
                 due_date=dependent.date_of_birth,
-                status=EventStatus.overdue,
+                status=EventStatus.completed,
+                completed_at=dependent.date_of_birth + timedelta(hours=3),
+                completed_by="Dr. Sharma",
+                location="District Hospital",
+                verification_status=VerificationStatus.verified,
+                verified_by=asha_workers[1],
+                verification_notes="Verified at health camp",
+                marked_given_at=dependent.date_of_birth + timedelta(hours=2),
                 schedule_version="1.0",
             )
             session.add(polio0)
 
-            # DPT 1 - 6 weeks
+            # DPT 1 - 6 weeks (pending verification)
             dpt1_date = dependent.date_of_birth + timedelta(weeks=6)
             dpt1 = HealthEvent(
                 dependent_id=dependent.id,
@@ -181,15 +196,42 @@ async def seed_health_events(dependents):
                 category="vaccination",
                 dose_number=1,
                 due_date=dpt1_date,
-                status=EventStatus.due if dpt1_date <= date.today() else EventStatus.upcoming,
+                status=EventStatus.completed if dpt1_date <= date.today() else EventStatus.upcoming,
+                completed_at=dpt1_date if dpt1_date <= date.today() else None,
+                completed_by="Dr. Patel" if dpt1_date <= date.today() else None,
+                location="Primary Health Center" if dpt1_date <= date.today() else None,
+                verification_status=VerificationStatus.pending if dpt1_date <= date.today() else VerificationStatus.pending,
+                marked_given_at=dpt1_date if dpt1_date <= date.today() else None,
                 schedule_version="1.0",
             )
             session.add(dpt1)
 
-            events_count += 3
+            # Hepatitis B - 6 weeks (verified by ASHA)
+            hepb_date = dependent.date_of_birth + timedelta(weeks=6)
+            hepb = HealthEvent(
+                dependent_id=dependent.id,
+                household_id=dependent.household_id,
+                name="Hepatitis B",
+                schedule_key="hepatitis_b_6w",
+                category="vaccination",
+                dose_number=1,
+                due_date=hepb_date,
+                status=EventStatus.completed if hepb_date <= date.today() else EventStatus.upcoming,
+                completed_at=hepb_date if hepb_date <= date.today() else None,
+                completed_by="Dr. Patel" if hepb_date <= date.today() else None,
+                location="Primary Health Center" if hepb_date <= date.today() else None,
+                verification_status=VerificationStatus.verified if hepb_date <= date.today() else VerificationStatus.pending,
+                verified_by=asha_workers[2] if hepb_date <= date.today() else None,
+                verification_notes="Verified at routine checkup" if hepb_date <= date.today() else None,
+                marked_given_at=hepb_date if hepb_date <= date.today() else None,
+                schedule_version="1.0",
+            )
+            session.add(hepb)
+
+            events_count += 4
             await session.commit()
 
-    print(f"✅ Seeded {events_count} health events")
+    print(f"✅ Seeded {events_count} health events with verification data")
 
 async def main():
     print("🚀 Starting Supabase seed script...")
