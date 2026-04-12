@@ -1,4 +1,5 @@
 from datetime import datetime
+import structlog
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -20,6 +21,7 @@ from app.services.health_schedule.engine import (
 )
 
 router = APIRouter(prefix="/timeline", tags=["Timeline"])
+log = structlog.get_logger()
 
 
 @router.get("/{dependent_id}", response_model=TimelineResponse)
@@ -34,31 +36,42 @@ async def get_timeline(
     - Refreshes event statuses (upcoming/due/overdue) on every call
     - Optional category filter: vaccination, prenatal_checkup, medicine_dose, growth_check, etc.
     """
-    dep = await session.get(Dependent, dependent_id)
-    if not dep:
-        raise HTTPException(status_code=404, detail="Dependent not found")
+    try:
+        log.info("timeline_request", dependent_id=dependent_id, category=category)
 
-    # Ensure schedule exists, generate if not
-    events = await generate_and_save_schedule(dep, session)
-    if not events:
-        # Fetch existing if already generated
-        events = await refresh_event_statuses(dependent_id, session)
-    else:
-        events = await refresh_event_statuses(dependent_id, session)
+        dep = await session.get(Dependent, dependent_id)
+        if not dep:
+            log.warning("dependent_not_found", dependent_id=dependent_id)
+            raise HTTPException(status_code=404, detail="Dependent not found")
 
-    # Apply category filter if provided
-    if category:
-        events = [e for e in events if e.category.value == category]
+        # Ensure schedule exists, generate if not
+        events = await generate_and_save_schedule(dep, session)
+        if not events:
+            # Fetch existing if already generated
+            events = await refresh_event_statuses(dependent_id, session)
+        else:
+            events = await refresh_event_statuses(dependent_id, session)
 
-    next_due = get_next_due_event(events)
+        # Apply category filter if provided
+        if category:
+            events = [e for e in events if e.category.value == category]
 
-    return TimelineResponse(
-        dependent_id=dependent_id,
-        dependent_name=dep.name,
-        generated_at=datetime.utcnow(),
-        events=[HealthEventResponse.model_validate(e) for e in events],
-        next_due=HealthEventResponse.model_validate(next_due) if next_due else None,
-    )
+        next_due = get_next_due_event(events)
+
+        log.info("timeline_success", dependent_id=dependent_id, event_count=len(events))
+
+        return TimelineResponse(
+            dependent_id=dependent_id,
+            dependent_name=dep.name,
+            generated_at=datetime.utcnow(),
+            events=[HealthEventResponse.model_validate(e) for e in events],
+            next_due=HealthEventResponse.model_validate(next_due) if next_due else None,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error("timeline_error", dependent_id=dependent_id, error=str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to fetch timeline: {str(e)}")
 
 
 @router.patch("/{dependent_id}/events/{event_id}/complete", response_model=HealthEventResponse)
