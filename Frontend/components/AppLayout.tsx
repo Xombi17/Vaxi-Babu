@@ -13,7 +13,6 @@ interface AppLayoutProps {
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getHousehold, type Household } from '@/lib/api';
-import { OnboardingWizard } from './OnboardingWizard';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -40,7 +39,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     router.push('/');
   };
 
-  const showOnboarding = household && !household.last_onboarded_at && pathname === '/dashboard';
+  const showOnboarding = false;
 
   const handleOnboardingComplete = () => {
     queryClient.invalidateQueries({ queryKey: ['household', householdId] });
@@ -142,7 +141,6 @@ export function AppLayout({ children }: AppLayoutProps) {
       </div>
 
       {/* Shared Voice FAB */}
-      {showOnboarding && <OnboardingWizard household={household} onComplete={handleOnboardingComplete} />}
       <VoiceFAB />
     </div>
   );
