@@ -131,6 +131,9 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
   const response = await fetch(url, {
     ...options,
     headers,
+  }).catch((error) => {
+    console.error('Fetch error:', error);
+    throw new ApiError(0, `Network error: ${error.message}`);
   });
 
   if (response.status === 401) {
@@ -146,10 +149,14 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
   }
 
   if (!response.ok) {
-    throw new ApiError(
-      response.status,
-      `HTTP ${response.status}: ${response.statusText}`
-    );
+    let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.detail || errorMessage;
+    } catch {
+      // Ignore JSON parse errors
+    }
+    throw new ApiError(response.status, errorMessage);
   }
 
   return response.json() as Promise<T>;
