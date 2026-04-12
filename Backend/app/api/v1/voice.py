@@ -305,18 +305,21 @@ async def vapi_webhook(
                                     },
                                     "household_id": {
                                         "type": "string",
-                                        "description": "The ID of the family household. ALWAYS use this value: " + h_id,
+                                        "description": "The ID of the family household.",
+                                        "default": h_id,
                                     },
                                     "dependent_id": {
                                         "type": "string",
                                         "description": "OPTIONAL: The specific child's ID. Leave empty if asking about the whole family or if child is unnamed.",
+                                        "default": "",
                                     },
                                     "language": {
                                         "type": "string",
                                         "description": "The language code to use for the response (e.g. 'hi', 'en').",
+                                        "default": lang,
                                     },
                                 },
-                                "required": ["question", "household_id"],
+                                "required": ["question"],
                             },
                         },
                     },
@@ -330,10 +333,34 @@ async def vapi_webhook(
                                 "properties": {
                                     "household_id": {
                                         "type": "string",
-                                        "description": "The ID of the family household. ALWAYS use this value: " + h_id,
+                                        "description": "The ID of the family household.",
+                                        "default": h_id,
                                     }
                                 },
-                                "required": ["household_id"],
+                                "required": [],
+                            },
+                        },
+                    },
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "get_child_vaccination_status",
+                            "description": "Get the vaccination status for a specific child.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "household_id": {
+                                        "type": "string",
+                                        "description": "The ID of the family household.",
+                                        "default": h_id,
+                                    },
+                                    "dependent_id": {
+                                        "type": "string",
+                                        "description": "The specific child's ID from the household.",
+                                        "default": "",
+                                    },
+                                },
+                                "required": [],
                             },
                         },
                     },
@@ -348,9 +375,10 @@ async def vapi_webhook(
                                     "dependent_id": {
                                         "type": "string",
                                         "description": "The specific child's ID from the DYNAMIC CONTEXT.",
+                                        "default": "",
                                     }
                                 },
-                                "required": ["dependent_id"],
+                                "required": [],
                             },
                         },
                     },
@@ -365,9 +393,10 @@ async def vapi_webhook(
                                     "dependent_id": {
                                         "type": "string",
                                         "description": "The specific child's ID from the DYNAMIC CONTEXT.",
+                                        "default": "",
                                     }
                                 },
-                                "required": ["dependent_id"],
+                                "required": [],
                             },
                         },
                     },
