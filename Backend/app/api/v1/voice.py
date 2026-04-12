@@ -367,21 +367,18 @@ async def vapi_webhook(
             },
         }
 
-        # Azure voices for regional languages (primary choice - Hindi & Marathi)
-        if language_name == "Hindi":
+        # ElevenLabs for regional languages (Hindi & Marathi) - excellent multilingual support
+        if language_name in ["Hindi", "Marathi"] and not use_elevenlabs:
             assistant_config["voice"] = {
-                "provider": "azure",
-                "voiceId": "hi-IN-SwaraNeural",
+                "provider": "elevenlabs",
+                "voiceId": "21m00Tcm4TlvDq8ikWAM",  # Aria (Multilingual v2)
+                "model": "eleven_multilingual_v2",
+                "stability": 0.5,
+                "similarityBoost": 0.75,
             }
-            log.info("voice_azure_hindi_active")
-        elif language_name == "Marathi":
-            assistant_config["voice"] = {
-                "provider": "azure",
-                "voiceId": "mr-IN-AarohiNeural",
-            }
-            log.info("voice_azure_marathi_active")
+            log.info("voice_elevenlabs_regional_active", lang=lang, language=language_name)
 
-        # Override with ElevenLabs if requested (premium mode)
+        # Override with premium ElevenLabs if requested
         if use_elevenlabs:
             assistant_config["voice"] = {
                 "provider": "elevenlabs",
