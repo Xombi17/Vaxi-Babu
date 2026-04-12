@@ -194,9 +194,10 @@ async def vapi_webhook(
                 continue
 
             # Check cache for repeated tool calls with same args
+            # SKIP CACHE for get_household_dependents - always fetch fresh data
             cache_key = _get_tool_cache_key(tool_name, tool_args)
             now = time.time()
-            if cache_key in _tool_result_cache:
+            if tool_name != "get_household_dependents" and cache_key in _tool_result_cache:
                 cached_time, cached_result = _tool_result_cache[cache_key]
                 if now - cached_time < TOOL_CACHE_TTL:
                     log.info("tool_result_cache_hit", tool=tool_name, age_seconds=int(now - cached_time))
@@ -212,8 +213,9 @@ async def vapi_webhook(
                     await _record_interaction(household_id, question, result_text, session)
                 break
 
-            # Cache the result
-            _tool_result_cache[cache_key] = (now, result_text)
+            # Cache the result (but not for get_household_dependents - always fetch fresh)
+            if tool_name != "get_household_dependents":
+                _tool_result_cache[cache_key] = (now, result_text)
 
             tool_duration = time.time() - tool_start
             log.info("tool_call_completed", tool=tool_name, duration_ms=int(tool_duration * 1000))
@@ -771,9 +773,14 @@ async def _get_dependents_for_household(household_id: str, session, call_id: str
             household_id=household_id,
             household_id_type=type(household_id).__name__,
             household_id_length=len(household_id) if household_id else 0,
+            session_info=f"session={type(session).__name__}",
         )
 
-        result = await session.execute(select(Dependent).where(Dependent.household_id == household_id))
+        # Build and execute query
+        stmt = select(Dependent).where(Dependent.household_id == household_id)
+        log.info("executing_query", call_id=call_id, statement=str(stmt)[:200])
+
+        result = await session.execute(stmt)
         dependents = result.scalars().all()
 
         query_duration = time.time() - query_start
