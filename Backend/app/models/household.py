@@ -1,7 +1,26 @@
 import uuid
 from datetime import datetime
+from enum import Enum
 
 from sqlmodel import Field, SQLModel
+
+
+class UserType(str, Enum):
+    family = "family"
+    asha = "asha"
+    anganwadi = "anganwadi"
+    health_worker = "health_worker"
+
+    @classmethod
+    def from_string(cls, value: str) -> "UserType":
+        value_lower = value.lower()
+        if value_lower in ("asha", "ashaworker", "asha_worker"):
+            return cls.asha
+        if value_lower in ("anganwadi", "anganwadi_worker"):
+            return cls.anganwadi
+        if value_lower in ("health_worker", "healthworker", "hw"):
+            return cls.health_worker
+        return cls.family
 
 
 class Household(SQLModel, table=True):
@@ -19,6 +38,9 @@ class Household(SQLModel, table=True):
     auth_id: uuid.UUID | None = Field(default=None, unique=True, index=True, description="Neon Auth user ID")
     name: str = Field(min_length=1, max_length=200, description="Family / household name")
     primary_language: str = Field(default="en", max_length=10, description="BCP-47 language code")
+    user_type: UserType = Field(
+        default=UserType.family, description="Type of user: family, asha, anganwadi, health_worker"
+    )
     village_town: str | None = Field(default=None, max_length=200)
     state: str | None = Field(default=None, max_length=100)
     district: str | None = Field(default=None, max_length=100)

@@ -71,3 +71,19 @@ async def delete_household(
     if not household:
         raise HTTPException(status_code=404, detail="Household not found")
     await session.delete(household)
+
+
+@router.get("/asha/assigned", response_model=list[HouseholdResponse])
+async def list_assigned_households(
+    user_type: str = "asha",
+    session: AsyncSession = Depends(get_session),
+) -> list[Household]:
+    """List households assigned to an ASHA/Anganwadi worker."""
+    from app.models.household import UserType
+
+    user_type_enum = UserType.from_string(user_type) if isinstance(user_type, str) else user_type
+
+    result = await session.execute(
+        select(Household).where(Household.user_type == user_type_enum).order_by(Household.created_at.desc())
+    )
+    return result.scalars().all()
