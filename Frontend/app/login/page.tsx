@@ -112,7 +112,10 @@ export default function LoginPage() {
         }),
       });
 
-      if (!createRes.ok) throw new Error('Signup failed');
+      if (!createRes.ok) {
+        const errorData = await createRes.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Signup failed');
+      }
 
       const loginRes = await fetch(`${API_URL}/api/v1/login`, {
         method: 'POST',
