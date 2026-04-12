@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { Providers } from '@/components/Providers';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import { Lora, Raleway } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 
 const lora = Lora({ 
   subsets: ['latin'], 
@@ -51,6 +52,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
             {children}
           </Providers>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
