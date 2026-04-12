@@ -477,9 +477,17 @@ This module can later support handwritten prescription parsing, allergy cross-ch
 - **Core config:** Pydantic Settings with `.env.example` covering all required and optional variables.
 - **Database layer:** Async SQLAlchemy engine with `pool_size=5`, `max_overflow=10`, `pool_pre_ping=True`. Auto-creates tables in dev via `create_db_and_tables()`. Proper session lifecycle with commit/rollback/close.
 
-**Pending as of this session:**
-- Vapi webhook endpoint (`/api/v1/voice/vapi-webhook`).
-- Alembic migration initial setup.
-- Full Pytest test suite.
-- Frontend integration (Next.js).
-- Offline-first PWA implementation.
+**Current progress (Session 2026-04-11/12):**
+- ✅ **Frontend Assembly:** Next.js dashboard fully wired to FastAPI backend.
+- ✅ **Cinematic UX:** Integrated Framer Motion scroll animations and premium dark mode.
+- ✅ **Multi-Language Phase:** Support for English + 6 regional Indian languages (Hindi, Marathi, Gujarati, etc.).
+- ✅ **Voice Context Injection:** Vapi agent now receives real-time household/dependent data via secure tool calls.
+- ✅ **Medicine Scanner:** Multi-tier multimodal OCR (GPT-4o) for packaging extraction.
+- ✅ **Branding:** Full set of production favicons and PWA manifest.
+- ✅ **Deployment:** Frontend live on Vercel, Backend live on Render.
+
+**Pending & Next Steps:**
+- Vapi webhook signature verification (re-enable in production).
+- Offline-first Service Worker hardening (PWA features).
+- Real-world testing with ASHA/Caregiver focus groups.
+- WhatsApp/IVR notification bridge.
