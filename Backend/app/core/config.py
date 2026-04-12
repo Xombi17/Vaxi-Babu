@@ -1,6 +1,4 @@
 from functools import lru_cache
-from typing import Optional
-import os
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
@@ -35,6 +33,9 @@ class Settings(BaseSettings):
 
     # Vapi webhook
     vapi_webhook_secret: str = ""
+
+    # Sarvam AI (Indian languages - STT, TTS, Translation)
+    sarvam_api_key: str = ""
 
     # Auth
     secret_key: str = "very-secret-dev-key-wellsync-ai"
