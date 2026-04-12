@@ -176,7 +176,7 @@ async def vapi_webhook(
                 question = tool_args.get("question", "")
                 if household_id and question:
                     await _record_interaction(household_id, question, result_text, session)
-                break 
+                break
 
             results.append({"toolCallId": cid, "result": result_text})
 
@@ -186,15 +186,31 @@ async def vapi_webhook(
         # Robust variable extraction
         msg = payload.get("message", {})
         call = msg.get("call", {})
-        
-        vars = msg.get("variableValues") or \
-               msg.get("assistantOverrides", {}).get("variableValues") or \
-               call.get("assistantOverrides", {}).get("variableValues") or \
-               payload.get("assistant", {}).get("variableValues") or {}
+
+        vars = (
+            msg.get("variableValues")
+            or msg.get("assistantOverrides", {}).get("variableValues")
+            or call.get("assistantOverrides", {}).get("variableValues")
+            or payload.get("assistant", {}).get("variableValues")
+            or {}
+        )
 
         h_id = vars.get("household_id")
         lang = vars.get("language", "en")
-        
+        language_name = vars.get("language_name", "")
+
+        # Map language code to language name if not provided
+        if not language_name or language_name == "English":
+            language_name_map = {
+                "hi": "Hindi",
+                "mr": "Marathi",
+                "gu": "Gujarati",
+                "bn": "Bengali",
+                "ta": "Tamil",
+                "te": "Telugu",
+            }
+            language_name = language_name_map.get(lang, "English")
+
         # 🔥 FIX: Ensure session is defined for fallback lookup
         if not h_id:
             async for session in get_session():
@@ -207,132 +223,176 @@ async def vapi_webhook(
                 break
 
         print(f"DEBUG: Vapi Webhook [{event_type}]. household_id: {h_id}, lang: {lang}")
-        
+
         first_messages = {
             "en": "Hello! I'm your WellSync health assistant.",
             "hi": "नमस्ते! मैं आपका वेलसिंक स्वास्थ्य सहायक हूँ।",
             "mr": "नमस्कार! मी तुमचा वेलसिंक आरोग्य सहाय्यक आहे।",
         }
-        
+
         first_message = first_messages.get(lang, first_messages["en"])
         child_names = []
         household_name = "User"
-        
+
         if h_id:
             async for session in get_session():
                 household = await session.get(Household, h_id)
                 if household:
                     household_name = household.name
                     first_message = f"Hello {household.name} family! I'm your health assistant."
-                
+
                 res = await session.execute(select(Dependent).where(Dependent.household_id == h_id))
                 children = res.scalars().all()
                 child_info = [f"Name: {c.name}, ID: {c.id}" for c in children]
                 child_names = [c.name for c in children]
-                child_context_str = '; '.join(child_info) if child_info else 'NO CHILDREN REGISTERED'
+                child_context_str = "; ".join(child_info) if child_info else "NO CHILDREN REGISTERED"
                 print(f"DEBUG: Found {len(child_names)} children for household {h_id}: {child_names}")
                 break
 
-        target_lang_name = {
-            "hi": "Hindi", "mr": "Marathi", "gu": "Gujarati", "bn": "Bengali", "ta": "Tamil", "te": "Telugu"
-        }.get(lang, "English")
+        target_lang_name = language_name
 
-        return {
-            "assistant": {
-                "firstMessage": first_message,
-                "transcriber": {
-                    "provider": "deepgram",
-                    "language": "en-US" if lang == "en" else "hi"
-                },
-                "model": {
-                    "provider": "openai",
-                    "model": "gpt-4o",
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": (
-                                f"You are the WellSync health assistant for the {household_name} family. "
-                                f"STRICT RULE: The user prefers {target_lang_name}. You MUST respond ONLY in {target_lang_name}. "
-                                f"DYNAMIC CONTEXT: This household has children: {child_context_str}. "
-                                "RULES FOR ANSWERING:\n"
-                                "1. If the user asks about their child generally, and they only have ONE child in the DYNAMIC CONTEXT, immediately use that child's ID to check records without asking.\n"
-                                "2. If they have MULTIPLE children and don't specify, politely ask them which child they mean.\n"
-                                "3. If they ask about a specific name (e.g., 'Saanvi'), verify it against the DYNAMIC CONTEXT. If the name is NOT there, politely reply: 'You do not have a child named [Name] registered.' and list their actual children.\n"
-                                "CRITICAL: You DO have access to their health records. Use tools (like `answer_health_question`, `get_timeline_summary`, `get_next_vaccine`) to retrieve real data whenever appropriate.\n"
-                                "\n\nGoals:\n"
-                                "- Discuss exact vaccination status by querying tools with the correct dependent ID.\n"
-                                "- Provide clear, simple health education.\n"
-                                "\n\nMedical Safety:\n"
-                                "- NO diagnosis. If emergency (e.g. trouble breathing), instruct to seek immediate medical care.\n"
-                                "- Never fabricate data. Rely strictly on the tools and DYNAMIC CONTEXT.\n"
-                                "\n\nStyle: Simple, short sentences. Confirm actions."
-                            ),
-                        }
-                    ],
-                    "tools": [
-                        {
-                            "type": "function",
-                            "function": {
-                                "name": "answer_health_question",
-                                "description": "Get health status and answer questions about a family or specific child's health timeline.",
-                                "parameters": {
-                                    "type": "object",
-                                    "properties": {
-                                        "question": {"type": "string", "description": "The user's health related question."},
-                                        "household_id": {"type": "string", "description": "The ID of the family household."},
-                                        "dependent_id": {"type": "string", "description": "OPTIONAL: The specific child's ID. Leave empty if asking about the whole family or if child is unnamed."},
-                                        "language": {"type": "string", "description": "The language code to use for the response (e.g. 'hi', 'en')."}
+        use_elevenlabs = vars.get("use_elevenlabs", False)
+
+        assistant_config = {
+            "firstMessage": first_message,
+            "transcriber": {
+                "provider": "deepgram",
+                "model": "nova-2",
+                "language": "multi",  # Auto-detect language for regional support
+            },
+            "model": {
+                "provider": "openai",
+                "model": "gpt-4o",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": (
+                            f"You are the WellSync health assistant for the {household_name} family. "
+                            f"STRICT RULE: The user prefers {target_lang_name}. You MUST respond ONLY in {target_lang_name}. "
+                            f"DYNAMIC CONTEXT: This household has children: {child_context_str}. "
+                            "RULES FOR ANSWERING:\n"
+                            "1. If the user asks about their child generally, and they only have ONE child in the DYNAMIC CONTEXT, immediately use that child's ID to check records without asking.\n"
+                            "2. If they have MULTIPLE children and don't specify, politely ask them which child they mean.\n"
+                            "3. If they ask about a specific name (e.g., 'Saanvi'), verify it against the DYNAMIC CONTEXT. If the name is NOT there, politely reply: 'You do not have a child named [Name] registered.' and list their actual children.\n"
+                            "CRITICAL: You DO have access to their health records. Use tools (like `answer_health_question`, `get_timeline_summary`, `get_next_vaccine`) to retrieve real data whenever appropriate.\n"
+                            "\n\nGoals:\n"
+                            "- Discuss exact vaccination status by querying tools with the correct dependent ID.\n"
+                            "- Provide clear, simple health education.\n"
+                            "\n\nMedical Safety:\n"
+                            "- NO diagnosis. If emergency (e.g. trouble breathing), instruct to seek immediate medical care.\n"
+                            "- Never fabricate data. Rely strictly on the tools and DYNAMIC CONTEXT.\n"
+                            "\n\nStyle: Simple, short sentences. Confirm actions."
+                        ),
+                    }
+                ],
+                "tools": [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "answer_health_question",
+                            "description": "Get health status and answer questions about a family or specific child's health timeline.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "question": {
+                                        "type": "string",
+                                        "description": "The user's health related question.",
                                     },
-                                    "required": ["question", "household_id"]
-                                }
-                            }
+                                    "household_id": {
+                                        "type": "string",
+                                        "description": "The ID of the family household.",
+                                    },
+                                    "dependent_id": {
+                                        "type": "string",
+                                        "description": "OPTIONAL: The specific child's ID. Leave empty if asking about the whole family or if child is unnamed.",
+                                    },
+                                    "language": {
+                                        "type": "string",
+                                        "description": "The language code to use for the response (e.g. 'hi', 'en').",
+                                    },
+                                },
+                                "required": ["question", "household_id"],
+                            },
                         },
-                        {
-                            "type": "function",
-                            "function": {
-                                "name": "get_household_dependents",
-                                "description": "List all members/children in the household.",
-                                "parameters": {
-                                    "type": "object",
-                                    "properties": {
-                                        "household_id": {"type": "string", "description": "The ID of the family household."}
-                                    },
-                                    "required": ["household_id"]
-                                }
-                            }
+                    },
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "get_household_dependents",
+                            "description": "List all members/children in the household.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "household_id": {"type": "string", "description": "The ID of the family household."}
+                                },
+                                "required": ["household_id"],
+                            },
                         },
-                        {
-                            "type": "function",
-                            "function": {
-                                "name": "get_timeline_summary",
-                                "description": "Get a summary of the vaccination and health timeline for a specific child in the database.",
-                                "parameters": {
-                                    "type": "object",
-                                    "properties": {
-                                        "dependent_id": {"type": "string", "description": "The specific child's ID from the DYNAMIC CONTEXT."}
-                                    },
-                                    "required": ["dependent_id"]
-                                }
-                            }
+                    },
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "get_timeline_summary",
+                            "description": "Get a summary of the vaccination and health timeline for a specific child in the database.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "dependent_id": {
+                                        "type": "string",
+                                        "description": "The specific child's ID from the DYNAMIC CONTEXT.",
+                                    }
+                                },
+                                "required": ["dependent_id"],
+                            },
                         },
-                        {
-                            "type": "function",
-                            "function": {
-                                "name": "get_next_vaccine",
-                                "description": "Get the most urgent upcoming vaccine or health event for a child from the database.",
-                                "parameters": {
-                                    "type": "object",
-                                    "properties": {
-                                        "dependent_id": {"type": "string", "description": "The specific child's ID from the DYNAMIC CONTEXT."}
-                                    },
-                                    "required": ["dependent_id"]
-                                }
-                            }
-                        }
-                    ]
-                },
-            }
+                    },
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "get_next_vaccine",
+                            "description": "Get the most urgent upcoming vaccine or health event for a child from the database.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "dependent_id": {
+                                        "type": "string",
+                                        "description": "The specific child's ID from the DYNAMIC CONTEXT.",
+                                    }
+                                },
+                                "required": ["dependent_id"],
+                            },
+                        },
+                    },
+                ],
+            },
         }
+
+        # Azure voices for regional languages (primary choice - Hindi & Marathi)
+        if language_name == "Hindi":
+            assistant_config["voice"] = {
+                "provider": "azure",
+                "voiceId": "hi-IN-SwaraNeural",
+            }
+            log.info("voice_azure_hindi_active")
+        elif language_name == "Marathi":
+            assistant_config["voice"] = {
+                "provider": "azure",
+                "voiceId": "mr-IN-AarohiNeural",
+            }
+            log.info("voice_azure_marathi_active")
+
+        # Override with ElevenLabs if requested (premium mode)
+        if use_elevenlabs:
+            assistant_config["voice"] = {
+                "provider": "elevenlabs",
+                "voiceId": "21m00Tcm4TlvDq8ikWAM",  # Aria (Multilingual v2)
+                "model": "eleven_multilingual_v2",
+                "stability": 0.5,
+                "similarityBoost": 0.75,
+            }
+            log.info("voice_elevenlabs_mode_active", lang=lang)
+
+        return {"assistant": assistant_config}
 
     # ── Unknown event type — acknowledge and ignore ───────────────────────
     log.warning("vapi_unknown_event", event_type=event_type)
@@ -390,10 +450,10 @@ async def _handle_tool_call(
                         if d.name.lower() in str(dependent_id).lower():
                             dependent_id = d.id
                             break
-        
+
         if not dependent_id or len(dependent_id) < 10:
             return "I need to know which child you are asking about. Please provide their exact ID or name."
-            
+
         return await _get_timeline_summary(dependent_id, session)
 
     log.warning("vapi_unknown_tool", tool_name=tool_name)
@@ -427,7 +487,7 @@ async def _build_health_context(
     for dependent in dependents:
         if not dependent:
             continue
-            
+
         context_parts.append(f"\nSubject: {dependent.name}")
         dob = dependent.date_of_birth
         age_days = (date.today() - dob).days
@@ -494,7 +554,7 @@ async def _get_conversation_history(household_id: str, session, limit: int = 6) 
     """Fetch recent conversation turns for health memory context."""
     if not household_id:
         return []
-        
+
     try:
         result = await session.execute(
             select(Conversation)
