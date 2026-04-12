@@ -1,0 +1,7 @@
+{
+  "name": "Data Health Assistant",
+  "description": "A voice-enabled health assistant that fetches patient records and provides consultancy on vaccinations and general health.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
