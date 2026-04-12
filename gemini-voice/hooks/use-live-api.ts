@@ -52,7 +52,7 @@ export function useLiveAPI() {
     setIsConnecting(false);
   }, []);
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (language: string = 'English') => {
     if (isConnected || isConnecting) return;
     setIsConnecting(true);
     setError(null);
@@ -182,12 +182,6 @@ export function useLiveAPI() {
             }
 
             // Handle transcription
-            // The SDK might return transcription in a specific field, let's check serverContent
-            // Usually it's in message.serverContent?.modelTurn for model, or message.clientContent for user
-            // But let's just append text if available
-            // Wait, the SKILL.md says: Handle `outputTranscription` and `inputTranscription` in `onmessage`
-            // Let's assume it's message.serverContent?.modelTurn?.parts for text, or there's a transcription field.
-            // I'll just check if there's text in modelTurn parts.
             const modelParts = message.serverContent?.modelTurn?.parts;
             if (modelParts) {
               const textPart = modelParts.find(p => p.text);
@@ -210,7 +204,7 @@ export function useLiveAPI() {
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } },
           },
-          systemInstruction: 'You are a professional, empathetic Data Health Assistant. You help users query patient records, check vaccination status (especially for children), and provide general health consultancy. Use the fetchPatientRecords tool when asked about specific patients or records. Keep your answers concise and conversational.',
+          systemInstruction: `You are a professional, empathetic Data Health Assistant. You help users query patient records, check vaccination status (especially for children), and provide general health consultancy. Use the fetchPatientRecords tool when asked about specific patients or records. Keep your answers concise and conversational. IMPORTANT: You MUST converse entirely in ${language}.`,
           tools: [{ functionDeclarations: [fetchPatientRecordsDeclaration] }],
           inputAudioTranscription: {},
           outputAudioTranscription: {},
