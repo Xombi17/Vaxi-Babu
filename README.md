@@ -42,7 +42,8 @@ Instead of expecting users to manually track medical schedules, it provides a **
 ### AI & Intelligence
 - **GitHub Models (GPT-4o)** — Low-latency, state-of-the-art LLM for natural language interactions.
 - **GPT-4o Multimodal** — Unified OCR and analysis for medicine safety checks.
-- **Vapi AI** — Enterprise-grade voice orchestration with custom tool-calling webhooks.
+- **Gemini Live (gemini-3.1-flash-preview)** — Real-time voice for regional Indian languages (Hindi, Marathi, etc.).
+- **Vapi AI** — Enterprise-grade voice orchestration with custom tool-calling webhooks (English).
 - **Deterministic Rule Engines** — AI never decides medical safety or schedules; it only explains them.
 
 ---
@@ -56,6 +57,9 @@ Instead of expecting users to manually track medical schedules, it provides a **
 
 ### 2. Multi-Language Voice Assistant
 - **7+ Languages:** Full support for English, Hindi, Marathi, Bengali, Tamil, Telugu, and Gujarati.
+- **Dual Provider:** 
+  - **English** → Vapi AI (GPT-4o)
+  - **Regional Languages** → Gemini Live (`gemini-3.1-flash-preview`)
 - **Context-Aware:** The voice assistant knows who you are and who your children are (e.g., "How is Saanvi's status?").
 - **Voice-First UI:** Hands-free interaction designed for caregivers with limited digital literacy.
 

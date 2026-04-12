@@ -65,7 +65,7 @@ cp .env.example .env
 | Language | Provider | Model |
 |----------|----------|-------|
 | English (en) | Vapi | GPT-4o |
-| Hindi, Marathi, Gujarati, Bengali, Tamil, Telugu | Gemini Live | gemini-2.0-flash-exp |
+| Hindi, Marathi, Gujarati, Bengali, Tamil, Telugu | Gemini Live | gemini-3.1-flash-preview |
 
 - **Frontend/lib/gemini-voice.ts**: Gemini Live API integration (callback-based pattern)
 - **Frontend/components/VoiceFAB.tsx**: Voice FAB with auto-routing
