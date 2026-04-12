@@ -240,6 +240,16 @@ async def vapi_webhook(
         lang = vars.get("language", "en")
         language_name = vars.get("language_name", "")
 
+        log.info(
+            "assistant_request_variables_extracted",
+            call_id=call_id,
+            household_id=h_id,
+            household_id_type=type(h_id).__name__ if h_id else "NoneType",
+            household_id_length=len(h_id) if h_id else 0,
+            language=lang,
+            all_vars=str(vars)[:500],
+        )
+
         # Map language code to language name if not provided
         if not language_name or language_name == "English":
             language_name_map = {
@@ -263,7 +273,7 @@ async def vapi_webhook(
                 fallback_h = h_res.scalar_one_or_none()
                 if fallback_h:
                     h_id = fallback_h.id
-                    log.info("voice_fallback_household_used", household=fallback_h.name)
+                    log.info("voice_fallback_household_used", household=fallback_h.name, household_id=h_id)
                 break
 
         print(f"DEBUG: Vapi Webhook [{event_type}]. household_id: {h_id}, lang: {lang}, language_name: {language_name}")
@@ -329,17 +339,18 @@ async def vapi_webhook(
                         "role": "system",
                         "content": (
                             f"You are the WellSync health assistant for the {household_name} family. "
-                            f"Your household ID is: {{household_id}}. "
+                            f"Your household ID is: {h_id}. "
                             f"STRICT RULE: The user prefers {target_lang_name}. You MUST respond ONLY in {target_lang_name}. "
                             f"DYNAMIC CONTEXT: This household has children: {child_context_str}. "
                             "RULES FOR ANSWERING:\n"
-                            "1. FIRST: Call `get_household_dependents` to get the list of children with their IDs.\n"
+                            f"1. FIRST: Call `get_household_dependents` with household_id={h_id} to get the list of children with their IDs.\n"
                             "2. If the user asks about their child and they only have ONE child, use that child's ID.\n"
                             "3. If they have MULTIPLE children and don't specify, politely ask which child they mean.\n"
                             "4. If they ask about a specific name (e.g., 'Arnav'), use the ID returned by `get_household_dependents`.\n"
                             "5. NEVER speak or display IDs (dependent_id, household_id, UUIDs) to the user. Use only names.\n"
                             "6. If `get_household_dependents` returned a list of children, you HAVE those names—use them directly.\n"
                             "CRITICAL: You DO have access to their health records. Use tools to retrieve real data.\n"
+                            f"IMPORTANT: Always pass household_id={h_id} when calling any tool that requires it.\n"
                             "\n\nGoals:\n"
                             "- Discuss exact vaccination status by querying tools with the correct dependent ID.\n"
                             "- Record when a health event or vaccine has been completed by the user.\n"
@@ -557,7 +568,10 @@ async def _handle_tool_call(
         tool=tool_name,
         call_id=call_id,
         household_id=household_id,
+        household_id_type=type(household_id).__name__,
+        household_id_length=len(household_id) if household_id else 0,
         args_keys=list(args.keys()),
+        full_args=str(args)[:500],  # Log first 500 chars of args for debugging
     )
 
     if tool_name == "answer_health_question":
@@ -755,7 +769,8 @@ async def _get_dependents_for_household(household_id: str, session, call_id: str
             "dependents_query_start",
             call_id=call_id,
             household_id=household_id,
-            query="SELECT * FROM dependents WHERE household_id = ?",
+            household_id_type=type(household_id).__name__,
+            household_id_length=len(household_id) if household_id else 0,
         )
 
         result = await session.execute(select(Dependent).where(Dependent.household_id == household_id))
@@ -771,6 +786,7 @@ async def _get_dependents_for_household(household_id: str, session, call_id: str
         )
 
         if not dependents:
+            log.warning("no_dependents_found", household_id=household_id, call_id=call_id)
             return json.dumps({"dependents": [], "message": "No children found in this household."})
 
         children = []
