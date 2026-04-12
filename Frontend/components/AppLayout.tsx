@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Home, Camera, User, Activity, Bell, Search, Mic, Sparkles, Settings, Clock, LogOut, MapPin, Users } from 'lucide-react';
 import { VoiceFAB } from './VoiceFAB';
 import Link from 'next/link';

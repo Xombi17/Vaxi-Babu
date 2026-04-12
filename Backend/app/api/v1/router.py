@@ -4,14 +4,18 @@ from app.api.v1 import (
     ai,
     auth,
     dependents,
+    growth,
     health_tips,
     households,
     medicine,
+    medicines,
     notifications,
+    pregnancy,
     reminders,
     sync,
     timeline,
     voice,
+    vapi_voice,
 )
 
 router = APIRouter(prefix="/api/v1")
@@ -25,8 +29,12 @@ router.include_router(dependents.router)
 router.include_router(timeline.router)
 router.include_router(reminders.router)
 router.include_router(medicine.router)
+router.include_router(pregnancy.router)
+router.include_router(medicines.router)
+router.include_router(growth.router)
 router.include_router(ai.router)
 router.include_router(voice.router)
+router.include_router(vapi_voice.router)
 router.include_router(sync.router)
 router.include_router(health_tips.router)
 router.include_router(notifications.router)

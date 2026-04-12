@@ -1,130 +1,180 @@
-// Prisma schema - syncs with Backend SQLModel
-// Match Backend/app/models/* exactly
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-enum DependentType {
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model conversations {
+  id           String     @id @db.VarChar
+  household_id String     @db.VarChar
+  role         String     @db.VarChar
+  content      String     @db.VarChar
+  created_at   DateTime   @db.Timestamp(6)
+  households   households @relation(fields: [household_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([household_id], map: "ix_conversations_household_id")
+  @@index([id], map: "ix_conversations_id")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model dependents {
+  id                     String          @id @db.VarChar
+  household_id           String          @db.VarChar
+  name                   String          @db.VarChar(200)
+  type                   dependenttype
+  date_of_birth          DateTime        @db.Date
+  sex                    sex
+  expected_delivery_date DateTime?       @db.Date
+  notes                  String?         @db.VarChar(500)
+  created_at             DateTime        @db.Timestamp(6)
+  updated_at             DateTime        @db.Timestamp(6)
+  households             households      @relation(fields: [household_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  health_events          health_events[]
+  reminders              reminders[]
+
+  @@index([household_id], map: "ix_dependents_household_id")
+  @@index([id], map: "ix_dependents_id")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model health_events {
+  id               String        @id @db.VarChar
+  dependent_id     String        @db.VarChar
+  household_id     String        @db.VarChar
+  name             String        @db.VarChar(300)
+  schedule_key     String        @db.VarChar(100)
+  category         eventcategory
+  dose_number      Int?
+  due_date         DateTime      @db.Date
+  window_start     DateTime?     @db.Date
+  window_end       DateTime?     @db.Date
+  status           eventstatus
+  completed_at     DateTime?     @db.Timestamp(6)
+  completed_by     String?       @db.VarChar(200)
+  location         String?       @db.VarChar(200)
+  notes            String?       @db.VarChar(500)
+  schedule_version String        @db.VarChar(50)
+  created_at       DateTime      @db.Timestamp(6)
+  updated_at       DateTime      @db.Timestamp(6)
+  dependents       dependents    @relation(fields: [dependent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  households       households    @relation(fields: [household_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reminders        reminders[]
+
+  @@index([dependent_id], map: "ix_health_events_dependent_id")
+  @@index([household_id], map: "ix_health_events_household_id")
+  @@index([id], map: "ix_health_events_id")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model health_notes {
+  id           String     @id @db.VarChar
+  household_id String     @db.VarChar
+  note         String     @db.VarChar(1000)
+  created_at   DateTime   @db.Timestamp(6)
+  households   households @relation(fields: [household_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([household_id], map: "ix_health_notes_household_id")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model households {
+  id                String          @id @db.VarChar
+  username          String          @unique(map: "ix_households_username") @db.VarChar(50)
+  password_hash     String          @db.VarChar
+  auth_id           String?         @unique(map: "ix_households_auth_id") @db.Uuid
+  name              String          @db.VarChar(200)
+  primary_language  String          @db.VarChar(10)
+  user_type         usertype
+  village_town      String?         @db.VarChar(200)
+  state             String?         @db.VarChar(100)
+  district          String?         @db.VarChar(100)
+  preferences       Json?           @db.Json
+  last_onboarded_at DateTime?       @db.Timestamp(6)
+  created_at        DateTime        @db.Timestamp(6)
+  updated_at        DateTime        @db.Timestamp(6)
+  conversations     conversations[]
+  dependents        dependents[]
+  health_events     health_events[]
+  health_notes      health_notes[]
+  reminders         reminders[]
+
+  @@index([id], map: "ix_households_id")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model reminders {
+  id              String         @id @db.VarChar
+  health_event_id String?        @db.VarChar
+  dependent_id    String         @db.VarChar
+  household_id    String         @db.VarChar
+  reminder_type   remindertype
+  event_name      String         @db.VarChar(300)
+  medicine_name   String?        @db.VarChar(200)
+  dosage          String?        @db.VarChar(100)
+  frequency       String?        @db.VarChar(100)
+  due_date        DateTime       @db.Date
+  scheduled_time  String?        @db.VarChar(50)
+  status          reminderstatus
+  snoozed_until   DateTime?      @db.Date
+  created_at      DateTime       @db.Timestamp(6)
+  updated_at      DateTime       @db.Timestamp(6)
+  dependents      dependents     @relation(fields: [dependent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  health_events   health_events? @relation(fields: [health_event_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  households      households     @relation(fields: [household_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([dependent_id], map: "ix_reminders_dependent_id")
+  @@index([health_event_id], map: "ix_reminders_health_event_id")
+  @@index([household_id], map: "ix_reminders_household_id")
+  @@index([id], map: "ix_reminders_id")
+}
+
+enum dependenttype {
   child
   adult
   elder
   pregnant
 }
 
-enum Sex {
-  male
-  female
-  other
-}
-
-enum EventCategory {
+enum eventcategory {
   vaccination
   checkup
   vitamin
   reminder
 }
 
-enum EventStatus {
+enum eventstatus {
   upcoming
   due
   overdue
   completed
 }
 
-enum ReminderStatus {
+enum reminderstatus {
   pending
   snoozed
   acknowledged
   completed
 }
 
-model Household {
-  id               String   @id @default(uuid())
-  username         String?   @unique @db.VarChar(50)
-  password_hash    String?   @db.VarChar(255)
-  auth_id          String?   @unique @map("auth_id") @db.Uuid
-  name             String   @map("name") @db.VarChar(200)
-  primary_language String  @default("en") @map("primary_language") @db.VarChar(10)
-  village_town     String?  @map("village_town") @db.VarChar(200)
-  state            String?  @db.VarChar(100)
-  district         String?  @db.VarChar(100)
-  created_at       DateTime @default(now()) @map("created_at")
-  updated_at       DateTime @updatedAt @map("updated_at")
-
-  dependents      Dependent[]
-  health_events   HealthEvent[]
-  reminders       Reminder[]
-
-  @@map("households")
+enum remindertype {
+  health_event
+  medicine
+  checkup
+  vitamin
 }
 
-model Dependent {
-  id                  String         @id @default(uuid())
-  household_id        String         @map("household_id")
-  name                String        @db.VarChar(200)
-  type                DependentType @map("type")
-  date_of_birth       DateTime       @map("date_of_birth") @db.Date
-  sex                 Sex          @map("sex")
-  expected_delivery_date DateTime?   @map("expected_delivery_date") @db.Date
-  notes               String?       @db.VarChar(500)
-  created_at          DateTime      @default(now()) @map("created_at")
-  updated_at          DateTime      @updatedAt @map("updated_at")
-
-  household          Household    @relation(fields: [household_id], references: [id], onDelete: Cascade)
-  health_events     HealthEvent[]
-  reminders        Reminder[]
-
-  @@map("dependents")
+enum sex {
+  male
+  female
+  other
 }
 
-model HealthEvent {
-  id                String        @id @default(uuid())
-  dependent_id      String        @map("dependent_id")
-  household_id      String        @map("household_id")
-  name              String        @db.VarChar(300)
-  schedule_key      String        @map("schedule_key") @db.VarChar(100)
-  category          EventCategory @map("category")
-  dose_number       Int?
-  due_date          DateTime      @map("due_date") @db.Date
-  window_start      DateTime?     @map("window_start") @db.Date
-  window_end        DateTime?     @map("window_end") @db.Date
-  status            EventStatus  @map("status")
-  completed_at     DateTime?     @map("completed_at")
-  completed_by     String?       @map("completed_by") @db.VarChar(200)
-  location         String?        @map("location") @db.VarChar(200)
-  notes             String?        @db.VarChar(500)
-  schedule_version String        @map("schedule_version") @db.VarChar(50)
-  created_at        DateTime     @default(now()) @map("created_at")
-  updated_at        DateTime     @updatedAt @map("updated_at")
-
-  dependent        Dependent    @relation(fields: [dependent_id], references: [id], onDelete: Cascade)
-  household        Household    @relation(fields: [household_id], references: [id], onDelete: Cascade)
-  reminders        Reminder[]
-
-  @@map("health_events")
-}
-
-model Reminder {
-  id              String          @id @default(uuid())
-  health_event_id String          @map("health_event_id")
-  dependent_id   String          @map("dependent_id")
-  household_id   String          @map("household_id")
-  event_name     String          @db.VarChar(300)
-  due_date      DateTime        @map("due_date") @db.Date
-  status        ReminderStatus  @map("status")
-  snoozed_until  DateTime?       @map("snoozed_until") @db.Date
-  created_at    DateTime       @default(now()) @map("created_at")
-  updated_at    DateTime       @updatedAt @map("updated_at")
-
-  health_event  HealthEvent   @relation(fields: [health_event_id], references: [id], onDelete: Cascade)
-  dependent   Dependent    @relation(fields: [dependent_id], references: [id], onDelete: Cascade)
-  household   Household    @relation(fields: [household_id], references: [id], onDelete: Cascade)
-
-  @@map("reminders")
+enum usertype {
+  family
+  asha
+  anganwadi
+  health_worker
 }

@@ -1,7 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, User, Syringe, Stethoscope, Pill, Volume2, ShieldCheck, X, Award } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { Calendar, User, Syringe, Stethoscope, Pill, Volume2, ShieldCheck, X as XIcon, Award, Baby, Heart, TrendingUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
@@ -15,6 +15,19 @@ const categoryIcons = {
   checkup: Stethoscope,
   vitamin: Pill,
   reminder: Calendar,
+  prenatal_checkup: Baby,
+  medicine_dose: Pill,
+  growth_check: TrendingUp,
+};
+
+const categoryColors = {
+  vaccination: 'blue',
+  checkup: 'emerald',
+  vitamin: 'amber',
+  reminder: 'slate',
+  prenatal_checkup: 'pink',
+  medicine_dose: 'purple',
+  growth_check: 'teal',
 };
 
 const statusColors = {
@@ -41,14 +54,15 @@ const iconStyles = {
 export function TimelineFeed() {
   const searchParams = useSearchParams();
   const [showPass, setShowPass] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const householdId = getStoredHouseholdId();
   const currentDependentId = searchParams.get('dependent');
-  
+
   const { data: timelineData, isLoading } = useQuery({
-    queryKey: ['timeline', searchParams.get('dependent'), householdId],
+    queryKey: ['timeline', searchParams.get('dependent'), householdId, selectedCategory],
     queryFn: async () => {
       let actualId = searchParams.get('dependent');
-      
+
       if (!actualId) {
         const dependents = await getDependents(householdId || undefined);
         if (dependents.length > 0) {
@@ -58,13 +72,21 @@ export function TimelineFeed() {
         }
       }
 
-      return getTimeline(actualId);
+      return getTimeline(actualId, selectedCategory === 'all' ? undefined : selectedCategory);
     },
     staleTime: 5 * 60 * 1000,
   });
 
   const events = timelineData?.events || [];
   const dependentName = timelineData?.dependent_name || '';
+
+  const categories = [
+    { id: 'all', label: 'All', icon: Calendar },
+    { id: 'vaccination', label: 'Vaccines', icon: Syringe },
+    { id: 'prenatal_checkup', label: 'Pregnancy', icon: Baby },
+    { id: 'medicine_dose', label: 'Medicines', icon: Pill },
+    { id: 'growth_check', label: 'Growth', icon: TrendingUp },
+  ];
 
   const speak = (event: HealthEvent) => {
     if (typeof window === 'undefined') return;
@@ -151,7 +173,7 @@ export function TimelineFeed() {
             {dependentName ? `${dependentName}'s Timeline` : 'Health Timeline'}
           </h2>
           {dependentName && (
-            <button 
+            <button
               onClick={() => setShowPass(true)}
               className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-xl flex items-center gap-2 px-4 text-sm font-bold"
             >
@@ -161,6 +183,28 @@ export function TimelineFeed() {
           )}
         </div>
         <Link href="/timeline" className="text-blue-500 dark:text-blue-400 font-bold text-sm hover:text-blue-600 dark:hover:text-blue-300 transition-colors">View All</Link>
+      </div>
+
+      {/* Category Filter Tabs */}
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+        {categories.map((cat) => {
+          const Icon = cat.icon;
+          const isActive = selectedCategory === cat.id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                isActive
+                  ? 'bg-blue-500 text-white shadow-lg'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Icon size={16} strokeWidth={3} />
+              {cat.label}
+            </button>
+          );
+        })}
       </div>
 
       <AnimatePresence>
@@ -181,9 +225,9 @@ export function TimelineFeed() {
                 onClick={() => setShowPass(false)}
                 className="absolute -top-4 -right-4 z-[110] bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-lg text-slate-500 hover:text-rose-500 transition-all border border-slate-100 dark:border-slate-700 active:scale-90"
               >
-                <X size={24} strokeWidth={3} />
+                <XIcon size={24} strokeWidth={3} />
               </button>
-              <HealthPassCard dependentId={currentDependentId!} />
+              <HealthPassCard dependentId={currentDependentId!} onClose={() => setShowPass(false)} />
             </motion.div>
           </motion.div>
         )}

@@ -2,11 +2,11 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
-import { ShieldCheck, AlertCircle, Clock, Download, Share2, Award } from 'lucide-react';
+import { ShieldCheck, AlertCircle, Clock, Download, Share2, Award, X as XIcon } from 'lucide-react';
 import { getHealthPass, HealthPassResponse } from '../lib/api';
 import { motion } from 'framer-motion';
 
-export function HealthPassCard({ dependentId }: { dependentId: string }) {
+export function HealthPassCard({ dependentId, onClose }: { dependentId: string, onClose?: () => void }) {
   const { data, isLoading } = useQuery<HealthPassResponse>({
     queryKey: ['health-pass', dependentId],
     queryFn: () => getHealthPass(dependentId),
@@ -14,7 +14,16 @@ export function HealthPassCard({ dependentId }: { dependentId: string }) {
 
   if (isLoading || !data) {
     return (
-      <div className="w-full h-[600px] bg-[#f3f6fd] dark:bg-slate-800 rounded-[3rem] p-8 flex flex-col items-center justify-center">
+      <div className="w-full h-[600px] bg-[#f3f6fd] dark:bg-slate-800 rounded-[3rem] p-8 flex flex-col items-center justify-center relative">
+        {onClose && (
+          <button 
+            onClick={onClose}
+            className="absolute top-8 right-8 z-[110] bg-white dark:bg-slate-700 p-3 rounded-2xl shadow-lg text-slate-500 hover:text-rose-500 transition-all border border-slate-100 dark:border-slate-700 active:scale-95"
+            aria-label="Close"
+          >
+            <XIcon size={20} strokeWidth={3} />
+          </button>
+        )}
         <div className="w-32 h-32 rounded-full border-4 border-slate-200 border-t-blue-500 animate-spin mb-4" />
         <p className="text-slate-500 font-bold animate-pulse tracking-widest uppercase text-xs">Generating Encrypted ID</p>
       </div>
@@ -69,8 +78,19 @@ export function HealthPassCard({ dependentId }: { dependentId: string }) {
             <h3 className="text-5xl font-black text-slate-800 dark:text-white tracking-tighter mb-1 leading-none">{dependent.name}</h3>
             <p className="text-slate-400 font-bold text-sm tracking-wide">Dependent ID: {dependent.id.slice(0, 8)}</p>
           </div>
-          <div className="bg-white dark:bg-slate-700/50 p-6 rounded-[2.5rem] shadow-[8px_8px_16px_rgba(0,0,0,0.03),inset_2px_2px_4px_rgba(255,255,255,0.8)] dark:shadow-[inset_2px_2px_4px_rgba(255,255,255,0.05)]">
-            {getStatusIcon()}
+          <div className="flex gap-4 items-start">
+            <div className="bg-white dark:bg-slate-700/50 p-6 rounded-[2.5rem] shadow-[8px_8px_16px_rgba(0,0,0,0.03),inset_2px_2px_4px_rgba(255,255,255,0.8)] dark:shadow-[inset_2px_2px_4px_rgba(255,255,255,0.05)]">
+              {getStatusIcon()}
+            </div>
+            {onClose && (
+              <button 
+                onClick={onClose}
+                className="bg-white dark:bg-slate-700 p-4 rounded-2xl shadow-lg text-slate-500 hover:text-rose-500 transition-all border border-slate-100 dark:border-slate-700 active:scale-95"
+                title="Close Pass"
+              >
+                <XIcon size={24} strokeWidth={3} />
+              </button>
+            )}
           </div>
         </div>
 

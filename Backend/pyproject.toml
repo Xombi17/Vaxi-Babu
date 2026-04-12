@@ -22,6 +22,8 @@ dependencies = [
     "requests>=2.32.0",
     "passlib[bcrypt]>=1.7.4",
     "python-jose[cryptography]>=3.5.0",
+    "aiosqlite[dev]>=0.22.1",
+    "supabase>=2.0.0",
 ]
 
 [project.optional-dependencies]

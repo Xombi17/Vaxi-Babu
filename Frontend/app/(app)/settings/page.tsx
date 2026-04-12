@@ -1,11 +1,16 @@
 'use client';
 import { Settings, Globe, Bell, Mic, Download, LogOut } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('primary_language') || 'en';
+    }
+    return 'en';
+  });
 
   const handleSignOut = () => {
     localStorage.removeItem('token');
@@ -13,13 +18,6 @@ export default function SettingsPage() {
     localStorage.removeItem('family_name');
     router.push('/login');
   };
-
-  useEffect(() => {
-    const stored = localStorage.getItem('primary_language');
-    if (stored) {
-      setLanguage(stored);
-    }
-  }, []);
 
   const handleLanguageChange = (lang: string) => {
     setLanguage(lang);

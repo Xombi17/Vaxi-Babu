@@ -19,12 +19,14 @@ router = APIRouter(prefix="/timeline", tags=["Timeline"])
 @router.get("/{dependent_id}", response_model=TimelineResponse)
 async def get_timeline(
     dependent_id: str,
+    category: str | None = None,
     session: AsyncSession = Depends(get_session),
 ) -> TimelineResponse:
     """
     Get the full health timeline for a dependent.
     - Generates schedule if it doesn't exist yet
     - Refreshes event statuses (upcoming/due/overdue) on every call
+    - Optional category filter: vaccination, prenatal_checkup, medicine_dose, growth_check, etc.
     """
     dep = await session.get(Dependent, dependent_id)
     if not dep:
@@ -37,6 +39,10 @@ async def get_timeline(
         events = await refresh_event_statuses(dependent_id, session)
     else:
         events = await refresh_event_statuses(dependent_id, session)
+
+    # Apply category filter if provided
+    if category:
+        events = [e for e in events if e.category.value == category]
 
     next_due = get_next_due_event(events)
 

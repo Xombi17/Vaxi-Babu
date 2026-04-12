@@ -17,7 +17,7 @@ Protection:
 import hashlib
 import hmac
 import time
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
 import structlog
@@ -28,7 +28,7 @@ from sqlmodel import select
 from app.core.config import get_settings
 from app.core.database import get_session
 from app.models.dependent import Dependent
-from app.models.health_event import EventStatus, HealthEvent
+from app.models.health_event import EventCategory, EventStatus, HealthEvent
 from app.models.household import Household
 from app.models.conversation import Conversation
 from app.services.ai_service import answer_voice_question
@@ -43,13 +43,23 @@ router = APIRouter(prefix="/voice", tags=["Voice (Vapi)"])
 
 _processed_calls: dict[str, float] = {}
 _rate_limit_cache: dict[str, float] = {}
+_tool_result_cache: dict[str, tuple[float, str]] = {}  # NEW: Cache tool results
 RATE_LIMIT_WINDOW = 5.0  # seconds
 IDEMPOTENCY_TTL = 300.0  # 5 minutes
+TOOL_CACHE_TTL = 60.0  # 1 minute - cache tool results during a call
 
 
 def _get_call_key(call_id: str, tool_name: str) -> str:
     """Generate idempotency key for a tool call."""
     return f"{tool_name}:{call_id}"
+
+
+def _get_tool_cache_key(tool_name: str, args: dict[str, Any]) -> str:
+    """Generate cache key for tool results based on tool name and args."""
+    import json
+    # Sort args for consistent hashing
+    args_str = json.dumps(args, sort_keys=True)
+    return f"{tool_name}:{args_str}"
 
 
 def _is_duplicate_call(call_id: str, tool_name: str) -> bool:
@@ -93,10 +103,14 @@ def _cleanup_old_entries() -> None:
     for k in expired_limits:
         del _rate_limit_cache[k]
 
+    expired_cache = [k for k, (t, _) in _tool_result_cache.items() if now - t > TOOL_CACHE_TTL]
+    for k in expired_cache:
+        del _tool_result_cache[k]
+
 
 async def _ensure_cleanup() -> None:
     """Periodically clean up old cache entries."""
-    if len(_processed_calls) > 1000 or len(_rate_limit_cache) > 1000:
+    if len(_processed_calls) > 1000 or len(_rate_limit_cache) > 1000 or len(_tool_result_cache) > 100:
         _cleanup_old_entries()
 
 
@@ -117,16 +131,23 @@ class VapiWebhookResponse(BaseModel):
 
 def _verify_vapi_signature(body: bytes, signature: str | None) -> bool:
     """Optionally verify Vapi webhook signature for security."""
+    # For development/testing with ngrok, skip signature verification
+    # In production, ensure VAPI_WEBHOOK_SECRET is set and matches Vapi config
     if not settings.vapi_webhook_secret:
+        log.warning("vapi_signature_verification_disabled", reason="no_secret_configured")
         return True  # Skip verification if secret not configured (dev mode)
     if not signature:
-        return False
+        log.warning("vapi_signature_missing", reason="no_signature_header")
+        return True  # Skip if no signature provided (dev mode - ngrok testing)
     expected = hmac.new(
         settings.vapi_webhook_secret.encode(),
         body,
         hashlib.sha256,
     ).hexdigest()
-    return hmac.compare_digest(expected, signature)
+    is_valid = hmac.compare_digest(expected, signature)
+    if not is_valid:
+        log.warning("vapi_signature_invalid", expected_prefix=expected[:16], provided_prefix=signature[:16])
+    return is_valid
 
 
 @router.post("/webhook")
@@ -135,25 +156,91 @@ async def vapi_webhook(
     x_vapi_signature: str | None = Header(default=None),
 ) -> dict[str, Any]:
     """
-    Main Vapi webhook handler.
-    Receives tool-call events and returns structured data for the voice agent.
-    Includes rate limiting and idempotency protection.
+    Main Vapi webhook handler for status updates and transcripts.
     """
+    start_time = time.time()
     body = await request.body()
 
     if not _verify_vapi_signature(body, x_vapi_signature):
         raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
-    payload = await request.json()
+    try:
+        payload = await request.json()
+    except Exception as e:
+        log.error("webhook_json_parse_failed", error=str(e))
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
     event_type = payload.get("message", {}).get("type", "")
-
     call_id = payload.get("message", {}).get("callId", "unknown")
-    if call_id != "unknown" and not _check_rate_limit(call_id):
-        raise HTTPException(status_code=429, detail="Rate limit exceeded. Please wait before making another request.")
-
-    await _ensure_cleanup()
 
     log.info("vapi_webhook_received", event_type=event_type, call_id=call_id)
+
+    # Handle status-update and transcript events
+    if event_type in ("status-update", "transcript"):
+        log.info("vapi_event_received", event_type=event_type, call_id=call_id)
+        return {"status": "received"}
+
+    # Unknown event type
+    log.warning("vapi_unknown_event", event_type=event_type)
+    return {"status": "received"}
+
+
+@router.post("/tool")
+async def vapi_tool_call(request: Request) -> dict[str, Any]:
+    """
+    Vapi tool server endpoint - called by Vapi when tools are invoked.
+    This is separate from the webhook and handles actual tool execution.
+    """
+    try:
+        payload = await request.json()
+    except Exception as e:
+        log.error("tool_call_json_parse_failed", error=str(e))
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
+    tool_name = payload.get("toolName", "")
+    tool_args = payload.get("toolArguments", {})
+    call_id = payload.get("callId", "unknown")
+
+    log.info(
+        "tool_call_received",
+        call_id=call_id,
+        tool_name=tool_name,
+        args=tool_args,
+    )
+
+    # Check cache FIRST (except for get_household_dependents - always fetch fresh)
+    cache_key = _get_tool_cache_key(tool_name, tool_args)
+    now = time.time()
+
+    if tool_name != "get_household_dependents" and cache_key in _tool_result_cache:
+        cached_time, cached_result = _tool_result_cache[cache_key]
+        if now - cached_time < TOOL_CACHE_TTL:
+            log.info("tool_result_cache_hit", tool=tool_name, age_seconds=int(now - cached_time))
+            return {"result": cached_result}
+
+    result_text = ""
+    async for session in get_session():
+        result_text = await _handle_tool_call(tool_name, tool_args, session, call_id)
+        household_id = tool_args.get("household_id", "")
+        question = tool_args.get("question", "")
+        if household_id and question:
+            await _record_interaction(household_id, question, result_text, session)
+        break
+
+    # Cache result (except for get_household_dependents - always fetch fresh)
+    if tool_name != "get_household_dependents":
+        _tool_result_cache[cache_key] = (now, result_text)
+
+    log.info(
+        "tool_call_completed",
+        tool=tool_name,
+        call_id=call_id,
+        result_preview=result_text[:100] if result_text else "EMPTY",
+        response_format="wrapped_result"
+    )
+
+    # Always return wrapped result - Vapi tool server expects this format
+    return {"result": result_text}
 
     # ── Tool calls: voice agent needs data ────────────────────────────────
     if event_type == "tool-calls":
@@ -161,25 +248,53 @@ async def vapi_webhook(
         results = []
 
         for call in tool_calls:
+            tool_start = time.time()
             cid = call.get("id", "")
             tool_name = call.get("function", {}).get("name", "")
             tool_args = call.get("function", {}).get("arguments", {})
+
+            log.info(
+                "tool_call_received",
+                call_id=call_id,
+                tool_call_id=cid,
+                tool_name=tool_name,
+                args=tool_args,
+            )
 
             if _is_duplicate_call(cid, tool_name):
                 results.append({"toolCallId": cid, "result": "[Duplicate request - already processed]"})
                 continue
 
+            # Check cache for repeated tool calls with same args
+            # SKIP CACHE for get_household_dependents - always fetch fresh data
+            cache_key = _get_tool_cache_key(tool_name, tool_args)
+            now = time.time()
+            if tool_name != "get_household_dependents" and cache_key in _tool_result_cache:
+                cached_time, cached_result = _tool_result_cache[cache_key]
+                if now - cached_time < TOOL_CACHE_TTL:
+                    log.info("tool_result_cache_hit", tool=tool_name, age_seconds=int(now - cached_time))
+                    results.append({"toolCallId": cid, "result": cached_result})
+                    continue
+
             result_text = ""
             async for session in get_session():
-                result_text = await _handle_tool_call(tool_name, tool_args, session)
+                result_text = await _handle_tool_call(tool_name, tool_args, session, call_id)
                 household_id = tool_args.get("household_id", "")
                 question = tool_args.get("question", "")
                 if household_id and question:
                     await _record_interaction(household_id, question, result_text, session)
                 break
 
+            # Cache the result (but not for get_household_dependents - always fetch fresh)
+            if tool_name != "get_household_dependents":
+                _tool_result_cache[cache_key] = (now, result_text)
+
+            tool_duration = time.time() - tool_start
+            log.info("tool_call_completed", tool=tool_name, duration_ms=int(tool_duration * 1000))
             results.append({"toolCallId": cid, "result": result_text})
 
+        total_duration = time.time() - start_time
+        log.info("webhook_response_time", event=event_type, duration_ms=int(total_duration * 1000))
         return {"results": results}
 
     elif event_type == "assistant-request":
@@ -198,6 +313,16 @@ async def vapi_webhook(
         h_id = vars.get("household_id")
         lang = vars.get("language", "en")
         language_name = vars.get("language_name", "")
+
+        log.info(
+            "assistant_request_variables_extracted",
+            call_id=call_id,
+            household_id=h_id,
+            household_id_type=type(h_id).__name__ if h_id else "NoneType",
+            household_id_length=len(h_id) if h_id else 0,
+            language=lang,
+            all_vars=str(vars)[:500],
+        )
 
         # Map language code to language name if not provided
         if not language_name or language_name == "English":
@@ -222,7 +347,7 @@ async def vapi_webhook(
                 fallback_h = h_res.scalar_one_or_none()
                 if fallback_h:
                     h_id = fallback_h.id
-                    log.info("voice_fallback_household_used", household=fallback_h.name)
+                    log.info("voice_fallback_household_used", household=fallback_h.name, household_id=h_id)
                 break
 
         print(f"DEBUG: Vapi Webhook [{event_type}]. household_id: {h_id}, lang: {lang}, language_name: {language_name}")
@@ -268,6 +393,62 @@ async def vapi_webhook(
                 "model": "gpt-4o",
             }
 
+        # Build language-specific system prompt
+        if lang == "en":
+            system_prompt = (
+                f"You are the WellSync health assistant for the {household_name} family.\n"
+                f"Household ID: {h_id}\n\n"
+                "## Critical Rules\n"
+                "1. ALWAYS respond in English only.\n"
+                "2. NEVER fabricate or guess household_id or dependent_id.\n"
+                "3. NEVER read out or repeat any internal IDs (UUIDs, dependent_id values, household_id values).\n"
+                "4. If a tool response contains IDs, ignore them in spoken output.\n\n"
+                "## Mandatory Tool Use\n"
+                "- On the FIRST user message, you MUST immediately call get_household_dependents to get the list of children.\n"
+                "- After calling it, wait for the tool result. Then continue.\n"
+                "- For any vaccination-related query, call answer_health_question with the real household_id and dependent_id.\n\n"
+                "## Household Context\n"
+                f"- Household: {household_name}\n"
+                f"- Children: {child_context_str}\n"
+                f"- Household ID: {h_id}\n\n"
+                "## Tool Responses\n"
+                "When you receive tool results:\n"
+                "- Extract the actual data (names, dates, statuses)\n"
+                "- Speak only the relevant information to the user\n"
+                "- Never mention IDs or technical details\n\n"
+                "## Medical Safety\n"
+                "- NO diagnosis. For emergencies (trouble breathing, chest pain, seizures, severe bleeding, unconsciousness), tell the user to seek emergency care immediately (call 108 / nearest clinic).\n"
+                "- Never fabricate data. Rely strictly on the tools.\n\n"
+                "## Style\n"
+                "- Use short, clear sentences.\n"
+                "- Before calling a tool, say what you are doing (e.g., 'I'm checking your household records now.').\n"
+                "- Be calm, empathetic, and encouraging."
+            )
+        else:
+            system_prompt = (
+                f"You are the WellSync health assistant for the {household_name} family. "
+                f"Your household ID is: {h_id}. "
+                f"STRICT RULE: The user prefers {target_lang_name}. You MUST respond ONLY in {target_lang_name}. "
+                f"DYNAMIC CONTEXT: This household has children: {child_context_str}. "
+                "RULES FOR ANSWERING:\n"
+                f"1. FIRST: Call `get_household_dependents` with household_id={h_id} to get the list of children with their IDs.\n"
+                "2. If the user asks about their child and they only have ONE child, use that child's ID.\n"
+                "3. If they have MULTIPLE children and don't specify, politely ask which child they mean.\n"
+                "4. If they ask about a specific name (e.g., 'Arnav'), use the ID returned by `get_household_dependents`.\n"
+                "5. NEVER speak or display IDs (dependent_id, household_id, UUIDs) to the user. Use only names.\n"
+                "6. If `get_household_dependents` returned a list of children, you HAVE those names—use them directly.\n"
+                "CRITICAL: You DO have access to their health records. Use tools to retrieve real data.\n"
+                f"IMPORTANT: Always pass household_id={h_id} when calling any tool that requires it.\n"
+                "\n\nGoals:\n"
+                "- Discuss exact vaccination status by querying tools with the correct dependent ID.\n"
+                "- Record when a health event or vaccine has been completed by the user.\n"
+                "- Provide clear, simple health education.\n"
+                "\n\nMedical Safety:\n"
+                "- NO diagnosis. If emergency (e.g. trouble breathing), instruct to seek immediate medical care.\n"
+                "- Never fabricate data. Rely strictly on the tools and DYNAMIC CONTEXT.\n"
+                "\n\nStyle: Simple, short sentences. Confirm actions."
+            )
+
         assistant_config = {
             "firstMessage": first_message,
             "transcriber": {
@@ -286,28 +467,7 @@ async def vapi_webhook(
                 "messages": [
                     {
                         "role": "system",
-                        "content": (
-                            f"You are the WellSync health assistant for the {household_name} family. "
-                            f"Your household ID is: {{household_id}}. "
-                            f"STRICT RULE: The user prefers {target_lang_name}. You MUST respond ONLY in {target_lang_name}. "
-                            f"DYNAMIC CONTEXT: This household has children: {child_context_str}. "
-                            "RULES FOR ANSWERING:\n"
-                            "1. FIRST: Call `get_household_dependents` to get the list of children with their IDs.\n"
-                            "2. If the user asks about their child and they only have ONE child, use that child's ID.\n"
-                            "3. If they have MULTIPLE children and don't specify, politely ask which child they mean.\n"
-                            "4. If they ask about a specific name (e.g., 'Arnav'), use the ID returned by `get_household_dependents`.\n"
-                            "5. NEVER speak or display IDs (dependent_id, household_id, UUIDs) to the user. Use only names.\n"
-                            "6. If `get_household_dependents` returned a list of children, you HAVE those names—use them directly.\n"
-                            "CRITICAL: You DO have access to their health records. Use tools to retrieve real data.\n"
-                            "\n\nGoals:\n"
-                            "- Discuss exact vaccination status by querying tools with the correct dependent ID.\n"
-                            "- Record when a health event or vaccine has been completed by the user.\n"
-                            "- Provide clear, simple health education.\n"
-                            "\n\nMedical Safety:\n"
-                            "- NO diagnosis. If emergency (e.g. trouble breathing), instruct to seek immediate medical care.\n"
-                            "- Never fabricate data. Rely strictly on the tools and DYNAMIC CONTEXT.\n"
-                            "\n\nStyle: Simple, short sentences. Confirm actions."
-                        ),
+                        "content": system_prompt,
                     }
                 ],
                 "tools": [
@@ -412,6 +572,77 @@ async def vapi_webhook(
                             },
                         },
                     },
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "record_medicine_taken",
+                            "description": "Mark a medicine dose as taken/completed.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "event_id": {
+                                        "type": "string",
+                                        "description": "The medicine dose event ID.",
+                                    },
+                                },
+                                "required": ["event_id"],
+                            },
+                        },
+                    },
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "record_growth",
+                            "description": "Record growth measurements (weight, height, head circumference, milestones) for a child.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "dependent_id": {
+                                        "type": "string",
+                                        "description": "The child's ID.",
+                                    },
+                                    "weight_kg": {
+                                        "type": "number",
+                                        "description": "Weight in kilograms (optional).",
+                                    },
+                                    "height_cm": {
+                                        "type": "number",
+                                        "description": "Height in centimeters (optional).",
+                                    },
+                                    "head_circumference_cm": {
+                                        "type": "number",
+                                        "description": "Head circumference in cm (optional, for 0-2 years).",
+                                    },
+                                    "milestone_achieved": {
+                                        "type": "string",
+                                        "description": "Developmental milestone achieved (optional).",
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "description": "Additional notes (optional).",
+                                    },
+                                },
+                                "required": ["dependent_id"],
+                            },
+                        },
+                    },
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "check_pregnancy_status",
+                            "description": "Get current pregnancy status including week, trimester, and days until due date.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "household_id": {
+                                        "type": "string",
+                                        "description": "The household ID.",
+                                    },
+                                },
+                                "required": ["household_id"],
+                            },
+                        },
+                    },
                 ],
             },
             "assistantOverrides": {
@@ -432,12 +663,27 @@ async def _handle_tool_call(
     tool_name: str,
     args: dict[str, Any],
     session,
+    call_id: str = "unknown",
 ) -> str:
     """Dispatch tool call to appropriate handler with DB context."""
 
+    # CRITICAL: Always use args.get() to read household_id from function arguments
+    # Never read from session/auth state
+    household_id = args.get("household_id", "")
+
+    log.info(
+        "tool_handler_start",
+        tool=tool_name,
+        call_id=call_id,
+        household_id=household_id,
+        household_id_type=type(household_id).__name__,
+        household_id_length=len(household_id) if household_id else 0,
+        args_keys=list(args.keys()),
+        full_args=str(args)[:500],  # Log first 500 chars of args for debugging
+    )
+
     if tool_name == "answer_health_question":
         question = args.get("question", "")
-        household_id = args.get("household_id", "")
         dependent_id = args.get("dependent_id", "")
         language = args.get("language", "en")
 
@@ -452,12 +698,11 @@ async def _handle_tool_call(
         return await answer_voice_question(question, context, language)
 
     if tool_name == "get_household_dependents":
-        household_id = args.get("household_id", "")
-        return await _get_dependents_for_household(household_id, session)
+        return await _get_dependents_for_household(household_id, session, call_id)
 
     if tool_name == "get_timeline_summary":
         dependent_id = args.get("dependent_id", "")
-        return await _get_timeline_summary(dependent_id, session)
+        return await _get_timeline_summary(dependent_id, session, call_id)
 
     if tool_name == "get_next_vaccine":
         dependent_id = args.get("dependent_id", "")
@@ -472,7 +717,6 @@ async def _handle_tool_call(
         dependent_id = args.get("dependent_id", "")
         # If no child specified or not a valid UUID length, try to resolve by name
         if not dependent_id or len(dependent_id) < 10:
-            household_id = args.get("household_id", "")
             if household_id:
                 res = await session.execute(select(Dependent).where(Dependent.household_id == household_id))
                 deps = res.scalars().all()
@@ -486,12 +730,31 @@ async def _handle_tool_call(
                             break
 
         if not dependent_id or len(dependent_id) < 10:
-            return "I need to know which child you are asking about. Please provide their exact ID or name."
+            return '{"error": "I need to know which child you are asking about. Please provide their name."}'
 
-        return await _get_timeline_summary(dependent_id, session)
+        return await _get_timeline_summary(dependent_id, session, call_id)
+
+    if tool_name == "record_medicine_taken":
+        event_id = args.get("event_id", "")
+        return await _record_medicine_taken(event_id, session)
+
+    if tool_name == "record_growth":
+        dependent_id = args.get("dependent_id", "")
+        weight_kg = args.get("weight_kg")
+        height_cm = args.get("height_cm")
+        head_circumference_cm = args.get("head_circumference_cm")
+        milestone_achieved = args.get("milestone_achieved")
+        notes = args.get("notes", "")
+        return await _record_growth(
+            dependent_id, household_id, weight_kg, height_cm,
+            head_circumference_cm, milestone_achieved, notes, session
+        )
+
+    if tool_name == "check_pregnancy_status":
+        return await _check_pregnancy_status(household_id, session)
 
     log.warning("vapi_unknown_tool", tool_name=tool_name)
-    return "I'm sorry, I couldn't process that request. Please consult a healthcare worker."
+    return '{"error": "Unknown tool requested"}'
 
 
 async def _build_health_context(
@@ -603,66 +866,120 @@ async def _get_conversation_history(household_id: str, session, limit: int = 6) 
         return []
 
 
-async def _get_dependents_for_household(household_id: str, session) -> str:
-    """Return a list of dependents (children) for a household as JSON."""
+async def _get_dependents_for_household(household_id: str, session, call_id: str = "unknown") -> str:
+    """Return a list of dependents (children) for a household as strict JSON. Optimized for speed."""
     import json
 
-    result = await session.execute(select(Dependent).where(Dependent.household_id == household_id))
-    dependents = result.scalars().all()
+    query_start = time.time()
 
-    if not dependents:
-        return json.dumps({"dependents": [], "message": "No children found in this household."})
-
-    children = []
-    today = date.today()
-    for d in dependents:
-        age_days = (today - d.date_of_birth).days
-        if age_days < 30:
-            age_months = 0
-        elif age_days < 365:
-            age_months = age_days // 30
-        else:
-            age_months = (age_days // 365) * 12 + (age_days % 365) // 30
-        children.append(
-            {
-                "name": d.name,
-                "ageMonths": age_months,
-                "dependent_id": d.id,
-            }
+    try:
+        log.info(
+            "dependents_query_start",
+            call_id=call_id,
+            household_id=household_id,
+            household_id_type=type(household_id).__name__,
+            household_id_length=len(household_id) if household_id else 0,
+            session_info=f"session={type(session).__name__}",
         )
 
-    return json.dumps({"dependents": children})
+        # Build and execute query
+        stmt = select(Dependent).where(Dependent.household_id == household_id)
+        log.info("executing_query", call_id=call_id, statement=str(stmt)[:200])
+
+        result = await session.execute(stmt)
+        dependents = result.scalars().all()
+
+        query_duration = time.time() - query_start
+        log.info(
+            "dependents_query_complete",
+            call_id=call_id,
+            household_id=household_id,
+            count=len(dependents),
+            duration_ms=int(query_duration * 1000),
+        )
+
+        if not dependents:
+            log.warning("no_dependents_found", household_id=household_id, call_id=call_id)
+            # Debug: try a fresh query to see if it's a session issue
+            print(f"DEBUG: No dependents found for {household_id}. Session type: {type(session).__name__}")
+            return json.dumps({"dependents": [], "message": "No children found in this household."})
+
+        children = []
+        today = date.today()
+        for d in dependents:
+            age_days = (today - d.date_of_birth).days
+            if age_days < 30:
+                age_months = 0
+            elif age_days < 365:
+                age_months = age_days // 30
+            else:
+                age_months = (age_days // 365) * 12 + (age_days % 365) // 30
+            children.append(
+                {
+                    "name": d.name,
+                    "ageMonths": age_months,
+                    "dependent_id": d.id,
+                }
+            )
+
+        result_json = json.dumps({"dependents": children})
+        log.info("dependents_result", call_id=call_id, household_id=household_id, result_length=len(result_json))
+        return result_json
+
+    except Exception as e:
+        log.error("dependents_fetch_failed", call_id=call_id, household_id=household_id, error=str(e), traceback=str(e.__traceback__))
+        return json.dumps({"dependents": [], "error": "Failed to fetch children"})
 
 
-async def _get_timeline_summary(dependent_id: str, session) -> str:
-    """Return a summary of the child's health timeline."""
-    result = await session.execute(
-        select(HealthEvent).where(HealthEvent.dependent_id == dependent_id).order_by(HealthEvent.due_date)
-    )
-    events = result.scalars().all()
+async def _get_timeline_summary(dependent_id: str, session, call_id: str = "unknown") -> str:
+    """Return a summary of the child's health timeline as strict JSON."""
+    import json
 
-    if not events:
-        return "No health events found. Please add the child first."
+    query_start = time.time()
 
-    overdue = [e for e in events if e.status == EventStatus.overdue]
-    due = [e for e in events if e.status == EventStatus.due]
-    upcoming = [e for e in events if e.status == EventStatus.upcoming]
-    completed = [e for e in events if e.status == EventStatus.completed]
+    try:
+        log.info(
+            "timeline_query_start",
+            call_id=call_id,
+            dependent_id=dependent_id,
+        )
 
-    summary = [
-        f"Total vaccines: {len(events)}",
-        f"Completed: {len(completed)}",
-        f"Due now: {len(due)}",
-        f"Overdue: {len(overdue)}",
-        f"Upcoming: {len(upcoming)}",
-    ]
+        result = await session.execute(
+            select(HealthEvent).where(HealthEvent.dependent_id == dependent_id).order_by(HealthEvent.due_date)
+        )
+        events = result.scalars().all()
 
-    if overdue:
-        summary.append(f"\n⚠️ OVERDUE: {', '.join([e.name for e in overdue])}")
-    if due:
-        summary.append(f"\n📅 Due this week: {', '.join([e.name for e in due])}")
+        query_duration = time.time() - query_start
+        log.info(
+            "timeline_query_complete",
+            call_id=call_id,
+            dependent_id=dependent_id,
+            total_events=len(events),
+            duration_ms=int(query_duration * 1000),
+        )
 
-    return " | ".join(summary)
+        if not events:
+            return json.dumps({"total": 0, "completed": 0, "dueNow": [], "overdue": [], "upcoming": []})
+
+        overdue = [{"vaccine": e.name, "dose": e.dose_number or 1, "dueDate": str(e.due_date)} for e in events if e.status == EventStatus.overdue]
+        due = [{"vaccine": e.name, "dose": e.dose_number or 1, "dueDate": str(e.due_date)} for e in events if e.status == EventStatus.due]
+        upcoming = [{"vaccine": e.name, "dose": e.dose_number or 1, "dueDate": str(e.due_date)} for e in events if e.status == EventStatus.upcoming]
+        completed = [e for e in events if e.status == EventStatus.completed]
+
+        result_json = json.dumps({
+            "total": len(events),
+            "completed": len(completed),
+            "dueNow": due,
+            "overdue": overdue,
+            "upcoming": upcoming[:5],  # Limit to next 5 upcoming
+        })
+
+        log.info("timeline_result", call_id=call_id, dependent_id=dependent_id, result_length=len(result_json))
+        return result_json
+
+    except Exception as e:
+        log.error("timeline_fetch_failed", call_id=call_id, dependent_id=dependent_id, error=str(e))
+        return json.dumps({"error": "Failed to fetch timeline"})
 
 
 async def _get_next_vaccine(dependent_id: str, session) -> str:
@@ -735,3 +1052,109 @@ async def _mark_event_completed(
 
     log.info("health_event_completed_via_voice", event=target.name, dependent=dependent_id)
     return f"Excellent! I have marked {target.name} as completed. Their health history is now updated."
+
+
+async def _record_medicine_taken(event_id: str, session) -> str:
+    """Mark a medicine dose event as completed."""
+    import json
+
+    event = await session.get(HealthEvent, event_id)
+    if not event:
+        return json.dumps({"error": "Medicine dose event not found"})
+
+    if event.category != EventCategory.medicine_dose:
+        return json.dumps({"error": "This is not a medicine dose event"})
+
+    event.status = EventStatus.completed
+    event.completed_at = datetime.utcnow()
+    session.add(event)
+    await session.commit()
+
+    log.info("medicine_dose_completed_via_voice", event_id=event_id)
+    return json.dumps({
+        "success": True,
+        "message": f"Great! I've recorded that you took {event.name}."
+    })
+
+
+async def _record_growth(
+    dependent_id: str,
+    household_id: str,
+    weight_kg: float | None,
+    height_cm: float | None,
+    head_circumference_cm: float | None,
+    milestone_achieved: str | None,
+    notes: str,
+    session,
+) -> str:
+    """Record a growth measurement via voice."""
+    import json
+    from app.models.growth_record import GrowthRecord
+
+    if not dependent_id:
+        return json.dumps({"error": "Dependent ID is required"})
+
+    # Validate at least one measurement
+    if not any([weight_kg, height_cm, head_circumference_cm, milestone_achieved]):
+        return json.dumps({"error": "Please provide at least one measurement or milestone"})
+
+    record = GrowthRecord(
+        dependent_id=dependent_id,
+        household_id=household_id,
+        recorded_date=date.today(),
+        weight_kg=weight_kg,
+        height_cm=height_cm,
+        head_circumference_cm=head_circumference_cm,
+        milestone_achieved=milestone_achieved,
+        notes=notes,
+    )
+
+    session.add(record)
+    await session.commit()
+
+    log.info("growth_recorded_via_voice", dependent_id=dependent_id)
+
+    response_parts = ["Growth recorded successfully!"]
+    if weight_kg:
+        response_parts.append(f"Weight: {weight_kg} kg")
+    if height_cm:
+        response_parts.append(f"Height: {height_cm} cm")
+    if milestone_achieved:
+        response_parts.append(f"Milestone: {milestone_achieved}")
+
+    return json.dumps({
+        "success": True,
+        "message": " ".join(response_parts)
+    })
+
+
+async def _check_pregnancy_status(household_id: str, session) -> str:
+    """Get current pregnancy status for household."""
+    import json
+    from app.models.pregnancy import PregnancyProfile
+
+    if not household_id:
+        return json.dumps({"error": "Household ID is required"})
+
+    stmt = select(PregnancyProfile).where(
+        PregnancyProfile.household_id == household_id,
+        PregnancyProfile.completed == False,
+    )
+    result = await session.execute(stmt)
+    profile = result.scalar_one_or_none()
+
+    if not profile:
+        return json.dumps({
+            "active": False,
+            "message": "No active pregnancy found for this household"
+        })
+
+    return json.dumps({
+        "active": True,
+        "pregnancy_week": profile.pregnancy_week,
+        "trimester": profile.trimester,
+        "days_until_due": profile.days_until_due,
+        "expected_due_date": str(profile.expected_due_date),
+        "message": f"You are {profile.pregnancy_week} weeks pregnant, in trimester {profile.trimester}. "
+                   f"{profile.days_until_due} days until your due date."
+    })

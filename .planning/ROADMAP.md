@@ -6,7 +6,7 @@
 
 | Metric | Value |
 |--------|-------|
-| Phases | 5 |
+| Phases | 6 |
 | Requirements | 33 |
 | v1 Coverage | 100% |
 
@@ -14,11 +14,12 @@
 
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
-| 1 | Backend Foundation | Get the local backend stable, testable, and fully wired | HH-01 to HL-09 | 10 |
+| 1 | Backend Foundation | Get the local backend stable, testable, and fully wired | HH-01 to HL-09 | ✅ |
 | 2 | Frontend Core | Build Next.js app with auth, household UI, and running-page polish | HH-01 to HL-09 | 9 |
 | 3 | Voice & AI | Integrate Vapi voice, local voice testing, and AI explanations | VC-01 to EX-04, MS-01 to MS-06 | 9 |
 | 4 | Offline PWA | Add offline-first capabilities and sync | OF-01 to OF-04 | 8 |
 | 5 | Deployment & Launch | Deploy backend to Hugging Face and frontend to Vercel, then verify end-to-end | release/integration | 8 |
+| 6 | Database Migration | Migrate from Neon to Supabase to resolve ISP DNS issues | Infrastructure | ✅ |
 
 ---
 
@@ -29,7 +30,9 @@
 **Plans:** 1
 
 Plans:
-- [ ] 01-01-PLAN.md — Stabilize backend startup, migrations, household/dependent/timeline contracts, and the local voice webhook path
+- [x] 01-01-PLAN.md — Stabilize backend startup, migrations, household/dependent/timeline contracts, and the local voice webhook path
+
+**Status:** Completed ✅
 
 **Requirements:**
 - HH-01 through HH-04 (Household CRUD)
@@ -37,16 +40,16 @@ Plans:
 - HL-01 through HL-09 (Health timeline operations)
 
 **Success Criteria:**
-1. Local backend starts cleanly with validated environment variables
-2. Alembic migrations run successfully and create all tables
-3. Pytest suite covers all API endpoints with 80%+ coverage
-4. Household and dependent creation works end-to-end in the backend
-5. Vapi webhook endpoint (`/api/v1/voice/webhook`) handles incoming voice sessions locally
-6. Health timeline generation works for any child DOB
-7. Event status computation (upcoming/due/overdue/completed) is accurate
-8. API returns proper error responses for invalid requests
-9. Database session management handles concurrent requests
-10. API documentation (OpenAPI) is accurate and complete
+1. Local backend starts cleanly with validated environment variables ✅
+2. Alembic migrations run successfully and create all tables ✅
+3. Pytest suite covers all API endpoints with 80%+ coverage ✅
+4. Household and dependent creation works end-to-end in the backend ✅
+5. Vapi webhook endpoint (`/api/v1/voice/webhook`) handles incoming voice sessions locally ✅
+6. Health timeline generation works for any child DOB ✅
+7. Event status computation (upcoming/due/overdue/completed) is accurate ✅
+8. API returns proper error responses for invalid requests ✅
+9. Database session management handles concurrent requests ✅
+10. API documentation (OpenAPI) is accurate and complete ✅
 
 ---
 
@@ -130,6 +133,26 @@ Plans:
 6. Environment variables and secrets are configured correctly in both deployments
 7. Smoke tests pass against the deployed stack
 8. Deployment notes and rollback steps are documented
+
+---
+
+## Phase 6: Database Migration (Supabase)
+
+**Goal:** Move the database backend from Neon to Supabase to bypass ISP-level DNS blocking of Neon subdomains, and clean up Frontend Prisma dependencies.
+
+**Plans:** 1
+
+Plans:
+- [x] 06-migrate-database-from-neon-to-supabase/PLAN.md — Migrate to Supabase, update env vars, and remove Prisma from Frontend
+
+**Status:** Completed ✅
+
+**Success Criteria:**
+1. Backend connects to Supabase via direct connection (db.PROJECT_REF.supabase.co)
+2. SQLModel auto-creates all 5 tables at startup
+3. Frontend Prisma dependencies removed (no longer needed, frontend uses Backend REST API)
+4. Frontend `.env` cleaned of direct DB URLs
+5. App runs on localhost:3000 (frontend) and localhost:8080 (backend) with full data flow capability
 
 ---
 

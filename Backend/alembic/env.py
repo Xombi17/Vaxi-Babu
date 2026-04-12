@@ -8,6 +8,14 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 from app.core.config import get_settings
+from app.models import (
+    Household, 
+    Dependent, 
+    HealthEvent, 
+    Reminder, 
+    Conversation, 
+    HealthNote
+)
 from sqlmodel import SQLModel
 
 config = context.config
@@ -73,16 +81,4 @@ else:
     run_migrations_online()
 
 
-def _populate_metadata():
-    """Force SQLModel to discover all models."""
-    from app.models import (
-        Household, 
-        Dependent, 
-        HealthEvent, 
-        Reminder, 
-        Conversation, 
-        HealthNote
-    ) # noqa: F401
-
-
-_populate_metadata()
+# Metadata is already populated via top-level imports

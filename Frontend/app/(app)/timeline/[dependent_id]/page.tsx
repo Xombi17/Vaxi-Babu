@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
-import { Syringe, Stethoscope, Pill, Volume2, Calendar, CheckCircle2, User, MapPin, Sparkles } from 'lucide-react';
+import { Syringe, Stethoscope, Pill, Volume2, Calendar, CheckCircle2, User, MapPin, Sparkles, Baby, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getTimeline, getDependents, type HealthEvent, type Dependent } from '@/lib/api';
 
@@ -20,6 +20,9 @@ const iconMap = {
   checkup: Stethoscope,
   vitamin: Pill,
   reminder: Calendar,
+  prenatal_checkup: Baby,
+  medicine_dose: Pill,
+  growth_check: TrendingUp,
 };
 
 // Convert API event to UI event shape
@@ -67,6 +70,15 @@ export default function TimelinePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  const categories = [
+    { id: 'all', label: 'All', icon: Calendar },
+    { id: 'vaccination', label: 'Vaccines', icon: Syringe },
+    { id: 'prenatal_checkup', label: 'Pregnancy', icon: Baby },
+    { id: 'medicine_dose', label: 'Medicines', icon: Pill },
+    { id: 'growth_check', label: 'Growth', icon: TrendingUp },
+  ];
 
   useEffect(() => {
     async function loadTimeline() {
@@ -77,7 +89,7 @@ export default function TimelinePage() {
         if (dep) {
           setDependent(dep);
         }
-        const healthEvents = await getTimeline(dependentId);
+        const healthEvents = await getTimeline(dependentId, selectedCategory === 'all' ? undefined : selectedCategory);
         setEvents(healthEvents.events.map((e) => toUiEvent(e, dep)));
       } catch (err) {
         setError('Unable to load timeline');
@@ -89,7 +101,7 @@ export default function TimelinePage() {
     if (dependentId) {
       loadTimeline();
     }
-  }, [dependentId]);
+  }, [dependentId, selectedCategory]);
 
   // Calculate age for display
   function getAgeText(dob: string) {
@@ -127,11 +139,11 @@ export default function TimelinePage() {
         <>
           <div className="flex items-center gap-6 mb-8 bg-[#f3f6fd] dark:bg-slate-800 rounded-[2.5rem] p-6 shadow-[10px_10px_20px_rgba(0,0,0,0.05),-10px_-10px_20px_rgba(255,255,255,0.8)] dark:shadow-[10px_10px_20px_rgba(0,0,0,0.4),-10px_-10px_20px_rgba(255,255,255,0.05)]">
             <div className="w-24 h-24 rounded-[1.5rem] bg-white dark:bg-slate-700 p-1 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5)] overflow-hidden relative">
-              <Image 
-                src={`https://picsum.photos/seed/${dependentId}/100/100`} 
-                alt={dependent?.name || 'Dependent'} 
+              <Image
+                src={`https://picsum.photos/seed/${dependentId}/100/100`}
+                alt={dependent?.name || 'Dependent'}
                 fill
-                className="object-cover rounded-xl" 
+                className="object-cover rounded-xl"
               />
             </div>
             <div>
@@ -141,6 +153,28 @@ export default function TimelinePage() {
                 {dependent?.date_of_birth ? getAgeText(dependent.date_of_birth) : ''}
               </p>
             </div>
+          </div>
+
+          {/* Category Filter Tabs */}
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+            {categories.map((cat) => {
+              const Icon = cat.icon;
+              const isActive = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                    isActive
+                      ? 'bg-blue-500 text-white shadow-lg'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <Icon size={16} strokeWidth={3} />
+                  {cat.label}
+                </button>
+              );
+            })}
           </div>
 
           <div className="space-y-6 relative before:absolute before:inset-0 before:ml-8 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-1 before:bg-gradient-to-b before:from-blue-400 before:to-emerald-400 before:rounded-full before:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.1)] dark:before:shadow-[inset_1px_1px_2px_rgba(0,0,0,0.5)]">

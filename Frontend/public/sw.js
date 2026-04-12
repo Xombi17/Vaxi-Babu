@@ -16,9 +16,7 @@ const CACHE_STRATEGIES = {
   staleWhileRevalidate: [],
 };
 
-declare const self: ServiceWorkerGlobalScope;
-
-self.addEventListener('install', (event: ExtendableEvent) => {
+self.addEventListener('install', (event) => {
   console.log('[WellSync SW] Installing service worker...');
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
@@ -29,7 +27,7 @@ self.addEventListener('install', (event: ExtendableEvent) => {
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (event: ExtendableEvent) => {
+self.addEventListener('activate', (event) => {
   console.log('[WellSync SW] Activating service worker...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -46,7 +44,7 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
   self.clients.claim();
 });
 
-self.addEventListener('fetch', (event: FetchEvent) => {
+self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
@@ -65,7 +63,7 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   event.respondWith(staleWhileRevalidate(request));
 });
 
-async function cacheFirst(request: Request): Promise<Response> {
+async function cacheFirst(request) {
   const cached = await caches.match(request);
   if (cached) return cached;
 
@@ -81,7 +79,7 @@ async function cacheFirst(request: Request): Promise<Response> {
   }
 }
 
-async function networkFirst(request: Request): Promise<Response> {
+async function networkFirst(request) {
   try {
     const response = await fetch(request);
     if (response.ok) {
@@ -99,7 +97,7 @@ async function networkFirst(request: Request): Promise<Response> {
   }
 }
 
-async function staleWhileRevalidate(request: Request): Promise<Response> {
+async function staleWhileRevalidate(request) {
   const cached = await caches.match(request);
   const fetchPromise = fetch(request)
     .then((response) => {
@@ -114,10 +112,10 @@ async function staleWhileRevalidate(request: Request): Promise<Response> {
   return cached || fetchPromise || new Response('Offline', { status: 503 });
 }
 
-self.addEventListener('push', (event: PushEvent) => {
+self.addEventListener('push', (event) => {
   const data = event.data?.json() || {};
   const title = data.title || 'WellSync';
-  const options: NotificationOptions = {
+  const options = {
     body: data.body || 'New health update available',
     icon: '/web-app-manifest-192x192.png',
     badge: '/web-app-manifest-192x192.png',
@@ -126,7 +124,7 @@ self.addEventListener('push', (event: PushEvent) => {
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-self.addEventListener('notificationclick', (event: NotificationEvent) => {
+self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const url = event.notification.data;
   event.waitUntil(

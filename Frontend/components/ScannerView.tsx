@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
-import { X, AlertTriangle, Volume2, ScanLine, Type, Camera, Loader2, CheckCircle2 } from 'lucide-react';
+import { X as XIcon, AlertTriangle, Volume2, ScanLine, Type, Camera, Loader2, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { checkMedicineByImage, checkMedicineByName, MedicineSafetyResponse } from '../lib/api';
 
@@ -219,7 +219,7 @@ export function ScannerView() {
                 onClick={() => setShowResult(false)}
                 className="absolute top-8 right-8 w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors shadow-inner"
               >
-                <X size={24} strokeWidth={3} />
+                <XIcon size={24} strokeWidth={3} />
               </button>
 
               <div className="flex flex-col items-center text-center">

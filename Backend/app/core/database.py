@@ -20,7 +20,7 @@ engine = create_async_engine(
     connect_args={
         "ssl": "require",
         "command_timeout": 60,
-        "statement_cache_size": 0,  # Fix for PgBouncer / Schema change invalidation issues
+        "statement_cache_size": 0,  # Fix for PgBouncer/Supabase Pooler invalidation issues
     },
 )
 

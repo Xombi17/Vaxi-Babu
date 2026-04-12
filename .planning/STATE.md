@@ -15,7 +15,14 @@
 - **Phase:** 2 (of 5)
 - **Progress:** 35%
 - **Status:** active
-- **Plans completed:** 1 of ~9
+- **Plans completed:** 2 of ~10
+- **Current Phase Status:**
+  - Phase 1: Backend Foundation — In Progress (Now verifying with Supabase)
+  - Phase 2: Frontend Core — In Progress
+  - Phase 3: Voice & AI — Not Started
+  - Phase 4: Offline PWA — Not Started
+  - Phase 5: Deployment & Launch — Not Started
+  - Phase 6: Database Migration (Supabase) — Completed ✅
 - **Last activity:** 2026-04-12 - Completed quick task 260412-iaq: Fix regional language voice support - Deepgram multi mode + Azure voices
 
 ## Phase Details
@@ -85,3 +92,17 @@ None yet.
 
 - Brownfield project — substantial existing code in Backend/ and Frontend/
 - Phase 1 and 2 can run in parallel since they target different codebases
+
+## Accumulated Context
+
+### Roadmap Evolution
+- Phase 6 added: Migrate database from Neon to Supabase
+
+### Stack Changes
+- **Database**: Replaced Neon PostgreSQL with Supabase PostgreSQL (project ref: azvvmmekxfcuzdadxlub)
+  - Root cause: ISP DNS servers blocking Neon's `c-3` subdomain
+  - Backend uses Transaction Pooler URI (port 6543) with `postgresql+asyncpg://`
+  - Frontend no longer has a direct DB connection — communicates via Backend REST API only
+- **Prisma removed from Frontend**: `@prisma/client`, `prisma` devDep, `prisma/` dir, `prisma.config.ts` all removed
+  - Frontend never imported PrismaClient in app code — was dead weight
+  - Schema is owned by Backend SQLModel models

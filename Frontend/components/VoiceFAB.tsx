@@ -4,14 +4,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Mic, Square, Loader2, Volume2, Sparkles } from 'lucide-react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
+import { startGeminiVoice, stopGeminiVoice, isGeminiVoiceAvailable, useGeminiVoiceBridge } from '@/lib/gemini-voice';
 
 // Vapi Public Key and Assistant ID should be in .env
 const VAPI_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY || '';
 const VAPI_ASSISTANT_ID = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID || '';
 
 const REGIONAL_LANGUAGES = ['hi', 'mr', 'gu', 'bn', 'ta', 'te'];
-
-import { startGeminiVoice, stopGeminiVoice, isGeminiVoiceAvailable } from '@/lib/gemini-voice';
 
 const FIRST_MESSAGES: Record<string, string> = {
   en: "Hello! I'm your WellSync health assistant. How can I help you today?",
@@ -102,10 +101,6 @@ function parseVapiError(error: unknown): ParsedVapiError {
   };
 }
 
-function normalizeDeepgramLanguage(language: string): 'en-US' | 'multi' {
-  return language === 'en' ? 'en-US' : 'multi';
-}
-
 function buildAssistantOverrides(context: StartContext) {
   const { language, householdId, dependentId, greeting, langName } = context;
 
@@ -123,6 +118,9 @@ function buildAssistantOverrides(context: StartContext) {
 export function VoiceFAB() {
   const params = useParams();
   const dependentId = (params?.dependent_id as string) || '';
+
+  // Gemini Integration
+  const { isConnected: isGeminiActive, isConnecting: isGeminiConnecting } = useGeminiVoiceBridge();
 
   const [isVapiReady, setIsVapiReady] = useState(false);
   const [isActive, setIsActive] = useState(false);
@@ -172,35 +170,9 @@ export function VoiceFAB() {
 
   const handleStartFailure = useCallback(
     (error: unknown, stage: string, context?: StartContext) => {
-      console.error(`VoiceFAB [${stage}] DIAGNOSTICS:`, {
-        type: typeof error,
-        string: String(error),
-        proto: Object.prototype.toString.call(error),
-        keys: error && typeof error === 'object' ? Object.getOwnPropertyNames(error) : [],
-        vapiConfig: {
-          hasPublicKey: !!VAPI_PUBLIC_KEY,
-          hasAssistantId: !!VAPI_ASSISTANT_ID,
-          keyStart: VAPI_PUBLIC_KEY?.slice(0, 4),
-          assistantIdStart: VAPI_ASSISTANT_ID?.slice(0, 4),
-        }
-      });
-
-      const errorJson = error instanceof Error 
-        ? JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
-        : JSON.stringify(error, null, 2);
-      
-      console.error(`VoiceFAB [${stage}] RAW ERROR:`, errorJson);
+      console.error(`VoiceFAB [${stage}] RAW ERROR:`, error);
       const parsed = parseVapiError(error);
-      console.error(`VoiceFAB [${stage}] failed`, { parsed, context });
-
-      let userMsg = parsed.message;
-      if (parsed.isBadRequest) {
-        userMsg = 'Vapi rejected the request. Please check settings.';
-      } else if (parsed.isStartMethodError) {
-        userMsg = 'Assistant initialization failed.';
-      }
-
-      setTransientError(userMsg);
+      setTransientError(parsed.message);
       resetCallState();
     },
     [resetCallState, setTransientError]
@@ -274,14 +246,6 @@ export function VoiceFAB() {
       return { ok: false, reason: 'Voice is available only in the browser.' };
     }
 
-    if (!VAPI_PUBLIC_KEY || !VAPI_ASSISTANT_ID) {
-      return { ok: false, reason: 'Voice is unavailable.' };
-    }
-
-    if (!isVapiReady || !vapiRef.current) {
-      return { ok: false, reason: 'Assistant still loading.' };
-    }
-
     const householdId = (localStorage.getItem('household_id') || '').trim();
     if (!householdId) {
       return { ok: false, reason: 'Select a household first.' };
@@ -289,10 +253,6 @@ export function VoiceFAB() {
 
     const language = (localStorage.getItem('primary_language') || 'en').trim().toLowerCase();
     const isRegional = REGIONAL_LANGUAGES.includes(language);
-
-    if (!householdId) {
-      return { ok: false, reason: 'Select a household first.' };
-    }
 
     return {
       ok: true,
@@ -304,10 +264,10 @@ export function VoiceFAB() {
         dependentId,
       },
     };
-  }, [dependentId, isVapiReady]);
+  }, [dependentId]);
 
   const startCall = useCallback(async () => {
-    if (startInFlightRef.current || isConnecting || isActive) return;
+    if (startInFlightRef.current || isConnecting || isActive || isGeminiActive || isGeminiConnecting) return;
 
     startInFlightRef.current = true;
     setIsConnecting(true);
@@ -334,13 +294,18 @@ export function VoiceFAB() {
         
         await startGeminiVoice({
           language: lang,
-          systemInstruction: `You are a helpful health assistant. Respond only in ${preflight.context.langName}. Keep responses short (under 60 words).`,
-          onText: (text) => console.log('Gemini response:', text),
+          householdId: preflight.context.householdId,
+          dependentId: preflight.context.dependentId,
         });
         
-        setIsActive(true);
         setIsConnecting(false);
         setCallError(null);
+        return;
+      }
+
+      if (!isVapiReady || !vapiRef.current) {
+        setTransientError('Vapi assistant still loading.');
+        resetCallState();
         return;
       }
 
@@ -350,31 +315,38 @@ export function VoiceFAB() {
     } finally {
       startInFlightRef.current = false;
     }
-  }, [handleStartFailure, isActive, isConnecting, readStartContext, resetCallState, setTransientError]);
+  }, [handleStartFailure, isActive, isConnecting, isGeminiActive, isGeminiConnecting, isVapiReady, readStartContext, resetCallState, setTransientError]);
 
   const stopCall = useCallback(async () => {
     startInFlightRef.current = false;
     
     try {
-      await stopGeminiVoice();
+      if (isGeminiActive) {
+        await stopGeminiVoice();
+      }
+      if (isActive) {
+        await vapiRef.current?.stop();
+      }
     } catch (error) {
     } finally {
-      try {
-        await vapiRef.current?.stop();
-      } catch (error) {
-      }
       resetCallState();
     }
-  }, [resetCallState]);
+  }, [isActive, isGeminiActive, resetCallState]);
 
   const toggleCall = useCallback(async () => {
-    if (isConnecting && !isActive) return;
-    if (isActive) {
+    const currentlyActive = isActive || isGeminiActive;
+    const currentlyConnecting = isConnecting || isGeminiConnecting;
+
+    if (currentlyConnecting && !currentlyActive) return;
+    if (currentlyActive) {
       await stopCall();
     } else {
       await startCall();
     }
-  }, [isActive, isConnecting, startCall, stopCall]);
+  }, [isActive, isGeminiActive, isConnecting, isGeminiConnecting, startCall, stopCall]);
+
+  const effectiveIsActive = isActive || isGeminiActive;
+  const effectiveIsConnecting = isConnecting || isGeminiConnecting;
 
   const fabPositionClass = 'bottom-32 md:bottom-12 right-6 md:right-12';
   const panelPositionClass = 'bottom-56 md:bottom-40 right-6 md:right-12';
@@ -383,7 +355,7 @@ export function VoiceFAB() {
   return (
     <>
       <AnimatePresence mode="wait">
-        {isActive && (
+        {effectiveIsActive && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -416,7 +388,7 @@ export function VoiceFAB() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {callError && !isActive && (
+        {callError && !effectiveIsActive && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -433,24 +405,24 @@ export function VoiceFAB() {
         whileTap={{ scale: 0.95 }}
         onClick={toggleCall}
         animate={{
-          boxShadow: isActive
+          boxShadow: effectiveIsActive
             ? '0px 0px 40px rgba(244, 63, 94, 0.4)'
             : premiumMode 
               ? '0px 0px 30px rgba(245, 158, 11, 0.3)' 
               : '10px 10px 20px rgba(59, 130, 246, 0.2)',
         }}
-        disabled={isConnecting}
+        disabled={effectiveIsConnecting}
         className={`fixed ${fabPositionClass} w-16 h-16 md:w-20 md:h-20 rounded-[2.5rem] flex items-center justify-center z-50 transition-all duration-300 shadow-[inset_4px_4px_10px_rgba(255,255,255,0.4),inset_-4px_-4px_10px_rgba(0,0,0,0.05)] ${
-          isActive 
+          effectiveIsActive 
             ? 'bg-rose-500 text-white' 
             : premiumMode 
               ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white' 
               : 'bg-blue-500 text-white hover:bg-blue-600'
         }`}
       >
-        {isConnecting ? (
+        {effectiveIsConnecting ? (
           <Loader2 className="w-8 h-8 md:w-10 md:h-10 animate-spin" strokeWidth={3} />
-        ) : isActive ? (
+        ) : effectiveIsActive ? (
           <Square className="w-8 h-8 md:w-10 md:h-10 fill-white" strokeWidth={3} />
         ) : premiumMode ? (
           <div className="relative">

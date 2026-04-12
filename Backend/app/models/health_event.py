@@ -17,6 +17,10 @@ class EventCategory(str, Enum):
     checkup = "checkup"
     vitamin = "vitamin"
     reminder = "reminder"
+    prenatal_checkup = "prenatal_checkup"
+    medicine_dose = "medicine_dose"
+    growth_check = "growth_check"
+    supplement = "supplement"
 
 
 class HealthEvent(SQLModel, table=True):

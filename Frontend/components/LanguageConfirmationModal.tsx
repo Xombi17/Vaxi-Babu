@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Check, Globe } from 'lucide-react';
+import { X as XIcon, Check, Globe } from 'lucide-react';
 
 interface LanguageConfirmationModalProps {
   isOpen: boolean;
@@ -66,7 +66,7 @@ export function LanguageConfirmationModal({ isOpen, onClose, onConfirm, language
                   onClick={onClose}
                   className="w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 py-4 rounded-2xl font-black text-lg transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
-                  <X size={20} strokeWidth={3} />
+                  <XIcon size={20} strokeWidth={3} />
                   Cancel
                 </button>
               </div>

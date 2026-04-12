@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import httpx
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
@@ -43,17 +44,27 @@ async def get_current_household(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
     try:
+        # Use local JWT validation only (skip Supabase for hackathon demo)
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-    except JWTError:
+        result = await session.execute(select(Household).where(Household.username == username))
+        household = result.scalars().first()
+        if household is None:
+            raise credentials_exception
+        return household
+    except (JWTError, httpx.HTTPError, ValueError):
         raise credentials_exception
-    
-    result = await session.execute(select(Household).where(Household.username == username))
-    household = result.scalars().first()
-    
-    if household is None:
-        raise credentials_exception
-    return household
+
+
+async def get_current_household_optional(
+    token: str = Depends(oauth2_scheme),
+    session: AsyncSession = Depends(get_session),
+) -> Household | None:
+    try:
+        return await get_current_household(token, session)
+    except HTTPException:
+        return None

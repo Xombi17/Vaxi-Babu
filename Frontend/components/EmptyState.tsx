@@ -55,13 +55,13 @@ export function EmptyState({ type, title, description, actionLabel, actionHref }
       <p className="text-slate-500 dark:text-slate-400 max-w-sm mb-8">
         {description || config.description}
       </p>
-      {(actionLabel || config.actionLabel) && actionHref && (
+      {(actionLabel || ('actionLabel' in config && config.actionLabel)) && (actionHref || ('actionHref' in config && config.actionHref)) && (
         <Link
-          href={actionHref || config.actionHref!}
+          href={actionHref || ('actionHref' in config ? config.actionHref : '')}
           className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-2xl transition-all flex items-center gap-2"
         >
           <Plus size={20} strokeWidth={2.5} />
-          {actionLabel || config.actionLabel}
+          {actionLabel || ('actionLabel' in config ? config.actionLabel : '')}
         </Link>
       )}
     </div>

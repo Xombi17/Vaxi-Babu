@@ -91,3 +91,7 @@ coverage/
 # misc
 *.pem
 Backend/tests/*
+.mcp.json
+.kiro/skills/*
+.qoder/skills/*
+.claude/skills/*

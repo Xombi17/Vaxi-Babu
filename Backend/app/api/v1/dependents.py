@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.core.auth import get_current_household
 from app.core.database import get_session
 from app.models.dependent import Dependent, DependentType
 from app.models.health_event import HealthEvent, EventStatus
@@ -25,7 +26,10 @@ router = APIRouter(prefix="/dependents", tags=["Dependents"])
 async def create_dependent(
     body: DependentCreate,
     session: AsyncSession = Depends(get_session),
+    current_household: Household = Depends(get_current_household),
 ) -> Dependent:
+    if body.household_id != current_household.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     # Verify household exists
     household = await session.get(Household, body.household_id)
     if not household:
@@ -51,10 +55,11 @@ async def create_dependent(
 async def list_dependents(
     household_id: str | None = None,
     session: AsyncSession = Depends(get_session),
+    current_household: Household = Depends(get_current_household),
 ) -> list[Dependent]:
     query = select(Dependent).order_by(Dependent.created_at)
-    if household_id:
-        query = query.where(Dependent.household_id == household_id)
+    effective_household_id = household_id or current_household.id
+    query = query.where(Dependent.household_id == effective_household_id)
     result = await session.execute(query)
     return result.scalars().all()
 
@@ -63,10 +68,13 @@ async def list_dependents(
 async def get_dependent(
     dependent_id: str,
     session: AsyncSession = Depends(get_session),
+    current_household: Household = Depends(get_current_household),
 ) -> Dependent:
     dep = await session.get(Dependent, dependent_id)
     if not dep:
         raise HTTPException(status_code=404, detail="Dependent not found")
+    if dep.household_id != current_household.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     return dep
 
 
@@ -105,10 +113,13 @@ async def delete_dependent(
 async def get_health_pass(
     dependent_id: str,
     session: AsyncSession = Depends(get_session),
+    current_household: Household = Depends(get_current_household),
 ) -> HealthPassResponse:
     dep = await session.get(Dependent, dependent_id)
     if not dep:
         raise HTTPException(status_code=404, detail="Dependent not found")
+    if dep.household_id != current_household.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
 
     # Fetch health events for stats
     query = select(HealthEvent).where(HealthEvent.dependent_id == dependent_id)

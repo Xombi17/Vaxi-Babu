@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     # Database
     database_url: str
 
+    # Supabase
+    supabase_url: str = ""
+    supabase_anon_key: str = ""
+    supabase_service_role_key: str = ""
+
     # GitHub Models for AI and OCR
     github_token: str = ""
     github_models_base_url: str = "https://models.github.ai/inference"

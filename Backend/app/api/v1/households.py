@@ -8,7 +8,7 @@ from app.core.database import get_session
 from app.models.household import Household
 from app.schemas.household import HouseholdCreate, HouseholdResponse, HouseholdUpdate
 from app.services.scheme_service import get_eligible_schemes, HealthScheme
-from app.core.auth import get_password_hash
+from app.core.auth import get_current_household, get_password_hash
 
 router = APIRouter(prefix="/households", tags=["Households"])
 
@@ -48,17 +48,19 @@ async def create_household(
 
 @router.get("", response_model=list[HouseholdResponse])
 async def list_households(
-    session: AsyncSession = Depends(get_session),
+    current_household: Household = Depends(get_current_household),
 ) -> list[Household]:
-    result = await session.execute(select(Household).order_by(Household.created_at.desc()))
-    return result.scalars().all()
+    return [current_household]
 
 
 @router.get("/{household_id}", response_model=HouseholdResponse)
 async def get_household(
     household_id: str,
     session: AsyncSession = Depends(get_session),
+    current_household: Household = Depends(get_current_household),
 ) -> Household:
+    if current_household.id != household_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     household = await session.get(Household, household_id)
     if not household:
         raise HTTPException(status_code=404, detail="Household not found")
@@ -70,7 +72,10 @@ async def update_household(
     household_id: str,
     body: HouseholdUpdate,
     session: AsyncSession = Depends(get_session),
+    current_household: Household = Depends(get_current_household),
 ) -> Household:
+    if current_household.id != household_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     household = await session.get(Household, household_id)
     if not household:
         raise HTTPException(status_code=404, detail="Household not found")
@@ -116,8 +121,11 @@ async def list_assigned_households(
 async def list_household_schemes(
     household_id: str,
     session: AsyncSession = Depends(get_session),
+    current_household: Household = Depends(get_current_household),
 ) -> list[HealthScheme]:
     """Get government health schemes eligible for this household."""
+    if current_household.id != household_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     household = await session.get(Household, household_id)
     if not household:
         raise HTTPException(status_code=404, detail="Household not found")

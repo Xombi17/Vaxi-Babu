@@ -20,14 +20,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const router = useRouter();
-  
-  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
-  const [signupForm, setSignupForm] = useState({ 
-    name: '', 
-    email: '', 
-    password: '', 
+
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [signupForm, setSignupForm] = useState({
+    name: '',
+    email: '',
+    password: '',
     confirmPassword: '',
     language: 'en'
   });
@@ -36,26 +36,20 @@ export default function LoginPage() {
     setLoading(username);
     setError(null);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const response = await fetch(`${apiUrl}/api/v1/login`, {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const response = await fetch(`${API_URL}/api/v1/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          username: username,
-          password: 'REMOVED_DEMO_PASSWORD',
-        }),
+        body: new URLSearchParams({ username, password: 'REMOVED_DEMO_PASSWORD' }),
       });
 
       if (!response.ok) throw new Error('Login failed');
-
       const data = await response.json();
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('household_id', data.household_id);
-      localStorage.setItem('family_name', demoFamilies.find(f => f.id === username)?.name || 'Family');
-
       router.push('/dashboard');
-    } catch (err) {
-      setError('Failed to connect to backend. Make sure it is running.');
+    } catch (err: any) {
+      setError(err.message || 'Demo login failed');
     } finally {
       setLoading(null);
     }
@@ -66,29 +60,20 @@ export default function LoginPage() {
     setLoading('login');
     setError(null);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const response = await fetch(`${apiUrl}/api/v1/login`, {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const response = await fetch(`${API_URL}/api/v1/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          username: loginForm.username,
-          password: loginForm.password,
-        }),
+        body: new URLSearchParams({ username: loginForm.email, password: loginForm.password }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || 'Login failed');
-      }
-
+      if (!response.ok) throw new Error('Invalid credentials');
       const data = await response.json();
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('household_id', data.household_id);
-      localStorage.setItem('family_name', loginForm.username);
-
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Invalid username or password');
+      setError(err.message || 'Login failed');
     } finally {
       setLoading(null);
     }
@@ -97,12 +82,10 @@ export default function LoginPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
     if (signupForm.password !== signupForm.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
-    
     if (signupForm.password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
@@ -110,48 +93,33 @@ export default function LoginPage() {
 
     setLoading('signup');
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      
-      const response = await fetch(`${apiUrl}/api/v1/households`, {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const createRes = await fetch(`${API_URL}/api/v1/households`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: signupForm.name,
-          username: signupForm.email,
+          username: signupForm.email.split('@')[0],
           password: signupForm.password,
           primary_language: signupForm.language,
         }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || 'Registration failed');
-      }
+      if (!createRes.ok) throw new Error('Signup failed');
 
-      const household = await response.json();
-      
-      const loginResponse = await fetch(`${apiUrl}/api/v1/login`, {
+      const loginRes = await fetch(`${API_URL}/api/v1/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          username: signupForm.email,
-          password: signupForm.password,
-        }),
+        body: new URLSearchParams({ username: signupForm.email.split('@')[0], password: signupForm.password }),
       });
 
-      if (!loginResponse.ok) {
-        setMode('login');
-        return;
-      }
-
-      const data = await loginResponse.json();
+      if (!loginRes.ok) throw new Error('Login after signup failed');
+      const data = await loginRes.json();
       localStorage.setItem('token', data.access_token);
-      localStorage.setItem('household_id', household.id);
-      localStorage.setItem('family_name', signupForm.name);
-
+      localStorage.setItem('household_id', data.household_id);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Registration failed. Try a different email.');
+      setError(err.message || 'Registration failed');
     } finally {
       setLoading(null);
     }
@@ -246,9 +214,9 @@ export default function LoginPage() {
                     <div className="relative">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                       <input
-                        type="text"
-                        value={loginForm.username}
-                        onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                        type="email"
+                        value={loginForm.email}
+                        onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
                         className="w-full pl-12 pr-4 py-3 bg-slate-100 dark:bg-slate-700 rounded-2xl font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Enter your email"
                         required
@@ -296,7 +264,7 @@ export default function LoginPage() {
                     onClick={() => { setMode('signup'); setError(null); }}
                     className="text-blue-500 font-bold hover:underline"
                   >
-                    Don't have an account? Sign up
+                    Don&apos;t have an account? Sign up
                   </button>
                 </div>
               </div>

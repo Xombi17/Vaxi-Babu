@@ -37,7 +37,7 @@ export interface HealthEvent {
   household_id: string;
   name: string;
   schedule_key: string;
-  category: 'vaccination' | 'checkup' | 'vitamin' | 'reminder';
+  category: 'vaccination' | 'checkup' | 'vitamin' | 'reminder' | 'prenatal_checkup' | 'medicine_dose' | 'growth_check';
   dose_number?: number;
   due_date: string;
   window_start?: string;
@@ -209,8 +209,9 @@ export async function getDependents(householdId?: string): Promise<Dependent[]> 
 /**
  * Fetch timeline/health events for a dependent
  */
-export async function getTimeline(dependentId: string): Promise<TimelineResponse> {
-  return fetchApi<TimelineResponse>(`/api/v1/timeline/${dependentId}`);
+export async function getTimeline(dependentId: string, category?: string): Promise<TimelineResponse> {
+  const params = category ? `?category=${category}` : '';
+  return fetchApi<TimelineResponse>(`/api/v1/timeline/${dependentId}${params}`);
 }
 
 /**
@@ -254,4 +255,124 @@ export async function getHealthPass(dependentId: string): Promise<HealthPassResp
 
 export async function getRecommendedSchemes(householdId: string): Promise<HealthScheme[]> {
   return fetchApi<HealthScheme[]>(`/api/v1/households/${householdId}/schemes`);
+}
+
+// Pregnancy Profile Types and Functions
+export interface PregnancyProfile {
+  id: string;
+  household_id: string;
+  lmp_date: string;
+  expected_due_date: string;
+  high_risk_flags: string;
+  completed: boolean;
+  created_at: string;
+  updated_at: string;
+  pregnancy_week?: number;
+  trimester?: number;
+  days_until_due?: number;
+}
+
+export async function createPregnancy(data: { household_id: string; lmp_date: string; high_risk_flags?: string }): Promise<PregnancyProfile> {
+  return fetchApi<PregnancyProfile>('/api/v1/pregnancy', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getPregnancy(householdId: string): Promise<PregnancyProfile | null> {
+  try {
+    return await fetchApi<PregnancyProfile>(`/api/v1/pregnancy/${householdId}`);
+  } catch (error: any) {
+    if (error.status === 404) return null;
+    throw error;
+  }
+}
+
+export async function updatePregnancy(householdId: string, data: Partial<PregnancyProfile>): Promise<PregnancyProfile> {
+  return fetchApi<PregnancyProfile>(`/api/v1/pregnancy/${householdId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+// Medicine Regimen Types and Functions
+export type FrequencyType = 'daily' | 'twice_daily' | 'three_daily' | 'weekly' | 'as_needed';
+
+export interface MedicineRegimen {
+  id: string;
+  dependent_id: string;
+  medicine_name: string;
+  dosage: string;
+  frequency: FrequencyType;
+  start_date: string;
+  end_date?: string;
+  safety_bucket: string;
+  prescribing_note: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function createMedicineRegimen(data: {
+  dependent_id: string;
+  household_id: string;
+  medicine_name: string;
+  dosage: string;
+  frequency: FrequencyType;
+  start_date: string;
+  end_date?: string;
+  prescribing_note?: string;
+}): Promise<MedicineRegimen> {
+  return fetchApi<MedicineRegimen>('/api/v1/medicines', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getMedicineRegimens(dependentId: string): Promise<MedicineRegimen[]> {
+  return fetchApi<MedicineRegimen[]>(`/api/v1/medicines/${dependentId}`);
+}
+
+export async function updateMedicineRegimen(regimenId: string, data: Partial<MedicineRegimen>): Promise<MedicineRegimen> {
+  return fetchApi<MedicineRegimen>(`/api/v1/medicines/${regimenId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deactivateMedicineRegimen(regimenId: string): Promise<void> {
+  return fetchApi<void>(`/api/v1/medicines/${regimenId}`, {
+    method: 'DELETE',
+  });
+}
+
+// Growth Record Types and Functions
+export interface GrowthRecord {
+  id: string;
+  dependent_id: string;
+  recorded_date: string;
+  height_cm?: number;
+  weight_kg?: number;
+  head_circumference_cm?: number;
+  milestone_achieved?: string;
+  notes: string;
+  created_at: string;
+}
+
+export async function createGrowthRecord(dependentId: string, data: {
+  recorded_date: string;
+  height_cm?: number;
+  weight_kg?: number;
+  head_circumference_cm?: number;
+  milestone_achieved?: string;
+  notes?: string;
+}): Promise<GrowthRecord> {
+  return fetchApi<GrowthRecord>(`/api/v1/growth/${dependentId}`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getGrowthRecords(dependentId: string): Promise<GrowthRecord[]> {
+  return fetchApi<GrowthRecord[]>(`/api/v1/growth/${dependentId}`);
 }
