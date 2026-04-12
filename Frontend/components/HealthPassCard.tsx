@@ -3,11 +3,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import { ShieldCheck, AlertCircle, Clock, Download, Share2, Award } from 'lucide-react';
-import { getHealthPass } from '../lib/api';
+import { getHealthPass, HealthPassResponse } from '../lib/api';
 import { motion } from 'framer-motion';
 
 export function HealthPassCard({ dependentId }: { dependentId: string }) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<HealthPassResponse>({
     queryKey: ['health-pass', dependentId],
     queryFn: () => getHealthPass(dependentId),
   });

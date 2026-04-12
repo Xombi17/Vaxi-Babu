@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FamilyOverview } from '@/components/FamilyOverview';
 import { TimelineFeed } from '@/components/TimelineFeed';
 import { ActivitySummary } from '@/components/ActivitySummary';
+import { SchemeNavigator } from '@/components/SchemeNavigator';
 import { getHouseholds, getHousehold } from '@/lib/api';
 
 export default function DashboardPage() {
@@ -56,6 +57,7 @@ export default function DashboardPage() {
         </div>
         <div className="space-y-8">
           <ActivitySummary />
+          <SchemeNavigator />
         </div>
       </div>
     </div>

@@ -256,6 +256,20 @@ async def vapi_webhook(
 
         use_elevenlabs = vars.get("use_elevenlabs", False)
 
+        use_gemini = lang in ("hi", "mr", "gu", "bn", "ta", "te")
+
+        if use_gemini:
+            model_config = {
+                "provider": "google",
+                "model": "gemini-2.0-flash-lite",
+            }
+            log.info("voice_using_gemini", language=lang, language_name=language_name)
+        else:
+            model_config = {
+                "provider": "openai",
+                "model": "gpt-4o",
+            }
+
         assistant_config = {
             "firstMessage": first_message,
             "transcriber": {
@@ -264,8 +278,7 @@ async def vapi_webhook(
                 "language": "en-US" if lang == "en" else "multi",
             },
             "model": {
-                "provider": "openai",
-                "model": "gpt-4o",
+                **model_config,
                 "toolChoices": {
                     "directThrough": {
                         "toolName": "get_household_dependents",
@@ -395,7 +408,7 @@ async def vapi_webhook(
                                     "event_name": {
                                         "type": "string",
                                         "description": "The name of the event (e.g., 'BCG', 'Polio 1').",
-                                    }
+                                    },
                                 },
                                 "required": ["dependent_id", "event_name"],
                             },
@@ -710,7 +723,7 @@ async def _mark_event_completed(
     """Find a pending event by name and mark it as completed."""
     if not dependent_id:
         return "I need a child's ID to record their health completion."
-    
+
     # Try fuzzy matching or exact match on pending events
     stmt = (
         select(HealthEvent)
@@ -719,30 +732,30 @@ async def _mark_event_completed(
     )
     res = await session.execute(stmt)
     pending_events = res.scalars().all()
-    
+
     target = None
     event_name_lower = event_name.lower()
-    
+
     # 1. Exact match
     for e in pending_events:
         if e.name.lower() == event_name_lower:
             target = e
             break
-            
+
     # 2. Fuzzy/Sub-string match
     if not target:
         for e in pending_events:
             if event_name_lower in e.name.lower() or e.name.lower() in event_name_lower:
                 target = e
                 break
-                
+
     if not target:
         return f"I couldn't find a pending health event named '{event_name}' for this child. Please check the name or the timeline."
-        
+
     target.status = EventStatus.completed
     target.completed_at = date.today()
     session.add(target)
     await session.commit()
-    
+
     log.info("health_event_completed_via_voice", event=target.name, dependent=dependent_id)
     return f"Excellent! I have marked {target.name} as completed. Their health history is now updated."

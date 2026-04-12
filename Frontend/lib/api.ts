@@ -12,6 +12,8 @@ export interface Household {
   village_town?: string;
   state?: string;
   district?: string;
+  preferences: Record<string, any>;
+  last_onboarded_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -58,14 +60,23 @@ export interface TimelineResponse {
   next_due: HealthEvent | null;
 }
 
+export interface HealthPassStats {
+  total_events: number;
+  completed_events: number;
+  overdue_count: number;
+  health_score: number;
+  status_color: string;
+}
+
+export interface HealthPassNextDue {
+  name: string | null;
+  date: string | null;
+}
+
 export interface HealthPassResponse {
-  dependent_id: string;
-  name: string;
-  type: string;
-  score: number;
-  status_color: 'green' | 'yellow' | 'red';
+  dependent: Dependent;
   stats: HealthPassStats;
-  next_due: HealthPassNextDue | null;
+  next_due: HealthPassNextDue;
 }
 
 export interface HealthScheme {
@@ -161,6 +172,16 @@ export async function getHousehold(id: string): Promise<Household> {
 }
 
 /**
+ * Update a household (settings, preferences, etc.)
+ */
+export async function updateHousehold(id: string, data: Partial<Household>): Promise<Household> {
+  return fetchApi<Household>(`/api/v1/households/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
  * Create a new dependent
  */
 export async function createDependent(data: Omit<Dependent, 'id' | 'created_at' | 'updated_at'>): Promise<Dependent> {
@@ -221,9 +242,9 @@ export async function checkMedicineByImage(file: File, concern?: string, languag
  * Fetch health pass for a dependent
  */
 export async function getHealthPass(dependentId: string): Promise<HealthPassResponse> {
-  return fetchApi<HealthPassResponse>(`/dependents/${dependentId}/pass`);
+  return fetchApi<HealthPassResponse>(`/api/v1/dependents/${dependentId}/pass`);
 }
 
 export async function getRecommendedSchemes(householdId: string): Promise<HealthScheme[]> {
-  return fetchApi<HealthScheme[]>(`/households/${householdId}/schemes`);
+  return fetchApi<HealthScheme[]>(`/api/v1/households/${householdId}/schemes`);
 }

@@ -10,6 +10,7 @@ settings = get_settings()
 url = settings.database_url
 if "sslmode" in url:
     url = url.replace("?sslmode=require", "").rstrip("?").rstrip("&")
+
 engine = create_async_engine(
     url,
     echo=settings.is_dev,

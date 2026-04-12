@@ -18,8 +18,8 @@ class HouseholdCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     primary_language: str = Field(default="en", max_length=10)
     user_type: UserType = Field(default=UserType.family)
-    username: str | None = Field(default=None, max_length=50)
-    password: str | None = Field(default=None, min_length=6, max_length=100)
+    username: str = Field(..., max_length=50)
+    password: str = Field(..., min_length=6, max_length=100)
     village_town: str | None = Field(default=None, max_length=200)
     state: str | None = Field(default=None, max_length=100)
     district: str | None = Field(default=None, max_length=100)
@@ -32,6 +32,8 @@ class HouseholdUpdate(BaseModel):
     village_town: str | None = None
     state: str | None = None
     district: str | None = None
+    preferences: dict | None = None
+    last_onboarded_at: datetime | None = None
 
 
 # ─── Response schemas ─────────────────────────────────────────────────────────
@@ -39,12 +41,15 @@ class HouseholdUpdate(BaseModel):
 
 class HouseholdResponse(BaseModel):
     id: str
+    username: str | None
     name: str
     primary_language: str
     user_type: UserType
     village_town: str | None
     state: str | None
     district: str | None
+    preferences: dict
+    last_onboarded_at: datetime | None
     created_at: datetime
     updated_at: datetime
 

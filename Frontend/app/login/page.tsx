@@ -117,6 +117,8 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: signupForm.name,
+          username: signupForm.email,
+          password: signupForm.password,
           primary_language: signupForm.language,
         }),
       });
