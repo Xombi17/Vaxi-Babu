@@ -254,8 +254,6 @@ async def vapi_webhook(
 
         target_lang_name = language_name
 
-        use_elevenlabs = vars.get("use_elevenlabs", False)
-
         use_gemini = lang in ("hi", "mr", "gu", "bn", "ta", "te")
 
         if use_gemini:
@@ -422,28 +420,6 @@ async def vapi_webhook(
                 }
             },
         }
-
-        # ElevenLabs for regional languages (Hindi & Marathi) - excellent multilingual support
-        if language_name in ["Hindi", "Marathi"] and not use_elevenlabs:
-            assistant_config["voice"] = {
-                "provider": "elevenlabs",
-                "voiceId": "21m00Tcm4TlvDq8ikWAM",  # Aria (Multilingual v2)
-                "model": "eleven_multilingual_v2",
-                "stability": 0.5,
-                "similarityBoost": 0.75,
-            }
-            log.info("voice_elevenlabs_regional_active", lang=lang, language=language_name)
-
-        # Override with premium ElevenLabs if requested
-        if use_elevenlabs:
-            assistant_config["voice"] = {
-                "provider": "elevenlabs",
-                "voiceId": "21m00Tcm4TlvDq8ikWAM",  # Aria (Multilingual v2)
-                "model": "eleven_multilingual_v2",
-                "stability": 0.5,
-                "similarityBoost": 0.75,
-            }
-            log.info("voice_elevenlabs_mode_active", lang=lang)
 
         return {"assistant": assistant_config}
 
