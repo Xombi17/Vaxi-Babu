@@ -1,6 +1,6 @@
 # WellSync AI — State
 
-**Last updated:** 2026-04-11
+**Last updated:** 2026-04-12
 
 ## Project
 
@@ -16,6 +16,7 @@
 - **Progress:** 35%
 - **Status:** active
 - **Plans completed:** 1 of ~9
+- **Last activity:** 2026-04-12 - Completed quick task 260412-iaq: Fix regional language voice support - Deepgram multi mode + Azure voices
 
 ## Phase Details
 
@@ -78,6 +79,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260411-x2g | Frontend zip replacement | 2026-04-11 | a0a43de | [260411-x2g-frontend-zip-replacement](./quick/260411-x2g-frontend-zip-replacement/) |
 | 260412-0gy | Wire Frontend to Backend API | 2026-04-12 | c89b3b7,64870a4,4269752 | [260412-0gy-wire-frontend-to-backend-api](./quick/260412-0gy-wire-frontend-to-backend-api/) |
+| 260412-iaq | Fix regional language voice support - Deepgram multi + Azure | 2026-04-12 | d757635 | [260412-iaq-fix-regional-language-voice-support-deep](./quick/260412-iaq-fix-regional-language-voice-support-deep/) |
 
 ## Notes
 
