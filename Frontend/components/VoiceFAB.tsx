@@ -9,6 +9,10 @@ import { useParams } from 'next/navigation';
 const VAPI_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY || '';
 const VAPI_ASSISTANT_ID = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID || '';
 
+const REGIONAL_LANGUAGES = ['hi', 'mr', 'gu', 'bn', 'ta', 'te'];
+
+import { startGeminiVoice, stopGeminiVoice, isGeminiVoiceAvailable } from '@/lib/gemini-voice';
+
 const FIRST_MESSAGES: Record<string, string> = {
   en: "Hello! I'm your WellSync health assistant. How can I help you today?",
   hi: 'नमस्ते! मैं आपका वेलसिंक स्वास्थ्य सहायक हूँ। आज मैं आपकी क्या मदद कर सकता हूँ?',
@@ -35,7 +39,6 @@ type StartContext = {
   greeting: string;
   householdId: string;
   dependentId: string;
-  useElevenlabs: boolean;
 };
 
 type StartPreflight =
@@ -104,15 +107,14 @@ function normalizeDeepgramLanguage(language: string): 'en-US' | 'multi' {
 }
 
 function buildAssistantOverrides(context: StartContext) {
-  const { language, householdId, dependentId, useElevenlabs, greeting, langName } = context;
+  const { language, householdId, dependentId, greeting, langName } = context;
 
   return {
     variableValues: {
       language,
-      language_name: langName,  // Backend uses this for system prompt and voice selection
+      language_name: langName,
       household_id: householdId,
       dependent_id: dependentId,
-      use_elevenlabs: useElevenlabs,
     },
     firstMessage: greeting,
   };
@@ -134,12 +136,14 @@ export function VoiceFAB() {
   const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const checkPremium = () => {
-      setPremiumMode(localStorage.getItem('use_elevenlabs') === 'true');
+    const language = localStorage.getItem('primary_language') || 'en';
+    setPremiumMode(REGIONAL_LANGUAGES.includes(language));
+    const checkLanguage = () => {
+      const lang = localStorage.getItem('primary_language') || 'en';
+      setPremiumMode(REGIONAL_LANGUAGES.includes(lang));
     };
-    checkPremium();
-    window.addEventListener('languageChange', checkPremium);
-    return () => window.removeEventListener('languageChange', checkPremium);
+    window.addEventListener('languageChange', checkLanguage);
+    return () => window.removeEventListener('languageChange', checkLanguage);
   }, []);
 
   const clearErrorTimer = useCallback(() => {
@@ -284,17 +288,20 @@ export function VoiceFAB() {
     }
 
     const language = (localStorage.getItem('primary_language') || 'en').trim().toLowerCase();
-    const useElevenlabs = localStorage.getItem('use_elevenlabs') === 'true';
+    const isRegional = REGIONAL_LANGUAGES.includes(language);
+
+    if (!householdId) {
+      return { ok: false, reason: 'Select a household first.' };
+    }
 
     return {
       ok: true,
       context: {
         language,
-        langName: LANGUAGE_NAMES[language] || 'English',
-        greeting: FIRST_MESSAGES[language] || FIRST_MESSAGES.en,
+        langName: LANGUAGE_NAMES[language] || (isRegional ? 'Hindi' : 'English'),
+        greeting: FIRST_MESSAGES[language] || (isRegional ? FIRST_MESSAGES.hi : FIRST_MESSAGES.en),
         householdId,
         dependentId,
-        useElevenlabs,
       },
     };
   }, [dependentId, isVapiReady]);
@@ -313,7 +320,30 @@ export function VoiceFAB() {
       return;
     }
 
+    const isRegional = REGIONAL_LANGUAGES.includes(preflight.context.language);
+
     try {
+      if (isRegional) {
+        if (!isGeminiVoiceAvailable()) {
+          setTransientError('Gemini voice not available. Check API key.');
+          resetCallState();
+          return;
+        }
+
+        const lang = preflight.context.language as 'hi' | 'mr' | 'gu' | 'bn' | 'ta' | 'te';
+        
+        await startGeminiVoice({
+          language: lang,
+          systemInstruction: `You are a helpful health assistant. Respond only in ${preflight.context.langName}. Keep responses short (under 60 words).`,
+          onText: (text) => console.log('Gemini response:', text),
+        });
+        
+        setIsActive(true);
+        setIsConnecting(false);
+        setCallError(null);
+        return;
+      }
+
       await vapiRef.current!.start(VAPI_ASSISTANT_ID, buildAssistantOverrides(preflight.context));
     } catch (error) {
       handleStartFailure(error, 'start:exception', preflight.context);
@@ -324,10 +354,15 @@ export function VoiceFAB() {
 
   const stopCall = useCallback(async () => {
     startInFlightRef.current = false;
+    
     try {
-      await vapiRef.current?.stop();
+      await stopGeminiVoice();
     } catch (error) {
     } finally {
+      try {
+        await vapiRef.current?.stop();
+      } catch (error) {
+      }
       resetCallState();
     }
   }, [resetCallState]);

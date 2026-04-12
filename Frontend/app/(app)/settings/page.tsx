@@ -2,14 +2,11 @@
 import { Settings, Globe, Bell, Mic, Download, LogOut } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { LanguageConfirmationModal } from '@/components/LanguageConfirmationModal';
 
 export default function SettingsPage() {
   const router = useRouter();
   const [language, setLanguage] = useState('en');
-  const [showModal, setShowModal] = useState(false);
-  const [pendingLang, setPendingLang] = useState<string | null>(null);
-  
+
   const handleSignOut = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('household_id');
@@ -25,20 +22,9 @@ export default function SettingsPage() {
   }, []);
 
   const handleLanguageChange = (lang: string) => {
-    if (lang !== 'en' && lang !== language) {
-      setPendingLang(lang);
-      setShowModal(true);
-    } else {
-      applyLanguageChange(lang, false);
-    }
-  };
-
-  const applyLanguageChange = (lang: string, useElevenlabs: boolean) => {
     setLanguage(lang);
     localStorage.setItem('primary_language', lang);
-    localStorage.setItem('use_elevenlabs', useElevenlabs ? 'true' : 'false');
     window.dispatchEvent(new Event('languageChange'));
-    setShowModal(false);
   };
 
   const languages = [
@@ -51,25 +37,8 @@ export default function SettingsPage() {
     { code: 'te', label: 'తెలుగు (Telugu)' },
   ];
 
-  const getLanguageName = (code: string | null) => {
-    return languages.find(l => l.code === code)?.label.split(' ')[0] || 'Regional';
-  };
-
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto">
-      <LanguageConfirmationModal 
-        isOpen={showModal}
-        languageName={getLanguageName(pendingLang)}
-        onClose={() => {
-          if (pendingLang) applyLanguageChange(pendingLang, false);
-          setShowModal(false);
-        }}
-        onConfirm={() => {
-          if (pendingLang) applyLanguageChange(pendingLang, true);
-          setShowModal(false);
-        }}
-      />
-      
       <div className="flex items-center gap-4 mb-8">
         <div className="w-16 h-16 rounded-[1.5rem] bg-slate-800 dark:bg-slate-700 text-white flex items-center justify-center shadow-[4px_4px_10px_rgba(0,0,0,0.2),inset_2px_2px_6px_rgba(255,255,255,0.2),inset_-2px_-2px_6px_rgba(0,0,0,0.4)] dark:shadow-[4px_4px_10px_rgba(0,0,0,0.5),inset_2px_2px_6px_rgba(255,255,255,0.1),inset_-2px_-2px_6px_rgba(0,0,0,0.6)]">
           <Settings size={32} strokeWidth={2.5} />
