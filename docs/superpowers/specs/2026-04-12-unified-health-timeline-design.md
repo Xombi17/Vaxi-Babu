@@ -198,7 +198,7 @@ All follow the same idempotent `schedule_key` pattern as existing `generate_and_
 
 | Tool | Purpose | Parameters |
 |------|---------|------------|
-| `record_medicine_taken` | Mark a medicine dose event as completed | `regimen_id`, `date` |
+| `record_medicine_taken` | Mark a medicine dose event as completed | `event_id`, `date` |
 | `record_growth` | Voice-guided growth measurement recording | `dependent_id`, `weight_kg?`, `height_cm?` |
 | `check_pregnancy_status` | Current week, next ANC visit, trimester summary | `household_id` |
 
