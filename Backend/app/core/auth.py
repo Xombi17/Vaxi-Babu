@@ -46,17 +46,54 @@ async def get_current_household(
     )
 
     try:
-        # Use local JWT validation only (skip Supabase for hackathon demo)
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        result = await session.execute(select(Household).where(Household.username == username))
-        household = result.scalars().first()
+        payload = None
+        is_supabase = False
+        
+        # 1. Try Supabase Verification if secret is available
+        if settings.supabase_jwt_secret:
+            try:
+                # Supabase uses HS256 by default
+                payload = jwt.decode(
+                    token, 
+                    settings.supabase_jwt_secret, 
+                    algorithms=["HS256"], 
+                    options={"verify_aud": False} # Supabase uses 'authenticated' as aud
+                )
+                is_supabase = True
+            except JWTError:
+                pass
+
+        # 2. Fallback to Local Secret
+        if not payload:
+            try:
+                payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+            except JWTError:
+                raise credentials_exception
+
+        # 3. Retrieve Household based on token type
+        if is_supabase:
+            # Supabase sub is the UUID
+            user_id: str = payload.get("sub")
+            if not user_id:
+                raise credentials_exception
+            # Look up by ID (which we now sync to Supabase ID) or auth_id
+            stmt = select(Household).where((Household.id == user_id) | (Household.auth_id == user_id))
+            result = await session.execute(stmt)
+            household = result.scalars().first()
+        else:
+            # Local sub is the username
+            username: str = payload.get("sub")
+            if not username:
+                raise credentials_exception
+            result = await session.execute(select(Household).where(Household.username == username))
+            household = result.scalars().first()
+
         if household is None:
             raise credentials_exception
         return household
-    except (JWTError, httpx.HTTPError, ValueError):
+
+    except (JWTError, httpx.HTTPError, ValueError) as e:
+        log.warning("auth_validation_failed", error=str(e))
         raise credentials_exception
 
 

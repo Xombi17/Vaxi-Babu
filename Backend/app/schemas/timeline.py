@@ -21,7 +21,7 @@ class HealthEventResponse(BaseModel):
     completed_by: str | None
     location: str | None
     notes: str | None
-    verification_status: VerificationStatus
+    verification_status: VerificationStatus | None
     verified_by: str | None
     verification_document_url: str | None
     verification_notes: str | None

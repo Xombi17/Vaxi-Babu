@@ -30,13 +30,13 @@ class Household(SQLModel, table=True):
     __tablename__ = "households"
 
     id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()),
         primary_key=True,
         index=True,
+        description="Household / Profile ID (Matches Supabase Auth User ID)"
     )
     username: str = Field(unique=True, index=True, min_length=3, max_length=255)
-    password_hash: str = Field(min_length=8)
-    auth_id: uuid.UUID | None = Field(default=None, unique=True, index=True, description="Neon Auth user ID")
+    password_hash: str = Field(default="SUPABASE_AUTH_MANAGED", min_length=1)
+    auth_id: uuid.UUID | None = Field(default=None, unique=True, index=True, description="Supabase Auth user ID")
     name: str = Field(min_length=1, max_length=200, description="Family / household name")
     primary_language: str = Field(default="en", max_length=10, description="BCP-47 language code")
     user_type: UserType = Field(

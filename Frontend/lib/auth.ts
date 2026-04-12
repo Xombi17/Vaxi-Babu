@@ -6,6 +6,7 @@ const HOUSEHOLD_ID_KEY = 'household_id';
 export interface AuthState {
   token: string | null;
   householdId: string | null;
+  name: string | null;
   isAuthenticated: boolean;
 }
 
@@ -19,10 +20,12 @@ export function getAuthState(): AuthState {
 
   const token = localStorage.getItem(TOKEN_KEY);
   const householdId = localStorage.getItem(HOUSEHOLD_ID_KEY);
+  const name = localStorage.getItem('family_name');
 
   return {
     token,
     householdId,
+    name,
     isAuthenticated: !!token && !!householdId,
   };
 }
@@ -30,10 +33,11 @@ export function getAuthState(): AuthState {
 /**
  * Set auth tokens in localStorage
  */
-export function setAuthTokens(token: string, householdId: string): void {
+export function setAuthTokens(token: string, householdId: string, name?: string): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(HOUSEHOLD_ID_KEY, householdId);
+  if (name) localStorage.setItem('family_name', name);
 }
 
 /**

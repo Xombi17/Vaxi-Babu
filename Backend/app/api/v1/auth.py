@@ -44,14 +44,15 @@ async def login(
     }
 
 @router.post("/auth/sync", response_model=dict[str, Any])
-async def sync_neon_auth(session: Session = Depends(get_session)):
+async def sync_supabase_auth(session: Session = Depends(get_session)):
     """
-    Synchronizes users from neon_auth.user into the public.households table.
-    Ensures every authenticated Neon user has a corresponding family profile.
+    Synchronizes users from Supabase auth.users into the public.households table.
+    Ensures every authenticated Supabase user has a corresponding family profile.
+    Normally handled by a DB trigger, but this provides a manual fallback.
     """
     try:
-        # 1. Fetch all users from Neon Auth schema
-        auth_users_query = text("SELECT id, email, name FROM neon_auth.user")
+        # 1. Fetch all users from Supabase Auth schema
+        auth_users_query = text("SELECT id, email, raw_user_meta_data FROM auth.users")
         result = await session.execute(auth_users_query)
         auth_users = result.fetchall()
         
@@ -61,25 +62,25 @@ async def sync_neon_auth(session: Session = Depends(get_session)):
         for auth_user in auth_users:
             auth_id = str(auth_user[0])
             email = auth_user[1]
-            name = auth_user[2] or f"{email.split('@')[0]}'s Family"
+            meta = auth_user[2] or {}
+            name = meta.get("name") or f"{email.split('@')[0]}'s Family"
             
             # 2. Check if this auth user already has a household profile
-            stmt = select(Household).where(Household.auth_id == auth_id)
+            stmt = select(Household).where(Household.id == auth_id)
             existing = (await session.execute(stmt)).scalar_one_or_none()
             
             if not existing:
-                # 3. Create a new Household profile linked to this Auth ID
-                # We use a dummy password_hash because Neon handles the real auth
+                # 3. Create a new Household profile linked to this Supabase ID
                 new_h = Household(
+                    id=auth_id,
                     username=email,
-                    password_hash="NEON_AUTH_MANAGED",
                     auth_id=auth_id,
                     name=name,
-                    primary_language="en"
+                    primary_language=meta.get("language", "en")
                 )
                 session.add(new_h)
                 new_count += 1
-                log.info("neon_auth_sync_created_household", email=email, auth_id=auth_id)
+                log.info("supabase_auth_sync_created_household", email=email, auth_id=auth_id)
             else:
                 synced_count += 1
         
@@ -93,5 +94,5 @@ async def sync_neon_auth(session: Session = Depends(get_session)):
         }
         
     except Exception as e:
-        log.error("neon_auth_sync_failed", error=str(e))
-        raise HTTPException(status_code=500, detail=f"Failed to sync with Neon Auth: {str(e)}")
+        log.error("supabase_auth_sync_failed", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to sync with Supabase Auth: {str(e)}")

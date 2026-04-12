@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { Activity, ArrowRight, ArrowLeft, Home, ShieldCheck, User, Lock, Mail, Eye, EyeOff, Sparkles } from 'lucide-react';
 import { setAuthTokens } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
 
 const demoFamilies = [
   { id: 'sharma', name: 'Sharma Family', color: 'bg-blue-400', icon: '🏠', city: 'Noida' },
@@ -61,16 +62,15 @@ export default function LoginPage() {
     setLoading('login');
     setError(null);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const response = await fetch(`${API_URL}/api/v1/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ username: loginForm.email, password: loginForm.password }),
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: loginForm.email,
+        password: loginForm.password,
       });
 
-      if (!response.ok) throw new Error('Invalid credentials');
-      const data = await response.json();
-      setAuthTokens(data.access_token, data.household_id);
+      if (authError) throw authError;
+      if (!authData.session) throw new Error('Failed to get session');
+
+      setAuthTokens(authData.session.access_token, authData.session.user.id, authData.session.user.user_metadata?.name);
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Login failed');
@@ -91,40 +91,27 @@ export default function LoginPage() {
       return;
     }
 
-    if (!signupForm.email || !signupForm.email.includes('@')) {
-      setError('Valid email is required');
-      return;
-    }
-
     setLoading('signup');
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const username = signupForm.email;
-      const createRes = await fetch(`${API_URL}/api/v1/households`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: signupForm.name,
-          username: username,
-          password: signupForm.password,
-          primary_language: signupForm.language,
-        }),
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: signupForm.email,
+        password: signupForm.password,
+        options: {
+          data: {
+            name: signupForm.name,
+            language: signupForm.language,
+          }
+        }
       });
 
-      if (!createRes.ok) {
-        const errorData = await createRes.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Signup failed');
+      if (authError) throw authError;
+      if (!authData.session) {
+        setMode('login');
+        setError('Verification email sent! Please check your inbox.');
+        return;
       }
 
-      const loginRes = await fetch(`${API_URL}/api/v1/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ username: username, password: signupForm.password }),
-      });
-
-      if (!loginRes.ok) throw new Error('Login after signup failed');
-      const data = await loginRes.json();
-      setAuthTokens(data.access_token, data.household_id);
+      setAuthTokens(authData.session.access_token, authData.session.user.id, signupForm.name);
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
