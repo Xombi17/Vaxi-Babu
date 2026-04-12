@@ -218,7 +218,14 @@ async def vapi_tool_call(request: Request) -> dict[str, Any]:
         break
 
     log.info("tool_call_completed", tool=tool_name, call_id=call_id)
-    return {"result": result_text}
+
+    # Return just the result string, not wrapped
+    # Vapi expects the raw tool output
+    import json
+    try:
+        return json.loads(result_text)
+    except:
+        return {"result": result_text}
 
     # ── Tool calls: voice agent needs data ────────────────────────────────
     if event_type == "tool-calls":
