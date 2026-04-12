@@ -2,17 +2,40 @@
 
 import { useState } from 'react';
 import { useLiveAPI } from '@/hooks/use-live-api';
-import { Mic, MicOff, Activity, Shield, User, Calendar, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Activity, Shield, User, Calendar, Loader2, Globe } from 'lucide-react';
 import { motion } from 'motion/react';
+
+const LANGUAGES = [
+  'English',
+  'Spanish',
+  'French',
+  'German',
+  'Hindi',
+  'Bengali',
+  'Telugu',
+  'Marathi',
+  'Tamil',
+  'Urdu',
+  'Gujarati',
+  'Malayalam',
+  'Kannada',
+  'Odia',
+  'Punjabi',
+  'Mandarin',
+  'Arabic',
+  'Japanese',
+  'Korean'
+];
 
 export default function Page() {
   const { isConnected, isConnecting, connect, disconnect, transcript, activeRecords, error } = useLiveAPI();
+  const [selectedLanguage, setSelectedLanguage] = useState('English');
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] text-gray-900 font-sans p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <header className="flex items-center justify-between">
+        <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-sm">
               <Activity className="text-white w-6 h-6" />
@@ -23,24 +46,40 @@ export default function Page() {
             </div>
           </div>
           
-          <button
-            onClick={isConnected ? disconnect : connect}
-            disabled={isConnecting}
-            className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all ${
-              isConnected 
-                ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
-            } disabled:opacity-50`}
-          >
-            {isConnecting ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : isConnected ? (
-              <MicOff className="w-5 h-5" />
-            ) : (
-              <Mic className="w-5 h-5" />
-            )}
-            {isConnecting ? 'Connecting...' : isConnected ? 'End Session' : 'Start Voice Session'}
-          </button>
+          <div className="flex items-center gap-4">
+            <div className="relative flex items-center bg-white rounded-full px-4 py-2 border border-gray-200 shadow-sm">
+              <Globe className="w-4 h-4 text-gray-400 mr-2" />
+              <select 
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+                disabled={isConnected || isConnecting}
+                className="bg-transparent text-sm font-medium outline-none cursor-pointer disabled:opacity-50"
+              >
+                {LANGUAGES.map(lang => (
+                  <option key={lang} value={lang}>{lang}</option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={() => isConnected ? disconnect() : connect(selectedLanguage)}
+              disabled={isConnecting}
+              className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all ${
+                isConnected 
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+              } disabled:opacity-50`}
+            >
+              {isConnecting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : isConnected ? (
+                <MicOff className="w-5 h-5" />
+              ) : (
+                <Mic className="w-5 h-5" />
+              )}
+              {isConnecting ? 'Connecting...' : isConnected ? 'End Session' : 'Start Voice Session'}
+            </button>
+          </div>
         </header>
 
         {error && (
