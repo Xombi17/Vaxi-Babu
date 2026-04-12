@@ -144,19 +144,10 @@ WellSync AI is **not** a diagnostic medical system.
 ---
 
 ## 👨‍💻 Author
+
 Built with ❤️ for health accessibility by **Varad Joshi**.
-THUB_VISION_MODEL` | ❌ | Default: `openai/gpt-4o` |
-| `VAPI_WEBHOOK_SECRET` | ❌ | For validating Vapi voice webhooks |
-| `FRONTEND_URL` | ❌ | CORS origin, default: `http://localhost:3000` |
 
 ---
 
-## License
-
-Add your preferred license here.
-
----
-
-## Author
-
-Built by Varad Joshi
+## ⚖️ License
+This project is for hackathon and educational purposes.

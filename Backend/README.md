@@ -1,86 +1,76 @@
-# WellSync AI — Backend
+# ⚙️ WellSync AI — Backend
 
-FastAPI backend for WellSync AI. Provides REST APIs for health timelines, medicine safety, voice webhooks, and offline sync.
+**High-Performance FastAPI Service for Health Timelines and AI Orchestration.**
 
-## Quick Start (UV)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109.0-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python)](https://www.python.org/)
+[![SQLModel](https://img.shields.io/badge/SQLModel-0.0.14-009485?style=for-the-badge&logo=pydantic)](https://sqlmodel.tiangolo.com/)
+[![GitHub Models](https://img.shields.io/badge/AI-GitHub_Models_(GPT--4o)-black?style=for-the-badge)](https://github.com/marketplace/models)
 
+---
+
+## 🌟 Overview
+
+The WellSync AI Backend is a robust, asynchronous Python service that manages family health records, generates deterministic healthcare timelines, and orchestrates AI-driven medical safety checks and voice interactions.
+
+## ✨ Key Features
+
+- **🛡️ Deterministic Health Engine**: Generates immunization and preventive care schedules based on India's National Immunization Schedule (NIS).
+- **🧠 AI Orchestration**: Uses GitHub Models (GPT-4o) for plain-language medical explanations and voice conversation synthesis.
+- **👁️ Multimodal Medicine OCR**: Integrated GPT-4o Vision for extracting data from medicine packaging and prescriptions.
+- **🎙️ Vapi Webhook Integration**: Custom tool-calling backend for Vapi voice assistants, providing real-time data context.
+- **🗺️ Regional Localization**: Automated translation of health guidance into 7+ Indian languages.
+- **📦 Reliable Storage**: Neon Serverless Postgres with SQLModel for type-safe, asynchronous database operations.
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Python 3.11 or 3.12
+- [uv](https://astral.sh/uv) (Recommended for lightning-fast dependency management)
+
+### Installation
+1. Navigate to the backend directory:
+   ```bash
+   cd Backend
+   ```
+2. Setup environment and install dependencies:
+   ```bash
+   # Using uv
+   uv sync --extra dev
+   ```
+3. Copy environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+4. Configure your `.env` with a `DATABASE_URL` (Neon) and `GITHUB_TOKEN`.
+
+### Running the Server
 ```bash
-# Install UV (one-time)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install dependencies
-cd Backend
-uv pip install -e ".[dev]"
-
-# Copy and fill in env vars
-cp .env.example .env
-
-# Pull Ollama models (for medicine OCR)
-ollama pull gemma4
-ollama pull llama3.2-vision
-
-# Run dev server
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 ```
 
-## API Documentation
+## 🧪 Testing
 
-Running at: http://localhost:8000/docs (Swagger UI, dev only)
-
-## Run Tests
+The backend includes a comprehensive suite of 29 tests covering schedule logic, API endpoints, and safety classifiers.
 
 ```bash
 pytest tests/ -v
 ```
 
-## Project Structure
+## 📂 Project Structure
 
-```
-Backend/
-├── app/
-│   ├── main.py                      # FastAPI app entry point
-│   ├── core/
-│   │   ├── config.py                # Settings (pydantic-settings)
-│   │   └── database.py              # Async DB engine (SQLModel + asyncpg)
-│   ├── models/                      # SQLModel table definitions (DB schema)
-│   ├── schemas/                     # Pydantic request/response schemas
-│   ├── services/
-│   │   ├── health_schedule/
-│   │   │   ├── rules.py             # Pure-Python NIS schedule loader
-│   │   │   └── engine.py            # DB-aware schedule generator
-│   │   ├── ai_service.py            # Groq LLM wrapper
-│   │   ├── ocr_service.py           # Gemma4/Llama3.2V/GCV OCR
-│   │   └── medicine_safety.py       # Deterministic safety classifier
-│   └── api/v1/                      # All API route handlers
-│       ├── router.py                # Aggregates all routers
-│       ├── households.py
-│       ├── dependents.py
-│       ├── timeline.py
-│       ├── reminders.py
-│       ├── medicine.py
-│       ├── ai.py
-│       ├── voice.py                 # Vapi webhook
-│       └── sync.py                  # Offline batch sync
-├── data/
-│   └── india_nis_schedule.json      # India NIS vaccination data
-├── tests/
-│   ├── test_health_schedule.py
-│   └── test_medicine_safety.py
-├── .env.example
-└── pyproject.toml
-```
+- `app/api/v1/`: API route handlers (Households, Dependents, Medicine, Voice).
+- `app/services/`: Core logic (Health Engine, AI Service, OCR, Safety Classifier).
+- `app/models/`: SQLModel database table definitions.
+- `app/core/`: Application configuration and database engine setup.
+- `data/`: Source-of-truth JSON files for immunization schedules.
 
-## Environment Variables
+## 🏁 Key Design Decisions
 
-See `.env.example` for full list. Minimum required:
-- `DATABASE_URL` — Neon Postgres async connection string
-- `GROQ_API_KEY` — Groq API key for LLM explanations
-- Ollama running locally with `gemma4` and `llama3.2-vision` models
+- **Deterministic Logic First**: All health schedules are computed using rules, never predicted by AI.
+- **Async Throughout**: Built with `async/await` for high concurrency and low latency.
+- **SQLModel Alignment**: Combined the power of SQLAlchemy and Pydantic for the database layer.
 
-## Key Design Decisions
+---
 
-- **No auth in MVP** — Add Clerk JWT validation or custom JWT when frontend is connected
-- **Deterministic schedule first** — NIS rules are in `data/india_nis_schedule.json`, never in the LLM
-- **AI for explanation only** — Groq is called exclusively for user-facing text simplification
-- **OCR cascades** — Gemma4 → Llama3.2-Vision → Google Cloud Vision
-- **Idempotent schedule generation** — safe to call `generate_and_save_schedule` multiple times
+Built with ❤️ by **Varad Joshi** for WellSync AI.
