@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     vapi_assistant_id: str = ""
     vapi_phone_number_id: str = ""
 
+    # Google Gemini Live API (for Hindi/Marathi voice)
+    google_ai_api_key: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:
