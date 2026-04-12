@@ -57,3 +57,22 @@ class DependentResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class HealthPassStats(BaseModel):
+    total_events: int
+    completed_events: int
+    overdue_count: int
+    health_score: int
+    status_color: str
+
+
+class HealthPassNextDue(BaseModel):
+    name: str | None
+    date: date | None
+
+
+class HealthPassResponse(BaseModel):
+    dependent: DependentResponse
+    stats: HealthPassStats
+    next_due: HealthPassNextDue
