@@ -35,6 +35,7 @@ class VoiceQuestionRequest(BaseModel):
     question: str
     context: str      # Serialized timeline context from the frontend
     language: str = "en"
+    household_id: str | None = None
 
 
 class VoiceQuestionResponse(BaseModel):
@@ -54,6 +55,9 @@ async def explain_event(
     if not event:
         raise HTTPException(status_code=404, detail="Health event not found")
 
+    household = await session.get(Household, event.household_id)
+    preferences = household.preferences if household else None
+
     # Look up schedule metadata for richer explanation context
     schedule = _load_schedule()
     vaccine_meta = next(
@@ -68,6 +72,7 @@ async def explain_event(
         why_it_matters=why_it_matters,
         what_to_expect=what_to_expect,
         language=body.language,
+        preferences=preferences,
     )
 
     return ExplainEventResponse(
@@ -78,14 +83,24 @@ async def explain_event(
 
 
 @router.post("/voice-answer", response_model=VoiceQuestionResponse)
-async def voice_answer(body: VoiceQuestionRequest) -> VoiceQuestionResponse:
+async def voice_answer(
+    body: VoiceQuestionRequest,
+    session: AsyncSession = Depends(get_session),
+) -> VoiceQuestionResponse:
     """
     Answer a natural language question from a voice session.
     Context is provided by the caller (Vapi webhook or frontend directly).
     """
+    preferences = None
+    if body.household_id:
+        household = await session.get(Household, body.household_id)
+        if household:
+            preferences = household.preferences
+
     answer = await answer_voice_question(
         question=body.question,
         context=body.context,
         language=body.language,
+        preferences=preferences,
     )
     return VoiceQuestionResponse(answer=answer)

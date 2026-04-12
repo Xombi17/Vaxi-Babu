@@ -8,8 +8,6 @@ import { useState } from 'react';
 import { getTimeline, getDependents, type HealthEvent } from '../lib/api';
 import { HealthPassCard } from './HealthPassCard';
 
-const DEFAULT_DEPENDENT_ID = 'ece5d2ee-ea49-47cd-8e47-7448d0ea2b25'; // Rahul
-
 const categoryIcons = {
   vaccination: Syringe,
   checkup: Stethoscope,
@@ -49,7 +47,7 @@ export function TimelineFeed() {
     queryFn: async () => {
       let actualId = searchParams.get('dependent');
       
-      if (!actualId || actualId === DEFAULT_DEPENDENT_ID) {
+      if (!actualId) {
         const dependents = await getDependents(householdId || undefined);
         if (dependents.length > 0) {
           actualId = dependents[0].id;

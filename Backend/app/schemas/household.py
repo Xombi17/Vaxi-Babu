@@ -36,6 +36,13 @@ class HouseholdUpdate(BaseModel):
     last_onboarded_at: datetime | None = None
 
 
+class HouseholdPreferences(BaseModel):
+    ai_tone: str = Field(default="simple")
+    language: str = Field(default="en")  # en, hi, mr
+    voice_mode: str = Field(default="regional")
+    health_focus: str = Field(default="general")
+
+
 # ─── Response schemas ─────────────────────────────────────────────────────────
 
 

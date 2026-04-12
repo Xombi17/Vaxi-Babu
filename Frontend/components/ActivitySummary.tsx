@@ -4,8 +4,6 @@ import { Activity, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { getTimeline, getDependents } from '../lib/api';
 
-const DEFAULT_DEPENDENT_ID = 'ece5d2ee-ea49-47cd-8e47-7448d0ea2b25'; // Rahul
-
 export function ActivitySummary() {
   const searchParams = useSearchParams();
   const householdId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
@@ -14,7 +12,7 @@ export function ActivitySummary() {
     queryKey: ['timeline', searchParams.get('dependent'), householdId],
     queryFn: async () => {
       let actualId = searchParams.get('dependent');
-      if (!actualId || actualId === DEFAULT_DEPENDENT_ID) {
+      if (!actualId) {
         const dependents = await getDependents(householdId || undefined);
         if (dependents.length > 0) {
           actualId = dependents[0].id;

@@ -11,15 +11,39 @@ interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getHousehold, type Household } from '@/lib/api';
+import { OnboardingWizard } from './OnboardingWizard';
+
+interface AppLayoutProps {
+  children: React.ReactNode;
+}
+
 export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const householdId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
+
+  const { data: household, isLoading: isHouseholdLoading } = useQuery({
+    queryKey: ['household', householdId],
+    queryFn: () => householdId ? getHousehold(householdId) : Promise.reject('No ID'),
+    enabled: !!householdId,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const handleSignOut = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('household_id');
     localStorage.removeItem('family_name');
     router.push('/');
+  };
+
+  const showOnboarding = household && !household.last_onboarded_at && pathname === '/dashboard';
+
+  const handleOnboardingComplete = () => {
+    queryClient.invalidateQueries({ queryKey: ['household', householdId] });
   };
 
   const isActive = (path: string) => {
@@ -118,6 +142,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </div>
 
       {/* Shared Voice FAB */}
+      {showOnboarding && <OnboardingWizard household={household} onComplete={handleOnboardingComplete} />}
       <VoiceFAB />
     </div>
   );

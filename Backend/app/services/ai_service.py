@@ -69,13 +69,28 @@ async def explain_health_event(
     why_it_matters: str,
     what_to_expect: str,
     language: str = "en",
+    preferences: dict | None = None,
 ) -> str:
     """
     Use AI to produce a simplified, user-friendly explanation of a health event.
     """
     try:
         client = get_ai_client()
-        target_lang = LANGUAGE_MAP.get(language, "English")
+
+        # Get language from preferences if not explicitly provided
+        lang_from_prefs = preferences.get("language") if preferences else None
+        target_lang = LANGUAGE_MAP.get(language or lang_from_prefs or "en", "English")
+
+        # Personalize based on onboarding preferences
+        persona_guide = ""
+        if preferences:
+            tone = preferences.get("ai_tone", "simple")
+            focus = preferences.get("health_focus", "general")
+            lang_name = preferences.get("language", "English")
+            persona_guide = (
+                f"\nUser Preferences: Tone should be {tone}. Primary focus: {focus}. Preferred language: {lang_name}."
+            )
+
         user_message = (
             f"Please explain this health event to a parent in simple language:\n\n"
             f"Event: {event_name}\n"
@@ -86,7 +101,7 @@ async def explain_health_event(
         chat = await client.chat.completions.create(
             model=settings.github_chat_model,
             messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
+                {"role": "system", "content": _SYSTEM_PROMPT + persona_guide},
                 {"role": "user", "content": user_message},
             ],
             max_tokens=200,
@@ -103,13 +118,25 @@ async def answer_voice_question(
     question: str,
     context: str,
     language: str = "en",
+    preferences: dict | None = None,
 ) -> str:
     """
     Answer a user's voice question using their health timeline context.
     """
     try:
         client = get_ai_client()
-        target_lang = LANGUAGE_MAP.get(language, "English")
+
+        # Get language from preferences if not explicitly provided
+        lang_from_prefs = preferences.get("language") if preferences else None
+        target_lang = LANGUAGE_MAP.get(language or lang_from_prefs or "en", "English")
+
+        # Personalize based on onboarding preferences
+        persona_guide = ""
+        if preferences:
+            tone = preferences.get("ai_tone", "helpful")
+            lang_name = preferences.get("language", "English")
+            persona_guide = f"\nUser Preferences: Tone should be {tone}. Preferred language: {lang_name}."
+
         user_message = (
             f"Context about this family's health schedule:\n{context}\n\n"
             f"User question: {question}\n\n"
@@ -122,7 +149,7 @@ async def answer_voice_question(
         chat = await client.chat.completions.create(
             model=settings.github_chat_model,
             messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
+                {"role": "system", "content": _SYSTEM_PROMPT + persona_guide},
                 {"role": "user", "content": user_message},
             ],
             max_tokens=150,
@@ -169,7 +196,7 @@ async def simplify_medicine_result(
     except Exception as exc:
         log.warning("ai_medicine_simplify_failed", error=str(exc))
         return f"{medicine_name}: {why_caution}"
-    
+
 
 async def detect_completion_intent(
     text: str,
@@ -189,7 +216,7 @@ async def detect_completion_intent(
             "Return JSON in format: {'event_name': string, 'dependent_name': string} or null if no clear completion reported."
         )
         user_message = f"Context:\n{context}\n\nUser text: {text}"
-        
+
         chat = await client.chat.completions.create(
             model=settings.github_chat_model,
             messages=[
@@ -201,6 +228,7 @@ async def detect_completion_intent(
             temperature=0.0,
         )
         import json
+
         return json.loads(chat.choices[0].message.content)
 
     except Exception as exc:
