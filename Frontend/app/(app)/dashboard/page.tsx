@@ -4,29 +4,11 @@ import { FamilyOverview } from '@/components/FamilyOverview';
 import { TimelineFeed } from '@/components/TimelineFeed';
 import { ActivitySummary } from '@/components/ActivitySummary';
 import { SchemeNavigator } from '@/components/SchemeNavigator';
-import { getHouseholds, getHousehold } from '@/lib/api';
+import { EmptyState } from '@/components/EmptyState';
+import { useHousehold } from '@/hooks/use-household';
 
 export default function DashboardPage() {
-  const { data: household, isLoading, error } = useQuery({
-    queryKey: ['household', typeof window !== 'undefined' ? localStorage.getItem('household_id') : 'active'],
-    queryFn: async () => {
-      const storedId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
-      if (storedId) {
-        return getHousehold(storedId);
-      }
-      const households = await getHouseholds();
-      if (households.length > 0) {
-        // Auto-select first household if none selected
-        if (typeof window !== 'undefined') {
-           localStorage.setItem('household_id', households[0].id);
-        }
-        return households[0];
-      }
-      throw new Error('No household found');
-    },
-    // Keep data fresh for 5 mins, but allow immediate reuse from cache
-    staleTime: 5 * 60 * 1000,
-  });
+  const { household, households, isLoading, error } = useHousehold();
 
   if (isLoading) {
     return (
@@ -39,14 +21,22 @@ export default function DashboardPage() {
     );
   }
 
+  if (!household || households.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <EmptyState type="household" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-4xl font-black text-slate-800 dark:text-white tracking-tight mb-2">
-          {error ? 'Welcome!' : `Good morning, ${household?.name || 'Family'}!`}
+        <h1 className="text-4xl font-bold text-slate-800 dark:text-white mb-2">
+          {`Good morning, ${household.name}!`}
         </h1>
-        <p className="text-slate-500 dark:text-slate-400 font-bold text-lg">
-          {error ? 'Unable to load data' : 'Here is your health overview for today.'}
+        <p className="text-slate-500 dark:text-slate-400">
+          Here is your health overview for today.
         </p>
       </div>
 

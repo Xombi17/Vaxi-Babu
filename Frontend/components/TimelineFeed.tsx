@@ -7,6 +7,8 @@ import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { getTimeline, getDependents, type HealthEvent } from '../lib/api';
 import { HealthPassCard } from './HealthPassCard';
+import { getStoredHouseholdId } from '../hooks/use-household';
+import { EmptyState } from './EmptyState';
 
 const categoryIcons = {
   vaccination: Syringe,
@@ -23,23 +25,23 @@ const statusColors = {
 };
 
 const statusStyles = {
-  red: 'bg-red-100 dark:bg-red-900/50 text-red-500 dark:text-red-400 shadow-[inset_2px_2px_4px_rgba(255,255,255,0.5),inset_-2px_-2px_4px_rgba(0,0,0,0.05)]',
-  amber: 'bg-amber-100 dark:bg-amber-900/50 text-amber-500 dark:text-amber-400 shadow-[inset_2px_2px_4px_rgba(255,255,255,0.5),inset_-2px_-2px_4px_rgba(0,0,0,0.05)]',
-  emerald: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-500 dark:text-emerald-400 shadow-[inset_2px_2px_4px_rgba(255,255,255,0.5),inset_-2px_-2px_4px_rgba(0,0,0,0.05)]',
-  blue: 'bg-blue-100 dark:bg-blue-900/50 text-blue-500 dark:text-blue-400 shadow-[inset_2px_2px_4px_rgba(255,255,255,0.5),inset_-2px_-2px_4px_rgba(0,0,0,0.05)]',
+  red: 'bg-red-100 dark:bg-red-900/50 text-red-500 dark:text-red-400',
+  amber: 'bg-amber-100 dark:bg-amber-900/50 text-amber-500 dark:text-amber-400',
+  emerald: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-500 dark:text-emerald-400',
+  blue: 'bg-blue-100 dark:bg-blue-900/50 text-blue-500 dark:text-blue-400',
 };
 
 const iconStyles = {
-  red: 'bg-red-400 dark:bg-red-500 text-white shadow-[4px_4px_8px_rgba(248,113,113,0.3)]',
-  amber: 'bg-amber-400 dark:bg-amber-500 text-white shadow-[4px_4px_8px_rgba(251,191,36,0.3)]',
-  emerald: 'bg-emerald-400 dark:bg-emerald-500 text-white shadow-[4px_4px_8px_rgba(52,211,153,0.3)]',
-  blue: 'bg-blue-400 dark:bg-blue-500 text-white shadow-[4px_4px_8px_rgba(59,130,246,0.3)]',
+  red: 'bg-red-400 dark:bg-red-500 text-white',
+  amber: 'bg-amber-400 dark:bg-amber-500 text-white',
+  emerald: 'bg-emerald-400 dark:bg-emerald-500 text-white',
+  blue: 'bg-blue-400 dark:bg-blue-500 text-white',
 };
 
 export function TimelineFeed() {
   const searchParams = useSearchParams();
   const [showPass, setShowPass] = useState(false);
-  const householdId = typeof window !== 'undefined' ? localStorage.getItem('household_id') : null;
+  const householdId = getStoredHouseholdId();
   const currentDependentId = searchParams.get('dependent');
   
   const { data: timelineData, isLoading } = useQuery({
@@ -130,11 +132,11 @@ export function TimelineFeed() {
     return (
       <section>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Health Timeline</h2>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Health Timeline</h2>
         </div>
         <div className="space-y-5">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-[#f3f6fd] dark:bg-slate-800 rounded-[2rem] p-6 animate-pulse h-32" />
+            <div key={i} className="bg-slate-100 dark:bg-slate-800 rounded-2xl p-6 animate-pulse h-32" />
           ))}
         </div>
       </section>
@@ -145,20 +147,20 @@ export function TimelineFeed() {
     <section className="relative">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
             {dependentName ? `${dependentName}'s Timeline` : 'Health Timeline'}
           </h2>
           {dependentName && (
             <button 
               onClick={() => setShowPass(true)}
-              className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-xl shadow-lg transition-all active:scale-90 flex items-center gap-2 px-4 shadow-blue-500/20"
+              className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-xl flex items-center gap-2 px-4 text-sm font-bold"
             >
               <Award size={18} strokeWidth={3} />
-              <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Health Pass</span>
+              <span className="hidden sm:inline">Health Pass</span>
             </button>
           )}
         </div>
-        <Link href="/timeline" className="text-blue-500 dark:text-blue-400 font-black text-sm hover:text-blue-600 dark:hover:text-blue-300 transition-colors">View All</Link>
+        <Link href="/timeline" className="text-blue-500 dark:text-blue-400 font-bold text-sm hover:text-blue-600 dark:hover:text-blue-300 transition-colors">View All</Link>
       </div>
 
       <AnimatePresence>
@@ -177,7 +179,7 @@ export function TimelineFeed() {
             >
               <button 
                 onClick={() => setShowPass(false)}
-                className="absolute -top-4 -right-4 z-[110] bg-white dark:bg-slate-800 p-4 rounded-[1.5rem] shadow-2xl text-slate-500 hover:text-rose-500 transition-all border border-slate-100 dark:border-slate-700 active:scale-90"
+                className="absolute -top-4 -right-4 z-[110] bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-lg text-slate-500 hover:text-rose-500 transition-all border border-slate-100 dark:border-slate-700 active:scale-90"
               >
                 <X size={24} strokeWidth={3} />
               </button>
@@ -189,9 +191,7 @@ export function TimelineFeed() {
 
       <div className="space-y-5">
         {events.length === 0 ? (
-          <div className="bg-[#f3f6fd] dark:bg-slate-800 rounded-[2.5rem] p-10 text-center shadow-inner">
-            <p className="text-slate-400 font-bold">No health events found for this member.</p>
-          </div>
+          <EmptyState type="events" />
         ) : (
           events.map((event, index) => {
             const Icon = categoryIcons[event.category] || Calendar;
@@ -203,24 +203,24 @@ export function TimelineFeed() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 key={event.id}
-                className="bg-[#f3f6fd] dark:bg-slate-800 rounded-[2rem] p-6 shadow-[8px_8px_16px_rgba(0,0,0,0.05),-8px_-8px_16px_rgba(255,255,255,0.8)] dark:shadow-[8px_8px_16px_rgba(0,0,0,0.4),-8px_-8px_16px_rgba(255,255,255,0.05)] flex flex-col sm:flex-row sm:items-center gap-6 hover:-translate-y-1 hover:shadow-[10px_10px_20px_rgba(0,0,0,0.05),-10px_-10px_20px_rgba(255,255,255,0.8),inset_4px_4px_10px_rgba(255,255,255,0.9),inset_-4px_-4px_10px_rgba(0,0,0,0.02)] dark:hover:shadow-[10px_10px_20px_rgba(0,0,0,0.4),-10px_-10px_20px_rgba(255,255,255,0.05),inset_4px_4px_10px_rgba(255,255,255,0.1),inset_-4px_-4px_10px_rgba(0,0,0,0.5)] transition-all"
+                className="bg-slate-100 dark:bg-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center gap-6 hover:-translate-y-1 transition-all"
               >
-                <div className={`w-16 h-16 rounded-[1.25rem] flex items-center justify-center shrink-0 ${iconStyles[colorKey]}`}>
+                <div className={`w-16 h-16 rounded-xl flex items-center justify-center shrink-0 ${iconStyles[colorKey]}`}>
                   <Icon size={32} strokeWidth={3} />
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-black text-slate-800 dark:text-white truncate">
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-white truncate">
                       {event.name}
-                      {event.dose_number && <span className="ml-2 text-[10px] bg-white/50 dark:bg-black/20 px-2 py-0.5 rounded-lg">Dose {event.dose_number}</span>}
+                      {event.dose_number && <span className="ml-2 text-xs bg-white/50 dark:bg-black/20 px-2 py-0.5 rounded-lg">Dose {event.dose_number}</span>}
                     </h3>
-                    <span className={`text-[10px] font-black tracking-wider px-3 py-1.5 rounded-xl uppercase ${statusStyles[colorKey]}`}>
+                    <span className={`text-xs font-bold px-3 py-1.5 rounded-xl uppercase ${statusStyles[colorKey]}`}>
                       {event.status}
                     </span>
                   </div>
-                  <div className="flex items-center gap-5 text-sm font-bold text-slate-500 dark:text-slate-400">
-                    <span className="flex items-center gap-1.5 bg-white dark:bg-slate-700 px-3 py-1.5 rounded-xl shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.5)]">
+                  <div className="flex items-center gap-5 text-sm font-medium text-slate-500 dark:text-slate-400">
+                    <span className="flex items-center gap-1.5 bg-white dark:bg-slate-700 px-3 py-1.5 rounded-xl">
                       <User size={16} className="text-blue-400"/> {dependentName}
                     </span>
                     <span className="flex items-center gap-1.5 leading-none">
@@ -232,7 +232,7 @@ export function TimelineFeed() {
 
                 <button 
                   onClick={() => speak(event)}
-                  className="w-full sm:w-auto mt-4 sm:mt-0 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-500 dark:hover:text-blue-400 rounded-2xl py-4 px-8 font-black flex items-center justify-center gap-2 transition-all shadow-[4px_4px_8px_rgba(0,0,0,0.05),inset_2px_2px_4px_rgba(255,255,255,0.9),inset_-2px_-2px_4px_rgba(0,0,0,0.02)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.3),inset_2px_2px_4px_rgba(255,255,255,0.1),inset_-2px_-2px_4px_rgba(0,0,0,0.4)] active:translate-y-0.5 active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05)] dark:active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+                  className="w-full sm:w-auto mt-4 sm:mt-0 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-500 dark:hover:text-blue-400 rounded-2xl py-4 px-8 font-bold flex items-center justify-center gap-2 transition-all"
                 >
                   <Volume2 size={20} strokeWidth={3} />
                   <span>Listen</span>

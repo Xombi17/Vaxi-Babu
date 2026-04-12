@@ -94,10 +94,10 @@ export function HealthPassCard({ dependentId }: { dependentId: string }) {
           <div className="flex flex-col justify-between py-2 space-y-6">
             <div className="bg-white/60 dark:bg-slate-700/60 p-8 rounded-[2.5rem] border border-white/50 dark:border-slate-600/30 shadow-sm">
               <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-3">Protection Score</p>
-              <div className="flex items-end gap-3">
-                <span className="text-5xl font-black text-slate-800 dark:text-white leading-none">{stats.health_score}%</span>
-                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${stats.health_score >= 80 ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                  {stats.health_score >= 80 ? 'Optimal' : 'Deficient'}
+                <div className="flex items-end gap-3">
+                <span className="text-5xl font-bold text-slate-800 dark:text-white leading-none">{stats.health_score}%</span>
+                <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${stats.health_score >= 80 ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                  {stats.health_score >= 80 ? 'Optimal' : 'Needs Focus'}
                 </div>
               </div>
             </div>
