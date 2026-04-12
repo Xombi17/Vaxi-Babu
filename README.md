@@ -108,7 +108,7 @@ uv sync --extra dev
 # Setup environment
 cp .env.example .env
 # Start the server
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8080
 ```
 
 ### Frontend Setup

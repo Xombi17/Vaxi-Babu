@@ -23,7 +23,7 @@ WellSyncAI/
 cd Backend
 uv sync              # install deps
 uv sync --extra dev # install + dev deps (pytest, ruff)
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 ruff check .        # lint
 ruff check . --fix # lint + format
 pytest tests/       # run tests (29/29 passing)

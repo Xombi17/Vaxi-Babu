@@ -19,7 +19,10 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown logic."""
-    log.info("wellsync_starting", env=settings.app_env)
+    log.info("wellsync_starting", 
+             env=settings.app_env, 
+             port=settings.app_port,
+             allowed_origins=settings.frontend_url.split(","))
 
     # Auto-create tables in development (use Alembic for production)
     if settings.is_dev:
@@ -46,11 +49,16 @@ app = FastAPI(
 
 # ─── CORS ─────────────────────────────────────────────────────────────────────
 # Split comma-separated origins from settings
-ALLOWED_ORIGINS = [origin.strip() for origin in settings.frontend_url.split(",")]
+raw_origins = settings.frontend_url.split(",")
+ALLOWED_ORIGINS = [origin.strip() for origin in raw_origins if origin.strip()]
+
+# If in production and FRONTEND_URL is not set to allow all, we ensure Vercel is there
+if settings.is_prod and "https://well-sync-nine.vercel.app" not in ALLOWED_ORIGINS:
+    ALLOWED_ORIGINS.append("https://well-sync-nine.vercel.app")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=ALLOWED_ORIGINS if "*" not in ALLOWED_ORIGINS else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

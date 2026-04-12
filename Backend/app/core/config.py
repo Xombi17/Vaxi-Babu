@@ -1,6 +1,9 @@
 from functools import lru_cache
+from typing import Optional
+import os
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
 
 class Settings(BaseSettings):
@@ -14,7 +17,8 @@ class Settings(BaseSettings):
     # App
     app_env: str = "development"
     app_host: str = "0.0.0.0"
-    app_port: int = 8080
+    # Render uses PORT, local dev uses APP_PORT or defaults to 8080
+    app_port: int = Field(default=8080, alias="PORT", validation_alias="APP_PORT")
     log_level: str = "INFO"
 
     # CORS
