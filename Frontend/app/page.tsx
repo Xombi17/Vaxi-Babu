@@ -6,52 +6,44 @@ import PwaInstallNotice from '@/components/landing/PwaInstallNotice';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-raleway text-slate-800 dark:text-slate-100 overflow-x-hidden relative">
+    <div className="min-h-screen bg-[#0F172A] font-raleway text-slate-100 overflow-x-hidden relative">
       {/* PWA Notice */}
       <PwaInstallNotice />
       
-      {/* Accessible Navigation */}
-      <nav className="fixed top-0 inset-x-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-[1rem] flex items-center justify-center shadow-lg relative overflow-hidden">
-              <Activity className="text-white relative z-10" size={20} strokeWidth={3} />
-            </div>
-            <span className="text-2xl font-lora font-black tracking-tight text-primary dark:text-secondary">WellSync</span>
-          </div>
-          <div className="hidden md:flex items-center gap-8 text-sm font-bold text-slate-600 dark:text-slate-400">
-            <a href="#features" className="hover:text-primary dark:hover:text-secondary transition-colors focus-visible:ring-3 rounded-sm outline-hidden">Features</a>
-            <a href="#reviews" className="hover:text-primary dark:hover:text-secondary transition-colors focus-visible:ring-3 rounded-sm outline-hidden">Reviews</a>
-          </div>
+      {/* Premium Glass Navigation */}
+      <nav className="fixed top-8 inset-x-6 z-50 pointer-events-none">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center bg-[#0F172A]/40 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-2xl pointer-events-auto">
           <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <Link href="/login" className="hidden md:block text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-white transition-colors focus-visible:ring-3 rounded-sm outline-hidden">
-              Sign in
-            </Link>
-            <Link href="/login" className="bg-cta hover:bg-emerald-700 text-white px-6 py-2.5 rounded-full text-sm font-bold transition-all focus-visible:ring-3 outline-hidden">
-              Get Started
-            </Link>
+            <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center shadow-2xl transition-transform hover:scale-110">
+              <Activity className="text-[#0F172A]" size={22} strokeWidth={3} />
+            </div>
+            <span className="text-2xl font-lora font-black tracking-tight text-white hidden sm:block">WellSync</span>
+          </div>
+          
+          <div className="flex items-center gap-8">
+            <div className="hidden md:flex items-center gap-10 text-xs font-black uppercase tracking-widest text-slate-400">
+              <a href="#features" className="hover:text-secondary transition-colors">Platform</a>
+              <a href="#about" className="hover:text-secondary transition-colors">Our Vision</a>
+            </div>
+            
+            <div className="h-6 w-px bg-white/10 hidden md:block" />
+            
+            <div className="flex items-center gap-6">
+              <ThemeToggle />
+              <Link href="/login" className="bg-white text-[#0F172A] px-8 py-3 rounded-full text-sm font-black transition-all hover:scale-105 active:scale-95 shadow-xl">
+                Get Started
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
 
-      {/* The interactive client boundaries */}
+      {/* Main content area */}
       <main>
         <LandingClient />
       </main>
 
-      {/* Minimal Footer */}
-      <footer className="bg-slate-100 dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800 py-10 relative z-50">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-3 text-slate-500 hover:text-primary transition-colors focus-visible:ring-3 rounded-sm outline-hidden cursor-pointer">
-            <Activity size={20} />
-            <span className="text-xl font-lora font-black tracking-tight">WellSync</span>
-          </div>
-          <p className="text-sm font-bold text-slate-500">
-            © {new Date().getFullYear()} WellSync AI. Accessible Healthcare.
-          </p>
-        </div>
-      </footer>
+      {/* Footer is handled inside LandingClient for seamless flow */}
     </div>
   );
 }

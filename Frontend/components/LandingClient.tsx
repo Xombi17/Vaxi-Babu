@@ -1,233 +1,335 @@
-'use client';
+"use client";
 
 import React, { useRef } from 'react';
+import { motion, useScroll, useSpring } from 'motion/react';
+import Image from 'next/image';
+import { 
+  Activity, 
+  ArrowRight, 
+  ShieldCheck, 
+  BrainCircuit, 
+  Smartphone, 
+  Clock, 
+  Globe2,
+  Star
+} from 'lucide-react';
 import Link from 'next/link';
-import { motion, useScroll, useTransform } from 'motion/react';
-import { Activity, ShieldCheck, HeartPulse, Clock, BrainCircuit, Globe2, Star, Download, Play, Smartphone } from 'lucide-react';
+
+const MotionImage = motion.create(Image);
 
 export default function LandingClient() {
   const containerRef = useRef<HTMLDivElement>(null);
-  
-  // Horizontal Scroll refs for the sticky walkthrough feature
-  const horizontalRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress: horizontalProgress } = useScroll({
-    target: horizontalRef,
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
   });
-  
-  // Maps 0-1 vertical scroll to 0% to -66% horizontal translation (since we have 3 panels of mostly 100vw but squeezed tightly)
-  const xTransform = useTransform(horizontalProgress, [0, 1], ["0%", "-66.6666%"]);
+
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
 
   return (
-    <div className="relative z-10 w-full bg-slate-950 text-slate-50 selection:bg-primary selection:text-white" ref={containerRef}>
+    <div className="relative z-10 w-full bg-[#0F172A] text-slate-50 selection:bg-secondary selection:text-[#0F172A]" ref={containerRef}>
       
-      {/* 1. HERO ALIVE - Cinematic Hook */}
-      <section className="relative min-h-[100dvh] flex flex-col items-center justify-center pt-28 pb-10 px-6 overflow-hidden">
-        {/* Animated Background Ambience - Stitch Tonal Lighting */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <motion.div 
-            className="absolute top-1/4 -left-[20%] w-[60vw] md:w-[40vw] h-[60vw] md:h-[40vw] rounded-full bg-primary/20 blur-[100px] md:blur-[140px] mix-blend-screen"
-            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div 
-            className="absolute bottom-1/4 -right-[10%] w-[50vw] md:w-[35vw] h-[50vw] md:h-[35vw] rounded-full bg-[#84d4d3]/20 blur-[80px] md:blur-[120px] mix-blend-screen"
-            animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.7, 0.4] }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-          />
-        </div>
-
-        <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col items-center text-center">
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full border border-primary/30 bg-slate-900/40 text-primary-light font-bold text-sm mb-10 backdrop-blur-xl"
-          >
-            <span className="w-2.5 h-2.5 rounded-full bg-[#84d4d3] animate-pulse shadow-[0_0_12px_#84d4d3]" />
-            #1 Offline PWA for Rural Care
-          </motion.div>
-          
-          <motion.h1 
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-            className="text-6xl md:text-8xl lg:text-[7rem] font-lora font-black tracking-tighter leading-[1.05] mb-8"
-          >
-            The digital sanctuary <br className="hidden md:block"/>
-            <span className="text-transparent bg-clip-text bg-[linear-gradient(135deg,#84d4d3,#006a6a)]">for family health.</span>
-          </motion.h1>
-          
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.3 }}
-            className="text-xl md:text-3xl text-slate-400 font-medium max-w-4xl mb-14 leading-relaxed"
-          >
-            No typing, no complex menus. Talk to a digital health assistant that instantly organizes health records securely in 6 local languages.
-          </motion.p>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-            className="flex flex-col sm:flex-row items-center gap-6"
-          >
-            <Link href="/login" className="group relative overflow-hidden rounded-[2.5rem] p-[2px]">
-               <div className="absolute inset-0 bg-[linear-gradient(135deg,#005050,#006a6a)] group-hover:bg-[linear-gradient(135deg,#006a6a,#84d4d3)] transition-colors duration-500" />
-               <div className="relative bg-slate-950/40 backdrop-blur-xl px-12 py-5 rounded-[2.5rem] flex items-center justify-center gap-3 text-white text-xl font-bold">
-                  <Download className="w-6 h-6 text-[#84d4d3]" />
-                  Install App
-               </div>
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 2. HORIZONTAL SCROLL JOURNEY (Sticky Narrative) */}
-      {/* We use a height of 300vh so it takes 3 screens of vertical scroll to unlock the sticky container */}
-      <section ref={horizontalRef} className="relative h-[300vh] bg-slate-950 border-t border-slate-900/50">
-        <div className="sticky top-0 h-screen flex items-center overflow-hidden">
-          {/* Scroll instruction indicator that fades out as we start scrolling */}
-          <motion.div 
-            className="absolute bottom-10 left-1/2 -translate-x-1/2 text-slate-500 flex flex-col items-center gap-2"
-            style={{ opacity: useTransform(horizontalProgress, [0, 0.1], [1, 0]) }}
-          >
-            <span className="text-sm tracking-widest uppercase font-bold">Hold & Scroll</span>
-            <div className="w-[1px] h-12 bg-gradient-to-b from-slate-500 to-transparent" />
-          </motion.div>
-
-          <motion.div style={{ x: xTransform }} className="flex gap-16 px-[10vw]">
-            
-            {/* Panel 1 */}
-            <div className="w-[85vw] md:w-[65vw] lg:w-[50vw] shrink-0 flex flex-col justify-center">
-              <div className="bg-slate-900/30 backdrop-blur-3xl border border-slate-800/80 p-12 md:p-16 rounded-[4rem] group hover:border-[#84d4d3]/30 transition-colors duration-500">
-                <Globe2 className="w-20 h-20 text-[#84d4d3] mb-10 group-hover:scale-110 transition-transform duration-500" />
-                <h2 className="text-5xl md:text-6xl font-lora font-bold mb-8 text-white">6 Local Languages.</h2>
-                <p className="text-2xl md:text-3xl text-slate-400 leading-relaxed font-medium">Speak naturally in English, Hindi, Marathi, Bengali, Tamil, and Telugu. Voted the most accessible voice UI.</p>
-              </div>
-            </div>
-
-            {/* Panel 2 */}
-            <div className="w-[85vw] md:w-[65vw] lg:w-[50vw] shrink-0 flex flex-col justify-center">
-              <div className="bg-slate-900/30 backdrop-blur-3xl border border-slate-800/80 p-12 md:p-16 rounded-[4rem] group hover:border-[#84d4d3]/30 transition-colors duration-500">
-                <ShieldCheck className="w-20 h-20 text-[#84d4d3] mb-10 group-hover:scale-110 transition-transform duration-500" />
-                <h2 className="text-5xl md:text-6xl font-lora font-bold mb-8 text-white">Medicine Safety.</h2>
-                <p className="text-2xl md:text-3xl text-slate-400 leading-relaxed font-medium">Scan medicine strips securely. We cross-reference with schedules to prevent errors instantly.</p>
-              </div>
-            </div>
-
-            {/* Panel 3 */}
-            <div className="w-[85vw] md:w-[65vw] lg:w-[50vw] shrink-0 flex flex-col justify-center">
-              <div className="bg-slate-900/30 backdrop-blur-3xl border border-slate-800/80 p-12 md:p-16 rounded-[4rem] group hover:border-[#84d4d3]/30 transition-colors duration-500">
-                <Clock className="w-20 h-20 text-[#84d4d3] mb-10 group-hover:scale-110 transition-transform duration-500" />
-                <h2 className="text-5xl md:text-6xl font-lora font-bold mb-8 text-white">Predictive Timelines.</h2>
-                <p className="text-2xl md:text-3xl text-slate-400 leading-relaxed font-medium">The Indian NIS scheduler determines exactly when your children need their vaccines automatically.</p>
-              </div>
-            </div>
-            
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 3. ASYMMETRICAL STORY (Tonal Layering - Scroll trigger) */}
-      {/* Light aesthetic to bridge to accessibility / offline reliability */}
-      <section className="py-40 bg-slate-50 text-slate-900 border-t-[30px] border-primary pb-52 border-b-2 border-slate-200 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 150 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
-            className="flex flex-col lg:flex-row gap-20 items-center"
-          >
-            <div className="flex-1 space-y-10 lg:pr-10">
-              <h2 className="text-6xl md:text-7xl lg:text-8xl font-lora font-black tracking-tight text-slate-900 leading-tight">
-                Built to work <br /> <span className="text-primary italic">offline.</span>
-              </h2>
-              <p className="text-2xl md:text-3xl text-slate-600 font-medium leading-relaxed">
-                Log events without the internet. Next time you reach a cell tower, we&rsquo;ll securely sync it back to the cloud. Designed specifically for rural connectivity hurdles.
-              </p>
-            </div>
-            
-            {/* The Floating UI Diagram */}
-            <div className="flex-1 w-full bg-white rounded-[4rem] p-12 md:p-16 shadow-[0_40px_80px_-20px_rgba(0,106,106,0.15)] relative">
-               <div className="absolute top-0 right-0 w-80 h-80 bg-[#84d4d3]/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/4 pointer-events-none" />
-               <Smartphone className="w-16 h-16 text-primary mb-10" />
-               <div className="space-y-6 relative z-10">
-                 {[1,2,3].map(i => (
-                    <motion.div 
-                      key={i} 
-                      className="h-24 bg-white/60 backdrop-blur-md rounded-3xl border border-slate-100 flex items-center px-8 gap-6 shadow-sm hover:shadow-md transition-shadow"
-                      initial={{ opacity: 0, x: 40 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.2, duration: 0.8, ease: "easeOut" }}
-                      viewport={{ once: true, margin: "-50px" }}
-                    >
-                      <div className="w-14 h-14 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center border border-green-100/50">
-                        <Activity size={24} />
-                      </div>
-                      <div className="space-y-3 flex-1">
-                        <div className="h-4 w-1/3 bg-slate-200 rounded-full" />
-                        <div className="h-3 w-1/4 bg-slate-100 rounded-full" />
-                      </div>
-                    </motion.div>
-                 ))}
-               </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      {/* 0. GRAIN & MESH OVERLAY */}
+      <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.04] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       
-      {/* 4. CLIMAX CTA */}
-      <section className="relative py-52 bg-slate-950 overflow-hidden text-center flex flex-col items-center">
-        {/* Deep gradient pulse for climax */}
+      {/* GLOBAL MESH GRADIENTS */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <motion.div 
-          className="absolute inset-0 opacity-50 pointer-events-none"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 0.5 }}
-          viewport={{ once: false }}
-        >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] md:w-[60vw] md:h-[60vw] bg-[radial-gradient(circle,rgba(0,106,106,0.4)_0%,transparent_70%)] blur-2xl" />
-        </motion.div>
-        
-        <div className="relative z-10 max-w-5xl px-6">
-           <motion.h2 
-             initial={{ scale: 0.9, opacity: 0, y: 50 }}
-             whileInView={{ scale: 1, opacity: 1, y: 0 }}
-             transition={{ duration: 0.8, ease: "easeOut" }}
-             className="text-6xl md:text-8xl lg:text-[7rem] font-lora font-black text-white mb-12 tracking-tight leading-[1.1]"
-           >
-             Ready to remember?
-           </motion.h2>
-           
-           <motion.div
-             initial={{ y: 50, opacity: 0 }}
-             whileInView={{ y: 0, opacity: 1 }}
-             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-           >
-             <Link href="/login" className="inline-flex bg-white text-slate-950 px-16 py-6 rounded-[3rem] text-2xl font-bold shadow-2xl hover:scale-105 hover:bg-[#84d4d3] hover:shadow-[#006a6a]/30 transition-all duration-300">
-                Install WellSync Now
-             </Link>
-           </motion.div>
-           
-           <motion.div 
-             initial={{ opacity: 0 }}
-             whileInView={{ opacity: 1 }}
-             transition={{ duration: 1, delay: 0.6 }}
-             className="mt-14 flex items-center justify-center gap-3 text-lg font-bold text-slate-400"
-           >
-             <div className="flex text-[#84d4d3] gap-1">
-               <Star size={20} fill="currentColor" />
-               <Star size={20} fill="currentColor" />
-               <Star size={20} fill="currentColor" />
-               <Star size={20} fill="currentColor" />
-               <Star size={20} fill="currentColor" />
+          animate={{ 
+            x: [0, 100, 0], 
+            y: [0, 50, 0],
+            scale: [1, 1.2, 1] 
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute -top-[20%] -left-[10%] w-[60vw] h-[60vw] bg-secondary/10 rounded-full blur-[120px]" 
+        />
+        <motion.div 
+          animate={{ 
+            x: [0, -80, 0], 
+            y: [0, 100, 0],
+            scale: [1, 1.1, 1] 
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[40%] -right-[15%] w-[50vw] h-[50vw] bg-primary/10 rounded-full blur-[100px]" 
+        />
+      </div>
+
+      {/* 1. HERO - THE CINEMATIC HOOK */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center pt-28 pb-20 px-6 overflow-hidden">
+        <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative z-10">
+          
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-secondary/20 bg-white/5 backdrop-blur-md text-secondary text-xs font-black uppercase tracking-widest mb-8"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
+              Sovereign Health Infrastructure
+            </motion.div>
+            
+            <h1 className="text-6xl md:text-8xl lg:text-[6.5rem] font-lora font-black tracking-tighter leading-[0.95] mb-8 text-white">
+              The Digital <br />
+              <span className="italic text-transparent bg-clip-text bg-[linear-gradient(135deg,var(--color-secondary),var(--color-primary))]">Sanctuary</span> <br />
+              for Families.
+            </h1>
+            
+            <p className="text-xl md:text-2xl text-slate-300 font-medium leading-relaxed max-w-xl mb-12">
+              WellSync is a health memory system designed for the resilience of rural life. Zero typing, offline-first, and clinical-grade intelligence.
+            </p>
+            
+            <div className="flex flex-wrap gap-6">
+              <Link href="/login" className="px-10 py-5 bg-white text-[#0F172A] rounded-full font-black text-xl hover:scale-105 active:scale-95 transition-all shadow-2xl">
+                Get Started
+              </Link>
+              <div className="flex items-center gap-4 text-slate-400 font-bold group">
+                <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-white/5 transition-colors cursor-pointer">
+                  <Activity size={20} className="text-secondary" />
+                </div>
+                <span>View Live Schedule</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Hero Image Frame */}
+          <motion.div 
+             initial={{ opacity: 0, scale: 0.9 }}
+             animate={{ opacity: 1, scale: 1 }}
+             transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+             className="relative aspect-square lg:aspect-[4/5] rounded-[3rem] overflow-hidden group shadow-2xl"
+          >
+             <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_60%,rgba(15,23,42,0.9))] z-10" />
+             <div className="absolute inset-0 border-[20px] border-[#0F172A] z-20 rounded-[3rem] pointer-events-none" />
+             <MotionImage 
+                src="/images/landing/hero.png" 
+                alt="Rural Health" 
+                width={1200}
+                height={1500}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[10s]"
+                priority
+             />
+             <div className="absolute bottom-12 left-12 z-30 right-12">
+                <div className="p-6 rounded-3xl bg-black/40 backdrop-blur-2xl border border-white/10 shadow-2xl">
+                   <div className="flex items-center gap-4 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-secondary/20 flex items-center justify-center text-secondary">
+                         <Activity size={20} />
+                      </div>
+                      <span className="font-black text-white">Live Health Analytics</span>
+                   </div>
+                   <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        whileInView={{ width: "85%" }}
+                        transition={{ duration: 2, delay: 1 }}
+                        className="h-full bg-secondary" 
+                      />
+                   </div>
+                </div>
              </div>
-             <span>Trusted by 10,000+ families</span>
-           </motion.div>
+          </motion.div>
         </div>
       </section>
-      
+
+      {/* 2. THE IDENTITY (High contrast Editorial) */}
+      <section className="relative py-40 border-y border-white/5 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+             <div className="lg:col-span-8">
+                <span className="text-secondary font-black tracking-widest uppercase text-xs mb-6 block">— Philosophy</span>
+                <h2 className="text-5xl md:text-8xl font-lora font-black text-white leading-[1] tracking-tighter">
+                  Clinical precision <br /> meets <span className="italic font-serif text-secondary/80">rural empathy.</span>
+                </h2>
+             </div>
+             <div className="lg:col-span-4 flex flex-col justify-end">
+                <p className="text-2xl text-slate-300 font-medium leading-[1.4]">
+                  We replace chaotic paper records with a deterministic, cryptographically secure digital sanctuary. Safe. Sovereign. Simple.
+                </p>
+             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. THE ECOSYSTEM (Bento Overhaul) */}
+      <section className="relative py-40 bg-black/10">
+        <div className="max-w-7xl mx-auto px-6">
+           <div className="mb-24 flex flex-col md:flex-row md:items-end justify-between gap-8">
+              <div className="max-w-2xl">
+                 <h2 className="text-secondary font-black tracking-widest uppercase text-xs mb-4">The Ecosystem</h2>
+                 <h3 className="text-5xl md:text-7xl font-lora font-black text-white leading-tight">Everything, <br /> synchronized.</h3>
+              </div>
+              <p className="text-lg text-slate-400 font-medium md:max-w-xs leading-relaxed">
+                A complete suite of medical automation models working in parallel to secure your family&apos;s future.
+              </p>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-6 gap-6 min-h-[800px]">
+              {/* Feature 1: Predictive */}
+              <motion.div 
+                whileHover={{ y: -10 }}
+                className="md:col-span-3 bg-white/5 border border-white/10 rounded-[3rem] p-12 overflow-hidden relative group"
+              >
+                 <div className="absolute top-0 right-0 p-8">
+                    <Clock className="w-12 h-12 text-secondary/30 group-hover:text-secondary transition-colors" />
+                 </div>
+                 <div className="relative z-10 h-full flex flex-col justify-end">
+                    <h4 className="text-4xl font-black mb-4 text-white">Predictive <br /> NIS Engine</h4>
+                    <p className="text-slate-400 text-lg max-w-sm font-medium">Deterministic vaccination mapping that lives offline and alerts you via voice.</p>
+                 </div>
+                 <div className="absolute inset-0 bg-gradient-to-t from-secondary/5 to-transparent pointer-events-none" />
+              </motion.div>
+
+              {/* Feature 2: High fidelity Image Feature */}
+              <motion.div 
+                whileHover={{ scale: 1.01 }}
+                className="md:col-span-3 md:row-span-2 bg-[#2563EB] rounded-[3rem] overflow-hidden relative shadow-2xl"
+              >
+                  <Image src="/images/landing/tech.png" alt="Tech" fill className="object-cover mix-blend-soft-light opacity-60" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#2563EB] via-transparent to-transparent opacity-80" />
+                  <div className="relative z-10 p-12 h-full flex flex-col justify-end">
+                    <Activity className="w-12 h-12 text-white mb-8" />
+                    <h4 className="text-5xl font-lora font-black text-white mb-6">Real-time <br /> Governance.</h4>
+                    <p className="text-blue-50 font-medium text-xl max-w-sm leading-relaxed">
+                      Your medical data never leaves the sovereign boundary of your device unless explicitly synced.
+                    </p>
+                  </div>
+              </motion.div>
+
+              {/* Feature 3: OCR Interaction */}
+              <motion.div 
+                whileHover={{ y: -10 }}
+                className="md:col-span-3 bg-white/5 border border-white/10 rounded-[3rem] p-12 flex flex-col lg:flex-row items-center gap-12 group"
+              >
+                 <div className="lg:w-1/2">
+                    <h4 className="text-4xl font-black mb-4 text-white">GPT-4o OCR</h4>
+                    <p className="text-slate-400 text-lg font-medium">Scan any prescription. Our vision pipeline extracts, verifies, and logs interaction risks instantly.</p>
+                 </div>
+                 <div className="lg:w-1/2 aspect-video rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
+                    <Image 
+                        src="/images/landing/ocr.png" 
+                        alt="Scanning" 
+                        width={800}
+                        height={450}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                     />
+                    <div className="absolute inset-0 bg-secondary/20 mix-blend-screen animate-pulse pointer-events-none" />
+                 </div>
+              </motion.div>
+           </div>
+        </div>
+      </section>
+
+      {/* 4. THE TECH STACK FLOW */}
+      <section className="relative py-40 border-t border-white/5">
+         <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+               <div className="relative order-2 lg:order-1">
+                  <div className="grid grid-cols-2 gap-6">
+                     {[
+                       { icon: BrainCircuit, title: "Gemini Live", desc: "Native Dialects" },
+                       { icon: ShieldCheck, title: "PostgreSQL", desc: "Native SSL" },
+                       { icon: Smartphone, title: "PWA 3.0", desc: "Offline Memory" },
+                       { icon: Activity, title: "FastRT", desc: "Deterministic Engine" }
+                     ].map((item, i) => (
+                       <motion.div 
+                         key={i}
+                         initial={{ opacity: 0, y: 30 }}
+                         whileInView={{ opacity: 1, y: 0 }}
+                         transition={{ delay: i * 0.1 }}
+                         className="p-8 rounded-[2rem] bg-white/5 border border-white/10 hover:border-secondary/50 transition-colors group"
+                       >
+                          <item.icon className="w-10 h-10 text-secondary mb-6 group-hover:scale-110 transition-transform" />
+                          <h4 className="font-black text-xl mb-1 text-white">{item.title}</h4>
+                          <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">{item.desc}</p>
+                       </motion.div>
+                     ))}
+                  </div>
+               </div>
+               
+               <div className="order-1 lg:order-2">
+                  <span className="text-secondary font-black tracking-widest uppercase text-xs mb-6 block">— The Stack</span>
+                  <h3 className="text-5xl md:text-7xl font-lora font-black text-white leading-tight mb-10">Intelligence <br /> without <span className="italic text-secondary/80">compromise.</span></h3>
+                  <div className="space-y-10">
+                     <div className="flex gap-8 group">
+                        <div className="text-4xl font-black text-white/10 group-hover:text-secondary transition-colors duration-500">01</div>
+                        <div>
+                           <h4 className="text-2xl font-black mb-3 text-white">Multimodal Intelligence</h4>
+                           <p className="text-lg text-slate-400 font-medium leading-relaxed">Speak in your mother tongue. Our Gemini engine parses local dialects with clinical precision.</p>
+                        </div>
+                     </div>
+                     <div className="w-full h-px bg-white/5" />
+                     <div className="flex gap-8 group">
+                        <div className="text-4xl font-black text-white/10 group-hover:text-secondary transition-colors duration-500">02</div>
+                        <div>
+                           <h4 className="text-2xl font-black mb-3 text-white">Execution Reliability</h4>
+                           <p className="text-lg text-slate-400 font-medium leading-relaxed">Cold, hard code handles your children&apos;s medical timing, ensuring zero hallucination.</p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </section>
+
+      {/* 5. CLIMAX CTA */}
+      <section className="relative py-64 bg-[#0F172A] overflow-hidden text-center">
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle,rgba(59,130,246,0.15)_0%,transparent_70%)] pointer-events-none" />
+         
+         <div className="max-w-4xl mx-auto px-6 relative z-10">
+            <motion.h2 
+               initial={{ opacity: 0, scale: 0.95 }}
+               whileInView={{ opacity: 1, scale: 1 }}
+               className="text-7xl md:text-[10rem] font-lora font-black text-white tracking-tighter leading-[0.85] mb-16"
+            >
+               The future <br /> <span className="text-secondary">is yours.</span>
+            </motion.h2>
+            
+            <Link href="/login" className="inline-flex items-center gap-4 bg-white text-[#0F172A] px-16 py-8 rounded-full text-3xl font-black shadow-2xl hover:scale-105 transition-all group active:scale-95">
+               Join WellSync
+               <ArrowRight className="w-8 h-8 group-hover:translate-x-2 transition-transform" />
+            </Link>
+            
+            <div className="mt-20 flex flex-wrap justify-center gap-12 opacity-40 grayscale hover:grayscale-0 transition-all">
+               <div className="flex items-center gap-2 font-black text-sm tracking-widest uppercase">
+                  <Star fill="currentColor" size={16} className="text-secondary" />
+                  Top Rated Medical PWA
+               </div>
+               <div className="flex items-center gap-2 font-black text-sm tracking-widest uppercase">
+                  <Star fill="currentColor" size={16} className="text-secondary" />
+                  Privacy Guaranteed
+               </div>
+            </div>
+         </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="relative py-20 px-6 border-t border-white/5 bg-black/20">
+         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
+            <div className="flex items-center gap-4">
+               <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-2xl">
+                  <Activity className="text-[#0F172A]" size={24} strokeWidth={3} />
+               </div>
+               <span className="text-3xl font-lora font-black text-white">WellSync</span>
+            </div>
+            
+            <div className="flex gap-12 text-sm font-black uppercase tracking-widest text-slate-500">
+               <Link href="/login" className="hover:text-secondary transition-colors">Safety</Link>
+               <Link href="/login" className="hover:text-secondary transition-colors">Privacy</Link>
+               <Link href="/login" className="hover:text-secondary transition-colors">Terms</Link>
+            </div>
+            
+            <div className="text-slate-500 font-bold text-xs uppercase tracking-tighter">
+               Built for the multi-sovereign world.
+            </div>
+         </div>
+      </footer>
     </div>
   );
 }

@@ -2,15 +2,15 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-primary: #0891B2;
-  --color-secondary: #22D3EE;
+  --color-primary: #2563EB;
+  --color-secondary: #60A5FA;
   --color-cta: #059669;
 
-  --color-text-primary-light: #164E63;
-  --color-bg-primary-light: #ECFEFF;
+  --color-text-primary-light: #1E293B;
+  --color-bg-primary-light: #F8FAFC;
 
-  --color-text-primary-dark: #ECFEFF;
-  --color-bg-primary-dark: #164E63;
+  --color-text-primary-dark: #F8FAFC;
+  --color-bg-primary-dark: #0F172A;
   
   --font-lora: "Lora", var(--font-lora), serif;
   --font-raleway: "Raleway", var(--font-raleway), sans-serif;
