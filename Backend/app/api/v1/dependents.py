@@ -30,10 +30,6 @@ async def create_dependent(
 ) -> Dependent:
     if body.household_id != current_household.id:
         raise HTTPException(status_code=403, detail="Forbidden")
-    # Verify household exists
-    household = await session.get(Household, body.household_id)
-    if not household:
-        raise HTTPException(status_code=404, detail="Household not found")
 
     dependent = Dependent(**body.model_dump())
     session.add(dependent)

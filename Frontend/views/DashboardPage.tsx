@@ -19,10 +19,11 @@ export default function DashboardPage() {
 
   if (depsError) return <div className="p-8"><ErrorState message="Failed to load family data" onRetry={() => refetchDeps()} /></div>;
 
-  const deps = dependents ?? [];
-  const events = allEvents ?? [];
-  const meds = medicines ?? [];
-  const rems = reminders ?? [];
+  const deps = Array.isArray(dependents) ? dependents : [];
+  const events = Array.isArray(allEvents) ? allEvents : [];
+  const meds = Array.isArray(medicines) ? medicines : [];
+  const rems = Array.isArray(reminders) ? reminders : [];
+  const validSchemes = Array.isArray(schemes) ? schemes : [];
 
   const overdueCount = events.filter((e: any) => e.status === 'overdue').length;
   const dueCount = events.filter((e: any) => e.status === 'due').length;
@@ -176,7 +177,7 @@ export default function DashboardPage() {
         <motion.div {...anim(9)} className="bg-surface-800/40 border border-white/[0.06] rounded-2xl p-5">
           <h2 className="font-heading font-700 text-sm text-white mb-4">Eligible Schemes</h2>
           <div className="space-y-2.5">
-            {(schemes ?? []).slice(0, 4).map((s: any, i: number) => (
+            {validSchemes.slice(0, 4).map((s: any, i: number) => (
               <div key={i} className="flex items-start gap-2.5">
                 <Sparkles size={14} className="text-warm-400 mt-0.5 flex-shrink-0" />
                 <div>

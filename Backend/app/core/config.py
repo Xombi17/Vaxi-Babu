@@ -29,7 +29,8 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_anon_key: str = ""
     supabase_service_role_key: str = ""
-    supabase_jwt_secret: str = "" # Found in Supabase Filter Dashboard -> Settings -> API
+    supabase_jwt_secret: str = "" # Found in Supabase Dashboard -> Settings -> API
+    supabase_jwk: str = ""    # JSON Web Key for ES256 verification
 
     # GitHub Models for AI and OCR
     github_token: str = ""

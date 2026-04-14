@@ -382,20 +382,50 @@ export async function getGrowthRecords(dependentId: string): Promise<GrowthRecor
   return fetchApi<GrowthRecord[]>(`/api/v1/growth/${dependentId}`);
 }
 
+export async function markEventComplete(dependentId: string, eventId: string, notes?: string): Promise<HealthEvent> {
+  return fetchApi<HealthEvent>(`/api/v1/timeline/${dependentId}/events/${eventId}/complete`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      completed_by: 'Parent',
+      location: 'Health Center',
+      notes: notes
+    }),
+  });
+}
+
+export async function createHealthEvent(dependentId: string, event: Partial<HealthEvent>): Promise<HealthEvent> {
+  return fetchApi<HealthEvent>(`/api/v1/timeline/${dependentId}/events`, {
+    method: 'POST',
+    body: JSON.stringify(event),
+  });
+}
+
+import { supabase } from './supabase';
+
 export const authApi = {
-  async login(username: string, password: string): Promise<{ access_token: string; token_type: string; household_id: string }> {
-    const response = await fetch(`${API_URL}/api/v1/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ username, password }),
+  async login(emailOrUsername: string, password: string): Promise<{ access_token: string; token_type: string; household_id: string }> {
+    // If it's a simple username (no @), we might need to append the demo domain 
+    // or handle it according to how they were seeded.
+    const email = emailOrUsername.includes('@') ? emailOrUsername : `${emailOrUsername}@wellsync.demo`;
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new ApiError(response.status, errorText || 'Login failed');
+    if (error) {
+      throw new ApiError(401, error.message);
     }
 
-    return response.json();
+    if (!data.session) {
+      throw new ApiError(401, 'Session not created');
+    }
+
+    return {
+      access_token: data.session.access_token,
+      token_type: 'bearer',
+      household_id: data.user.id,
+    };
   },
 
   async signup(payload: {
@@ -404,15 +434,39 @@ export const authApi = {
     password: string;
     primary_language?: string;
   }): Promise<Household> {
-    return fetchApi<Household>('/api/v1/households', {
-      method: 'POST',
-      body: JSON.stringify({
-        name: payload.name,
-        username: payload.username,
-        password: payload.password,
-        primary_language: payload.primary_language ?? 'en',
-      }),
+    const email = payload.username.includes('@') ? payload.username : `${payload.username}@wellsync.demo`;
+    
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: payload.password,
+      options: {
+        data: {
+          name: payload.name,
+          username: payload.username,
+          primary_language: payload.primary_language ?? 'en',
+        }
+      }
     });
+
+    if (error) {
+      throw new ApiError(400, error.message);
+    }
+
+    if (!data.user) {
+      throw new ApiError(400, 'User creation failed');
+    }
+
+    // Since the trigger handles household creation, we return a partial household
+    // The actual household will be fetched by the dashboard.
+    return {
+      id: data.user.id,
+      name: payload.name,
+      username: payload.username,
+      primary_language: payload.primary_language ?? 'en',
+      preferences: {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as Household;
   },
 };
 

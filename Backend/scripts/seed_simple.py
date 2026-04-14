@@ -44,18 +44,25 @@ DEMO_FAMILIES = [
 ]
 
 async def clear_data():
-    """Delete all existing data"""
-    print("\n🗑️  Clearing existing data...")
+    """Delete all existing data from all tables"""
+    print("\n🗑️  Clearing all existing database data...")
+    tables = [
+        "reminders", "health_events", "growth_records", "medicine_regimens", 
+        "pregnancy_profiles", "conversations", "health_notes", "dependents", "households"
+    ]
     async with AsyncSessionLocal() as session:
-        await session.execute(text("DELETE FROM health_events"))
-        await session.execute(text("DELETE FROM dependents"))
-        await session.execute(text("DELETE FROM households"))
+        for table in tables:
+            try:
+                await session.execute(text(f"DELETE FROM {table}"))
+                print(f"   Cleared table: {table}")
+            except Exception as e:
+                print(f"   Warning: Could not clear {table} (it might not exist yet): {e}")
         await session.commit()
-    print("✅ Cleared data")
+    print("✅ Database cleared")
 
 async def delete_auth_users():
-    """Delete demo auth users via Supabase Admin API"""
-    print("\n🗑️  Deleting auth users...")
+    """Delete ALL auth users via Supabase Admin API"""
+    print("\n🗑️  Deleting all Supabase Auth users...")
     async with httpx.AsyncClient() as client:
         # List users
         response = await client.get(
@@ -65,20 +72,30 @@ async def delete_auth_users():
                 "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
             },
         )
+        if response.status_code != 200:
+            print(f"   Error fetching users: {response.text}")
+            return
+            
         users = response.json().get("users", [])
+        print(f"   Found {len(users)} users to delete.")
 
-        # Delete demo users
+        # Delete users
         for user in users:
-            if user["email"] in [f["email"] for f in DEMO_FAMILIES]:
-                await client.delete(
+            try:
+                del_resp = await client.delete(
                     f"{SUPABASE_URL}/auth/v1/admin/users/{user['id']}",
                     headers={
                         "apikey": SUPABASE_SERVICE_KEY,
                         "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
                     },
                 )
-                print(f"   Deleted: {user['email']}")
-    print("✅ Deleted auth users")
+                if del_resp.status_code in (200, 204):
+                    print(f"   Deleted: {user['email']}")
+                else:
+                    print(f"   Failed to delete {user['email']}: {del_resp.text}")
+            except Exception as e:
+                print(f"   Error deleting user {user['id']}: {e}")
+    print("✅ All auth users deleted")
 
 async def create_demo_users():
     """Create Supabase Auth users and households"""
@@ -112,18 +129,32 @@ async def create_demo_users():
 
             # Create household
             async with AsyncSessionLocal() as session:
-                household = Household(
-                    name=family["name"],
-                    username=family["username"],
-                    password_hash=get_password_hash(family["password"]),
-                    primary_language="hi",
-                    auth_id=user_id,
-                )
-                session.add(household)
+                # Check if the trigger already created the household
+                stmt = select(Household).where(Household.auth_id == user_id)
+                db_result = await session.execute(stmt)
+                existing_household = db_result.scalar_one_or_none()
+
+                if existing_household:
+                    print(f"   Trigger already created household for {family['email']}. Updating...")
+                    existing_household.name = family["name"]
+                    existing_household.username = family["username"]
+                    existing_household.password_hash = get_password_hash(family["password"])
+                    existing_household.primary_language = "hi"
+                    household = existing_household
+                else:
+                    household = Household(
+                        name=family["name"],
+                        username=family["username"],
+                        password_hash=get_password_hash(family["password"]),
+                        primary_language="hi",
+                        auth_id=user_id,
+                    )
+                    session.add(household)
+                
                 await session.commit()
                 await session.refresh(household)
                 households.append(household)
-                print(f"   Created household: {family['name']}")
+                print(f"   Synced household: {family['name']}")
 
     print(f"✅ Created {len(households)} households")
     return households

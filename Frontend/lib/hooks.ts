@@ -13,12 +13,14 @@ import {
   getMedicineRegimens,
   getRecommendedSchemes,
   getTimeline,
+  markEventComplete,
+  createHealthEvent,
   type Dependent,
   type HealthEvent,
   type Household,
-} from '@/lib/api';
-import { useAuthStore } from '@/lib/auth-store';
-import { demoFamilies } from '@/lib/data';
+} from './api';
+import { useAuthStore } from './auth-store';
+import { demoFamilies } from './data';
 
 function getDemoFamily() {
   var hid = useAuthStore.getState().householdId;
@@ -60,8 +62,9 @@ export function useHousehold() {
       }
 
       var households = await getHouseholds();
-      return households[0] as any;
+      return (households[0] as any) || null;
     },
+    enabled: !!householdId || isDemoMode,
   });
 }
 
@@ -76,8 +79,9 @@ export function useSchemes() {
         return getDemoFamily().schemes || [];
       }
       if (!householdId) return [];
-      return getRecommendedSchemes(householdId);
+      return getRecommendedSchemes(householdId) || null;
     },
+    enabled: !!householdId || isDemoMode,
   });
 }
 
@@ -248,12 +252,26 @@ export function useAllTimelines() {
 }
 
 export function useCompleteEvent() {
-  // Keep UI action responsive without changing endpoint contracts.
   var qc = useQueryClient();
   return useMutation({
-    mutationFn: async (eventId: string) => ({ id: eventId, status: 'completed' }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['timeline'] });
+    mutationFn: async ({ depId, eventId }: { depId: string; eventId: string }) => {
+      return markEventComplete(depId, eventId);
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['timeline', vars.depId] });
+      qc.invalidateQueries({ queryKey: ['all-timelines'] });
+    },
+  });
+}
+
+export function useCreateEvent() {
+  var qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ depId, event }: { depId: string; event: Partial<HealthEvent> }) => {
+      return createHealthEvent(depId, event);
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['timeline', vars.depId] });
       qc.invalidateQueries({ queryKey: ['all-timelines'] });
     },
   });
@@ -371,7 +389,6 @@ export function usePregnancy() {
         };
       }
       if (!householdId) return null;
-      // fallback from timeline-backed profile in current backend
       return null;
     },
   });

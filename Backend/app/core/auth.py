@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -21,28 +22,14 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/login")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plain text password against a hash.
-
-    Args:
-        plain_password: Plain text password to verify
-        hashed_password: Hashed password to compare against
-
-    Returns:
-        True if password matches, False otherwise
-    """
+    """Verify a plain text password against a hash."""
     return PasswordService.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a plain text password.
-
-    Args:
-        password: Plain text password to hash
-
-    Returns:
-        Hashed password string
-    """
+    """Hash a plain text password."""
     return PasswordService.hash(password)
+
 
 def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
@@ -69,51 +56,84 @@ async def get_current_household(
         payload = None
         is_supabase = False
         
-        # 1. Try Supabase Verification if secret is available
-        if settings.supabase_jwt_secret:
+        # 1. Try Supabase Verification
+        if settings.supabase_jwt_secret or settings.supabase_jwk:
             try:
-                # Supabase uses HS256 by default
+                # Peek at algorithm
+                unverified_header = jwt.get_unverified_header(token)
+                alg = unverified_header.get("alg", "HS256")
+                log.debug("auth_token_header", alg=alg)
+
+                verification_key = settings.supabase_jwt_secret
+                verification_algs = ["HS256"]
+
+                if alg == "ES256" and settings.supabase_jwk:
+                    verification_key = json.loads(settings.supabase_jwk)
+                    verification_algs = ["ES256"]
+                elif alg == "HS256" and not settings.supabase_jwt_secret:
+                    log.warning("auth_missing_secret_for_hs256")
+                    raise JWTError("Missing HS256 secret")
+
                 payload = jwt.decode(
                     token, 
-                    settings.supabase_jwt_secret, 
-                    algorithms=["HS256"], 
-                    options={"verify_aud": False} # Supabase uses 'authenticated' as aud
+                    verification_key, 
+                    algorithms=verification_algs, 
+                    options={"verify_aud": False, "leeway": 60}
                 )
                 is_supabase = True
-            except JWTError:
-                pass
+                log.debug("auth_supabase_verified", user_id=payload.get("sub"))
+            except (JWTError, json.JSONDecodeError) as e:
+                log.debug("auth_supabase_failed", error=str(e), alg=alg if 'alg' in locals() else 'unknown')
+                # Fallback to local key if not verified by Supabase
 
-        # 2. Fallback to Local Secret
+        # 2. Fallback to Local Secret (for backend-to-backend or legacy tokens)
         if not payload:
             try:
-                payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-            except JWTError:
+                payload = jwt.decode(
+                    token, 
+                    settings.secret_key, 
+                    algorithms=[settings.algorithm], 
+                    options={"leeway": 60}
+                )
+                log.debug("auth_local_verified", sub=payload.get("sub"))
+            except JWTError as e:
+                log.warning("auth_all_failed", error=str(e))
                 raise credentials_exception
 
-        # 3. Retrieve Household based on token type
+        # 3. Retrieve/Construct Household based on token type
         if is_supabase:
-            # Supabase sub is the UUID
             user_id: str = payload.get("sub")
             if not user_id:
+                log.error("auth_payload_missing_sub")
                 raise credentials_exception
-            # Look up by ID (which we now sync to Supabase ID) or auth_id
-            stmt = select(Household).where((Household.id == user_id) | (Household.auth_id == user_id))
-            result = await session.execute(stmt)
-            household = result.scalars().first()
-        else:
-            # Local sub is the username
-            username: str = payload.get("sub")
-            if not username:
-                raise credentials_exception
-            result = await session.execute(select(Household).where(Household.username == username))
-            household = result.scalars().first()
+
+            # Trust Supabase: return a virtual household object without DB lookup.
+            # This allows the app to function even if public.households record doesn't exist.
+            metadata = payload.get("user_metadata", {})
+            email = payload.get("email", metadata.get("email", ""))
+            name = metadata.get("name", email.split('@')[0] if email else "User")
+
+            return Household(
+                id=user_id,
+                username=email or user_id,
+                name=name,
+                auth_id=user_id  # SQLModel converts str to UUID
+            )
+
+        # 4. Fallback to Local Database (for non-Supabase tokens)
+        username: str = payload.get("sub")
+        if not username:
+            raise credentials_exception
+
+        result = await session.execute(select(Household).where(Household.username == username))
+        household = result.scalars().first()
 
         if household is None:
             raise credentials_exception
         return household
 
     except (JWTError, httpx.HTTPError, ValueError) as e:
-        log.warning("auth_validation_failed", error=str(e))
+        log.warning("auth_unexpected_error", error=str(e))
         raise credentials_exception
 
 

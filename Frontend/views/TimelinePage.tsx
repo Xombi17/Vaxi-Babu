@@ -4,10 +4,10 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../lib/auth-store';
-import { useDependents, useTimeline, useAllTimelines, useCompleteEvent } from '../lib/hooks';
+import { useDependents, useTimeline, useAllTimelines, useCompleteEvent, useCreateEvent } from '../lib/hooks';
 import { CardSkeleton } from '../components/LoadingSkeleton';
 import ErrorState from '../components/ErrorState';
-import { CalendarClock, Pill, Baby, Heart, Sparkles, X, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
+import { CalendarClock, Pill, Baby, Heart, Sparkles, X, CheckCircle2, AlertTriangle, Clock, Plus } from 'lucide-react';
 
 type Category = 'all' | 'vaccine' | 'medicine' | 'growth' | 'pregnancy' | 'checkup';
 
@@ -16,10 +16,42 @@ export default function TimelinePage() {
   const depId = (params?.depId as string | undefined) || (params?.dependent_id as string | undefined);
   const [filter, setFilter] = useState<Category>('all');
   const [aiOpen, setAiOpen] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  
+  // Add Event Form State
+  const [newTitle, setNewTitle] = useState('');
+  const [newCategory, setNewCategory] = useState<Category>('checkup');
+  const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newNotes, setNewNotes] = useState('');
+
   const { data: deps } = useDependents();
   const { data: depTimeline, isLoading: depLoading, error: depError, refetch: refetchDep } = useTimeline(depId);
   const { data: allTimelines, isLoading: allLoading, error: allError, refetch: refetchAll } = useAllTimelines();
+  
   const completeMutation = useCompleteEvent();
+  const createMutation = useCreateEvent();
+
+  const handleAddEvent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!depId || !newTitle) return;
+
+    createMutation.mutate({
+      depId,
+      event: {
+        title: newTitle,
+        category: newCategory as any,
+        date: newDate,
+        description: newNotes,
+        status: 'upcoming' as any
+      }
+    }, {
+      onSuccess: () => {
+        setShowAddForm(false);
+        setNewTitle('');
+        setNewNotes('');
+      }
+    });
+  };
 
   const dep = depId ? (deps ?? []).find((d: any) => d.id === depId) : null;
   const isLoading = depId ? depLoading : allLoading;
@@ -55,7 +87,7 @@ export default function TimelinePage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6">
         {dep ? (
           <div className="flex items-center gap-3 mb-1">
             <span className="text-3xl">{dep.avatar}</span>
@@ -65,10 +97,16 @@ export default function TimelinePage() {
             </div>
           </div>
         ) : (
-          <>
+          <div>
             <h1 className="font-heading font-800 text-2xl text-white mb-1">Health Timeline</h1>
             <p className="text-sm text-white/35">All health events for your family</p>
-          </>
+          </div>
+        )}
+        
+        {depId && (
+          <button onClick={() => setShowAddForm(true)} className="flex items-center gap-2 px-4 py-2 bg-teal-500 hover:bg-teal-400 text-surface-950 font-heading font-700 text-sm rounded-xl transition-all">
+            <Plus size={16} /> Add Record
+          </button>
         )}
       </motion.div>
 
@@ -118,7 +156,7 @@ export default function TimelinePage() {
                         </button>
                       )}
                       {(event.status === 'due' || event.status === 'overdue') && (
-                        <button onClick={() => completeMutation.mutate(event.id)} disabled={completeMutation.isPending} className="p-1.5 rounded-lg bg-teal-500/10 text-teal-400 hover:bg-teal-500/20 transition-colors disabled:opacity-50" title="Mark Complete">
+                        <button onClick={() => completeMutation.mutate({ depId: event.dep_id, eventId: event.id })} disabled={completeMutation.isPending} className="p-1.5 rounded-lg bg-teal-500/10 text-teal-400 hover:bg-teal-500/20 transition-colors disabled:opacity-50" title="Mark Complete">
                           <CheckCircle2 size={14} />
                         </button>
                       )}
@@ -147,6 +185,51 @@ export default function TimelinePage() {
         </div>
       </div>
       )}
+
+      {/* Add Record Modal */}
+      <AnimatePresence>
+        {showAddForm && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50" onClick={() => setShowAddForm(false)} />
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-x-4 top-[10%] sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md z-50 bg-surface-900 border border-white/[0.08] rounded-2xl p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="font-heading font-700 text-lg text-white">Add Health Record</h2>
+                <button onClick={() => setShowAddForm(false)} className="p-1 text-white/30 hover:text-white/60"><X size={18} /></button>
+              </div>
+              <form onSubmit={handleAddEvent} className="space-y-4">
+                <div>
+                  <label className="text-xs text-white/40 mb-1.5 block">Title</label>
+                  <input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)} required
+                    className="w-full px-4 py-2.5 bg-surface-800/40 border border-white/[0.08] rounded-xl text-white placeholder:text-white/20 focus:outline-none focus:border-teal-500/30 text-sm" placeholder="e.g. Fever Checkup or Custom Vaccine" />
+                </div>
+                <div>
+                  <label className="text-xs text-white/40 mb-1.5 block">Category</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['vaccine', 'medicine', 'checkup', 'growth'].map(c => (
+                      <button key={c} type="button" onClick={() => setNewCategory(c as any)}
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-medium capitalize transition-all ${newCategory === c ? 'bg-teal-500/15 text-teal-400 border border-teal-500/20' : 'bg-surface-800/40 text-white/35 border border-white/[0.06]'}`}>{c}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-white/40 mb-1.5 block">Date</label>
+                  <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} required
+                    className="w-full px-4 py-2.5 bg-surface-800/40 border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-teal-500/30 text-sm [color-scheme:dark]" />
+                </div>
+                <div>
+                  <label className="text-xs text-white/40 mb-1.5 block">Notes / Description (Optional)</label>
+                  <textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} rows={3}
+                    className="w-full px-4 py-2.5 bg-surface-800/40 border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-teal-500/30 text-sm resize-none" placeholder="Add any details..." />
+                </div>
+                <button type="submit" disabled={createMutation.isPending} className="w-full py-3 bg-teal-500 hover:bg-teal-400 text-surface-950 font-heading font-700 rounded-xl transition-all disabled:opacity-60">
+                  {createMutation.isPending ? 'Adding...' : 'Add Record'}
+                </button>
+              </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {!isLoading && filtered.length === 0 && (
         <div className="text-center py-16">

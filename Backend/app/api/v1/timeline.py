@@ -24,6 +24,24 @@ router = APIRouter(prefix="/timeline", tags=["Timeline"])
 log = structlog.get_logger()
 
 
+@router.post("/{dependent_id}/events", response_model=HealthEventResponse)
+async def create_manual_event(
+    dependent_id: str,
+    event: HealthEvent,
+    session: AsyncSession = Depends(get_session),
+) -> HealthEvent:
+    """Create a manual health event."""
+    event.dependent_id = dependent_id
+    event.is_automated = False
+    event.status = event.status or EventStatus.upcoming
+    event.created_at = datetime.utcnow()
+    event.updated_at = datetime.utcnow()
+    session.add(event)
+    await session.flush()
+    await session.refresh(event)
+    return event
+
+
 @router.get("/{dependent_id}", response_model=TimelineResponse)
 async def get_timeline(
     dependent_id: str,
