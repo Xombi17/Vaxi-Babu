@@ -138,8 +138,8 @@ export default function LoginPage() {
               className="w-10 h-10 rounded-xl"
             />
             <span className="font-heading font-800 text-2xl text-white">
-              Well<span className="text-teal-400">Sync</span>{" "}
-              <span className="text-teal-300 text-lg">AI</span>
+              Vaxi<span className="text-teal-400">Babu  </span>{" "}
+              <span className="text-teal-300 text-lg"></span>
             </span>
           </Link>
           <h1 className="font-heading font-800 text-4xl text-white leading-tight mb-4">

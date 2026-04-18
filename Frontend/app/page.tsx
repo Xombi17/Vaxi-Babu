@@ -69,8 +69,8 @@ export default function LandingPage() {
               className="w-8 h-8 rounded-lg"
             />
             <span className="font-heading font-800 text-lg text-white">
-              Well<span className="text-teal-400">Sync</span>
-              <span className="text-teal-300 text-xs ml-0.5">AI</span>
+              Vaxi<span className="text-teal-400">Babu</span>
+              <span className="text-teal-300 text-xs ml-0.5"></span>
             </span>
           </div>
           <div className="hidden md:flex items-center gap-6">
