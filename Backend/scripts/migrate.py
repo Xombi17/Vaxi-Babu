@@ -55,7 +55,7 @@ async def migrate_users():
         # Supabase Auth requires valid email format
         email = username
         if "@" not in username:
-            email = f"{username}@wellsync.local"
+            email = f"{username}@Vaxi Babu.local"
             print(f"  Note: Using {email} for auth (original username: {username})")
 
         print(f"Migrating {username} (Legacy ID: {legacy_id})...")

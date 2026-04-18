@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-test.describe('WellSync E2E Smoke Tests', () => {
+test.describe('Vaxi Babu E2E Smoke Tests', () => {
   test('should login with demo family and view dashboard', async ({ page }) => {
     // Navigate to login page
     await page.goto(`${BASE_URL}/login`);

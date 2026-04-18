@@ -1,5 +1,5 @@
 """
-WellSync Voice Agent Demo
+Vaxi Babu Voice Agent Demo
 --------------------------
 Streamlit UI for testing Vapi voice agent with live conversation.
 Supports multiple languages for voice interaction.
@@ -8,9 +8,9 @@ Supports multiple languages for voice interaction.
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="WellSync Voice Agent", page_icon="🎙️")
+st.set_page_config(page_title="Vaxi Babu Voice Agent", page_icon="🎙️")
 
-st.title("🎙️ WellSync Voice Agent")
+st.title("🎙️ Vaxi Babu Voice Agent")
 st.markdown("Test the voice agent with live conversation in different languages")
 
 # Language selection
@@ -34,16 +34,16 @@ st.markdown("---")
 
 # Vapi configuration
 VAPI_CONFIG = {
-    "en": "Welcome to WellSync! How can I help you today?",
-    "hi": "नमस्ते! WellSync में आपका स्वागत है। मैं आपकी कैसे मदद कर सकता हूं?",
-    "mr": "नमस्कार! WellSync मध्ये आपले स्वागत आहे. मी आपली कशी मदत करू शकतो?",
-    "ta": "வணக்கம்! WellSync க்கு வரவேற்கிறோம். உங்களுக்கு எப்படி உதவ முடியும்?",
-    "te": "నమస్కారం! WellSyncకు స్వాగతం. మీకు ఎలా సహాయం చేయగలను?",
-    "bn": "নমস্কার! WellSync এ আপনাকে স্বাগতম। আমি কীভাবে আপনাকে সাহায্য করতে পারি?",
-    "gu": "નમસ્તે! WellSync માં આપનું સ્વાગત છે. હું તમને કેવી રીતે મદદ કરી શકું?",
-    "kn": "ನಮಸ್ಕಾರ! WellSync ಗೆ ಸ್ವಾಗತ. ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?",
-    "ml": "നമസ്കാരം! WellSync-ലേക്ക് സ്വാഗതം. എങ്ങനെ സഹായിക്കാനാകും?",
-    "pa": "ਨਮਸਤੇ! WellSync ਵਿੱਚ ਤੁਹਾਦਾ ਸਵਾਗਤ ਹੈ। ਮੈਂ ਤੁਹਾਡੀ ਕਿਵੇ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?",
+    "en": "Welcome to Vaxi Babu! How can I help you today?",
+    "hi": "नमस्ते! Vaxi Babu में आपका स्वागत है। मैं आपकी कैसे मदद कर सकता हूं?",
+    "mr": "नमस्कार! Vaxi Babu मध्ये आपले स्वागत आहे. मी आपली कशी मदत करू शकतो?",
+    "ta": "வணக்கம்! Vaxi Babu க்கு வரவேற்கிறோம். உங்களுக்கு எப்படி உதவ முடியும்?",
+    "te": "నమస్కారం! Vaxi Babuకు స్వాగతం. మీకు ఎలా సహాయం చేయగలను?",
+    "bn": "নমস্কার! Vaxi Babu এ আপনাকে স্বাগতম। আমি কীভাবে আপনাকে সাহায্য করতে পারি?",
+    "gu": "નમસ્તે! Vaxi Babu માં આપનું સ્વાગત છે. હું તમને કેવી રીતે મદદ કરી શકું?",
+    "kn": "ನಮಸ್ಕಾರ! Vaxi Babu ಗೆ ಸ್ವಾಗತ. ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?",
+    "ml": "നമസ്കാരം! Vaxi Babu-ലേക്ക് സ്വാഗതം. എങ്ങനെ സഹായിക്കാനാകും?",
+    "pa": "ਨਮਸਤੇ! Vaxi Babu ਵਿੱਚ ਤੁਹਾਦਾ ਸਵਾਗਤ ਹੈ। ਮੈਂ ਤੁਹਾਡੀ ਕਿਵੇ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?",
 }
 
 # Instructions

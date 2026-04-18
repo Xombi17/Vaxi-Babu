@@ -39,7 +39,7 @@ export default function SettingsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${household?.family_name ?? "wellsync"}_health_records.json`;
+    a.download = `${household?.family_name ?? "Vaxi Babu"}_health_records.json`;
     a.click();
     URL.revokeObjectURL(url);
   };

@@ -1,6 +1,6 @@
-const CACHE_NAME = 'wellsync-v2';
-const STATIC_CACHE = 'wellsync-static-v2';
-const DYNAMIC_CACHE = 'wellsync-dynamic-v2';
+const CACHE_NAME = 'Vaxi Babu-v2';
+const STATIC_CACHE = 'Vaxi Babu-static-v2';
+const DYNAMIC_CACHE = 'Vaxi Babu-dynamic-v2';
 
 const STATIC_ASSETS = [
   '/manifest.json',
@@ -15,10 +15,10 @@ const CACHE_STRATEGIES = {
 };
 
 self.addEventListener('install', (event) => {
-  console.log('[WellSync SW] Installing service worker...');
+  console.log('[Vaxi Babu SW] Installing service worker...');
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
-      console.log('[WellSync SW] Caching static assets');
+      console.log('[Vaxi Babu SW] Caching static assets');
       return cache.addAll(STATIC_ASSETS);
     })
   );
@@ -26,14 +26,14 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('[WellSync SW] Activating service worker...');
+  console.log('[Vaxi Babu SW] Activating service worker...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((name) => name !== STATIC_CACHE && name !== DYNAMIC_CACHE)
           .map((name) => {
-            console.log('[WellSync SW] Deleting old cache:', name);
+            console.log('[Vaxi Babu SW] Deleting old cache:', name);
             return caches.delete(name);
           })
       );
@@ -124,7 +124,7 @@ async function staleWhileRevalidate(request) {
 
 self.addEventListener('push', (event) => {
   const data = event.data?.json() || {};
-  const title = data.title || 'WellSync';
+  const title = data.title || 'Vaxi Babu';
   const options = {
     body: data.body || 'New health update available',
     icon: '/web-app-manifest-192x192.png',

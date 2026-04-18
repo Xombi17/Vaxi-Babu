@@ -86,7 +86,7 @@ export const useAuthStore = create<AuthState>()(
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
     }),
     {
-      name: 'wellsync-auth',
+      name: 'Vaxi Babu-auth',
       partialize: (state) => ({
         token: state.token,
         userId: state.userId,

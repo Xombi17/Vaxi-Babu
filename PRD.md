@@ -332,7 +332,7 @@ Before adding any package, agent must check whether an existing dependency or na
 Recommended structure:
 
 ```text
-wellsync-ai/
+Vaxi Babu/
   apps/
     web/
     api/
@@ -381,7 +381,7 @@ Token waste usually comes from repeated re-explaining of product context, repeat
 
 Use this pattern for coding agents:
 
-1. Read `wellsync_final_project_requirements.md`.
+1. Read `Vaxi Babu_final_project_requirements.md`.
 2. Read the relevant files you will edit.
 3. Summarize only the task-specific context in 5 to 8 lines.
 4. Make the smallest valid implementation.
@@ -404,7 +404,7 @@ This reduces repeated token burn and keeps sessions deterministic.[web:149][web:
 
 Create and maintain these files in the repo:
 
-- `docs/requirements/wellsync_final_project_requirements.md`
+- `docs/requirements/Vaxi Babu_final_project_requirements.md`
 - `docs/architecture/system-architecture.md`
 - `docs/prompts/agent-rules.md`
 - `docs/prompts/task-templates.md`

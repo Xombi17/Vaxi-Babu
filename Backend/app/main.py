@@ -20,7 +20,7 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown logic."""
-    log.info("wellsync_starting",
+    log.info("Vaxi Babu_starting",
              env=settings.app_env,
              port=settings.app_port,
              allowed_origins=settings.frontend_url.split(","))
@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    log.info("wellsync_shutting_down")
+    log.info("Vaxi Babu_shutting_down")
 
 
 app = FastAPI(

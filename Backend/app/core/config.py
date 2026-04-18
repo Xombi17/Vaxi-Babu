@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     sarvam_api_key: str = ""
 
     # Auth
-    secret_key: str = "very-secret-dev-key-wellsync-ai"
+    secret_key: str = "very-secret-dev-key-Vaxi Babu"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 

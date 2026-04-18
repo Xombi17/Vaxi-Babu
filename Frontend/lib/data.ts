@@ -377,14 +377,14 @@ export const demoFamilies: Family[] = [
   },
 ];
 
-const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD || 'wellsync_demo_secure_2026';
+const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD || 'Vaxi Babu_demo_secure_2026';
 
 export const demoLoginAccounts: DemoLoginAccount[] = [
-  { familyId: 'sharma', familyName: 'Sharma Family', username: 'sharma', email: 'sharma@wellsync.demo', password: DEMO_PASSWORD },
-  { familyId: 'patel', familyName: 'Patel Family', username: 'patel', email: 'patel@wellsync.demo', password: DEMO_PASSWORD },
-  { familyId: 'kumar', familyName: 'Kumar Family', username: 'kumar', email: 'kumar@wellsync.demo', password: DEMO_PASSWORD },
-  { familyId: 'singh', familyName: 'Singh Family', username: 'singh', email: 'singh@wellsync.demo', password: DEMO_PASSWORD },
-  { familyId: 'verma', familyName: 'Verma Family', username: 'verma', email: 'verma@wellsync.demo', password: DEMO_PASSWORD },
+  { familyId: 'sharma', familyName: 'Sharma Family', username: 'sharma', email: 'sharma@Vaxi Babu.demo', password: DEMO_PASSWORD },
+  { familyId: 'patel', familyName: 'Patel Family', username: 'patel', email: 'patel@Vaxi Babu.demo', password: DEMO_PASSWORD },
+  { familyId: 'kumar', familyName: 'Kumar Family', username: 'kumar', email: 'kumar@Vaxi Babu.demo', password: DEMO_PASSWORD },
+  { familyId: 'singh', familyName: 'Singh Family', username: 'singh', email: 'singh@Vaxi Babu.demo', password: DEMO_PASSWORD },
+  { familyId: 'verma', familyName: 'Verma Family', username: 'verma', email: 'verma@Vaxi Babu.demo', password: DEMO_PASSWORD },
 ];
 
 export function getDemoLoginAccount(familyId: string): DemoLoginAccount | undefined {

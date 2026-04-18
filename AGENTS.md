@@ -7,7 +7,7 @@ Before any work, read `PRD.md` — it's the single source of truth. All agents m
 ## Repository Structure
 
 ```
-WellSyncAI/
+Vaxi BabuAI/
 ├── Backend/          # FastAPI + Python 3.11+ (OWNED: primary dev)
 ├── Frontend/        # Next.js 16 (in progress)
 ├── .agents/         # Agent-specific context and memory

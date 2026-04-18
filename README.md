@@ -137,7 +137,7 @@ Instead of expecting users to manually track medical schedules, it provides a **
 ## 📁 Repository Structure
 
 ```text
-WellSync Vaxi/
+Vaxi Babu Vaxi/
 ├── Backend/                          # FastAPI + Python 3.11+
 │   ├── app/
 │   │   ├── api/v1/

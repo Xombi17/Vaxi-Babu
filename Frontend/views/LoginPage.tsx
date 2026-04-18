@@ -132,7 +132,7 @@ export default function LoginPage() {
           <Link href="/" className="flex items-center gap-3 mb-12">
             <Image
               src="/images/logo-icon.png"
-              alt="WellSync logo"
+              alt="Vaxi Babu logo"
               width={40}
               height={40}
               className="w-10 h-10 rounded-xl"
@@ -171,7 +171,7 @@ export default function LoginPage() {
             <ArrowLeft size={16} className="text-white/40" />
             <Image
               src="/images/logo-icon.png"
-              alt="WellSync logo"
+              alt="Vaxi Babu logo"
               width={32}
               height={32}
               className="w-8 h-8 rounded-lg"

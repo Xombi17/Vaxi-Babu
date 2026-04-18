@@ -1,5 +1,5 @@
 [project]
-name = "wellsync-ai-backend"
+name = "Vaxi Babu-backend"
 version = "0.1.0"
 description = "Vaxi Babu — Voice-First Health Memory System Backend"
 requires-python = ">=3.11"

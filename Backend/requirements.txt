@@ -4,7 +4,7 @@
 alembic==1.18.4 \
     --hash=sha256:a5ed4adcf6d8a4cb575f3d759f071b03cd6e5c7618eb796cb52497be25bfe19a \
     --hash=sha256:cb6e1fd84b6174ab8dbb2329f86d631ba9559dd78df550b57804d607672cedbc
-    # via wellsync-ai-backend
+    # via Vaxi Babu-backend
 altair==6.0.0 \
     --hash=sha256:09ae95b53d5fe5b16987dccc785a7af8588f2dca50de1e7a156efa8a461515f8 \
     --hash=sha256:614bf5ecbe2337347b590afb111929aa9c16c9527c4887d96c9bc7f6640756b4
@@ -67,7 +67,7 @@ asyncpg==0.31.0 \
     --hash=sha256:eee690960e8ab85063ba93af2ce128c0f52fd655fdff9fdb1a28df01329f031d \
     --hash=sha256:f6b56b91bb0ffc328c4e3ed113136cddd9deefdf5f79ab448598b9772831df44 \
     --hash=sha256:f890de5e1e4f7e14023619399a471ce4b71f5418cd67a51853b9910fdfa73696
-    # via wellsync-ai-backend
+    # via Vaxi Babu-backend
 attrs==26.1.0 \
     --hash=sha256:c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309 \
     --hash=sha256:d03ceb89cb322a8fd706d4fb91940737b6642aa36998fe130a9bc96c985eff32
@@ -375,7 +375,7 @@ ecdsa==0.19.2 \
 fastapi==0.135.3 \
     --hash=sha256:9b0f590c813acd13d0ab43dd8494138eb58e484bfac405db1f3187cfc5810d98 \
     --hash=sha256:bd6d7caf1a2bdd8d676843cdcd2287729572a1ef524fc4d65c17ae002a1be654
-    # via wellsync-ai-backend
+    # via Vaxi Babu-backend
 gitdb==4.0.12 \
     --hash=sha256:5ef71f855d191a3326fcfbc0d5da835f26b13fbcba60c32c21091c349ffdb571 \
     --hash=sha256:67073e15955400952c6565cc3e707c554a4eea2e428946f7a4c162fab9bd9bcf
@@ -472,7 +472,7 @@ httpx==0.28.1 \
     --hash=sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad
     # via
     #   openai
-    #   wellsync-ai-backend
+    #   Vaxi Babu-backend
 idna==3.11 \
     --hash=sha256:771a87f49d9defaf64091e6e6fe9c18d4833f140bd19464795bc32d966ca37ea \
     --hash=sha256:795dafcc9c04ed0c1fb032c2aa73654d8e8c5023a7df64a53f39190ada629902
@@ -738,7 +738,7 @@ numpy==2.4.4 \
 openai==2.31.0 \
     --hash=sha256:43ca59a88fc973ad1848d86b98d7fac207e265ebbd1828b5e4bdfc85f79427a5 \
     --hash=sha256:44e1344d87e56a493d649b17e2fac519d1368cbb0745f59f1957c4c26de50a0a
-    # via wellsync-ai-backend
+    # via Vaxi Babu-backend
 packaging==26.0 \
     --hash=sha256:00243ae351a257117b6a241061796684b084ed1c516a08c48a3f7e147a9d80b4 \
     --hash=sha256:b36f1fef9334a5588b4166f8bcd26a14e521f2b55e6b9de3aaa80d3ff7a37529
@@ -798,7 +798,7 @@ pandas==3.0.2 \
 passlib==1.7.4 \
     --hash=sha256:aa6bca462b8d8bda89c70b382f0c298a20b5560af6cbfa2dce410c0a2fb669f1 \
     --hash=sha256:defd50f72b65c5402ab2c573830a6978e5f202ad0d984793c8dde2c4152ebe04
-    # via wellsync-ai-backend
+    # via Vaxi Babu-backend
 pillow==12.2.0 \
     --hash=sha256:00a2865911330191c0b818c59103b58a5e697cae67042366970a6b6f1b20b7f9 \
     --hash=sha256:01afa7cf67f74f09523699b4e88c73fb55c13346d212a59a2db1f86b0a63e8c5 \
@@ -882,7 +882,7 @@ pillow==12.2.0 \
     --hash=sha256:fc3d34d4a8fbec3e88a79b92e5465e0f9b842b628675850d860b8bd300b159f5
     # via
     #   streamlit
-    #   wellsync-ai-backend
+    #   Vaxi Babu-backend
 protobuf==7.34.1 \
     --hash=sha256:34b84ce27680df7cca9f231043ada0daa55d0c44a2ddfaa58ec1d0d89d8bf60a \
     --hash=sha256:403b093a6e28a960372b44e5eb081775c9b056e816a8029c61231743d63f881a \
@@ -956,7 +956,7 @@ pydantic==2.12.5 \
     #   openai
     #   pydantic-settings
     #   sqlmodel
-    #   wellsync-ai-backend
+    #   Vaxi Babu-backend
 pydantic-core==2.41.5 \
     --hash=sha256:0177272f88ab8312479336e1d777f6b124537d47f2123f89cb37e0accea97f90 \
     --hash=sha256:01a3d0ab748ee531f4ea6c3e48ad9dac84ddba4b0d82291f87248f2f9de8d740 \
@@ -1049,7 +1049,7 @@ pydantic-core==2.41.5 \
 pydantic-settings==2.13.1 \
     --hash=sha256:b4c11847b15237fb0171e1462bf540e294affb9b86db4d9aa5c01730bdbe4025 \
     --hash=sha256:d56fd801823dbeae7f0975e1f8c8e25c258eb75d278ea7abb5d9cebb01b56237
-    # via wellsync-ai-backend
+    # via Vaxi Babu-backend
 pydeck==0.9.1 \
     --hash=sha256:b3f75ba0d273fc917094fa61224f3f6076ca8752b93d46faf3bcfd9f9d59b038 \
     --hash=sha256:f74475ae637951d63f2ee58326757f8d4f9cd9f2a457cf42950715003e2cb605
@@ -1059,22 +1059,22 @@ python-dateutil==2.9.0.post0 \
     --hash=sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427
     # via
     #   pandas
-    #   wellsync-ai-backend
+    #   Vaxi Babu-backend
 python-dotenv==1.2.2 \
     --hash=sha256:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a \
     --hash=sha256:2c371a91fbd7ba082c2c1dc1f8bf89ca22564a087c2c287cd9b662adde799cf3
     # via
     #   pydantic-settings
     #   uvicorn
-    #   wellsync-ai-backend
+    #   Vaxi Babu-backend
 python-jose==3.5.0 \
     --hash=sha256:abd1202f23d34dfad2c3d28cb8617b90acf34132c7afd60abd0b0b7d3cb55771 \
     --hash=sha256:fb4eaa44dbeb1c26dcc69e4bd7ec54a1cb8dd64d3b4d81ef08d90ff453f2b01b
-    # via wellsync-ai-backend
+    # via Vaxi Babu-backend
 python-multipart==0.0.26 \
     --hash=sha256:08fadc45918cd615e26846437f50c5d6d23304da32c341f289a617127b081f17 \
     --hash=sha256:c0b169f8c4484c13b0dcf2ef0ec3a4adb255c4b7d18d8e420477d2b1dd03f185
-    # via wellsync-ai-backend
+    # via Vaxi Babu-backend
 pyyaml==6.0.3 \
     --hash=sha256:00c4bdeba853cc34e7dd471f16b4114f4162dc03e6b7afcc2128711f0eca823c \
     --hash=sha256:02893d100e99e03eda1c8fd5c441d8c60103fd175728e23e431db1b589cf5ab3 \
@@ -1136,7 +1136,7 @@ requests==2.33.1 \
     --hash=sha256:4e6d1ef462f3626a1f0a0a9c42dd93c63bad33f9f1c1937509b8c5c8718ab56a
     # via
     #   streamlit
-    #   wellsync-ai-backend
+    #   Vaxi Babu-backend
 rpds-py==0.30.0 \
     --hash=sha256:07ae8a593e1c3c6b82ca3292efbe73c30b61332fd612e05abee07c79359f292f \
     --hash=sha256:0a59119fc6e3f460315fe9d08149f8102aa322299deaa5cab5b40092345c2136 \
@@ -1309,7 +1309,7 @@ sqlalchemy==2.0.49 \
 sqlmodel==0.0.38 \
     --hash=sha256:84e3fa990a77395461ded72a6c73173438ce8449d5c1c4d97fbff1b1df692649 \
     --hash=sha256:d583ec237b14103809f74e8630032bc40ab68cd6b754a610f0813c56911a547b
-    # via wellsync-ai-backend
+    # via Vaxi Babu-backend
 starlette==1.0.0 \
     --hash=sha256:6a4beaf1f81bb472fd19ea9b918b50dc3a77a6f2e190a12954b25e6ed5eea149 \
     --hash=sha256:d3ec55e0bb321692d275455ddfd3df75fff145d009685eb40dc91fc66b03d38b
@@ -1317,11 +1317,11 @@ starlette==1.0.0 \
 streamlit==1.56.0 \
     --hash=sha256:1176acfa89ae1318b79078e8efe689a9d02e8d58e325c00fc0e55fa2f3fe8d6a \
     --hash=sha256:8677a335734a30a51bc57ad0ec910e365d95f7c456fc02c60032927cd0729dc5
-    # via wellsync-ai-backend
+    # via Vaxi Babu-backend
 structlog==25.5.0 \
     --hash=sha256:098522a3bebed9153d4570c6d0288abf80a031dfdb2048d59a49e9dc2190fc98 \
     --hash=sha256:a8453e9b9e636ec59bd9e79bbd4a72f025981b3ba0f5837aebf48f02f37a7f9f
-    # via wellsync-ai-backend
+    # via Vaxi Babu-backend
 tenacity==9.1.4 \
     --hash=sha256:6095a360c919085f28c6527de529e76a06ad89b23659fa881ae0649b867a9d55 \
     --hash=sha256:adb31d4c263f2bd041081ab33b498309a57c77f9acf2db65aadf0898179cf93a
@@ -1381,7 +1381,7 @@ urllib3==2.6.3 \
 uvicorn==0.44.0 \
     --hash=sha256:6c942071b68f07e178264b9152f1f16dfac5da85880c4ce06366a96d70d4f31e \
     --hash=sha256:ce937c99a2cc70279556967274414c087888e8cec9f9c94644dfca11bd3ced89
-    # via wellsync-ai-backend
+    # via Vaxi Babu-backend
 uvloop==0.22.1 ; platform_python_implementation != 'PyPy' and sys_platform != 'cygwin' and sys_platform != 'win32' \
     --hash=sha256:0530a5fbad9c9e4ee3f2b33b148c6a64d47bbad8000ea63704fa8260f4cf728e \
     --hash=sha256:1cdf5192ab3e674ca26da2eada35b288d2fa49fdd0f357a19f0e7c4e7d5077c8 \

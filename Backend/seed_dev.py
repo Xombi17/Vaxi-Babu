@@ -70,7 +70,7 @@ async def seed_data():
             }
         ]
 
-        dev_password = os.environ.get("DEV_DEFAULT_PASSWORD", "wellsync_demo_secure_2026")
+        dev_password = os.environ.get("DEV_DEFAULT_PASSWORD", "Vaxi Babu_demo_secure_2026")
         password_hash = get_password_hash(dev_password)
 
         for f_data in families:

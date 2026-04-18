@@ -36,14 +36,14 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:password
 engine = create_async_engine(DATABASE_URL, echo=True)
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-SEED_PASSWORD = os.getenv("SEED_DEMO_PASSWORD", "wellsync_demo_secure_2026")
+SEED_PASSWORD = os.getenv("SEED_DEMO_PASSWORD", "Vaxi Babu_demo_secure_2026")
 
 DEMO_FAMILIES = [
-    {"username": "sharma", "name": "Sharma Family", "email": "sharma@wellsync.demo", "password": SEED_PASSWORD},
-    {"username": "patel", "name": "Patel Family", "email": "patel@wellsync.demo", "password": SEED_PASSWORD},
-    {"username": "kumar", "name": "Kumar Family", "email": "kumar@wellsync.demo", "password": SEED_PASSWORD},
-    {"username": "singh", "name": "Singh Family", "email": "singh@wellsync.demo", "password": SEED_PASSWORD},
-    {"username": "verma", "name": "Verma Family", "email": "verma@wellsync.demo", "password": SEED_PASSWORD},
+    {"username": "sharma", "name": "Sharma Family", "email": "sharma@Vaxi Babu.demo", "password": SEED_PASSWORD},
+    {"username": "patel", "name": "Patel Family", "email": "patel@Vaxi Babu.demo", "password": SEED_PASSWORD},
+    {"username": "kumar", "name": "Kumar Family", "email": "kumar@Vaxi Babu.demo", "password": SEED_PASSWORD},
+    {"username": "singh", "name": "Singh Family", "email": "singh@Vaxi Babu.demo", "password": SEED_PASSWORD},
+    {"username": "verma", "name": "Verma Family", "email": "verma@Vaxi Babu.demo", "password": SEED_PASSWORD},
 ]
 
 async def clear_existing_data():

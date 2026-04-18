@@ -406,7 +406,7 @@ export const authApi = {
   async login(emailOrUsername: string, password: string): Promise<{ access_token: string; token_type: string; household_id: string }> {
     // If it's a simple username (no @), we might need to append the demo domain 
     // or handle it according to how they were seeded.
-    const email = emailOrUsername.includes('@') ? emailOrUsername : `${emailOrUsername}@wellsync.demo`;
+    const email = emailOrUsername.includes('@') ? emailOrUsername : `${emailOrUsername}@Vaxi Babu.demo`;
     
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -434,7 +434,7 @@ export const authApi = {
     password: string;
     primary_language?: string;
   }): Promise<Household> {
-    const email = payload.username.includes('@') ? payload.username : `${payload.username}@wellsync.demo`;
+    const email = payload.username.includes('@') ? payload.username : `${payload.username}@Vaxi Babu.demo`;
     
     const { data, error } = await supabase.auth.signUp({
       email,
