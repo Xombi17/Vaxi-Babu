@@ -18,11 +18,10 @@ dependencies = [
     "python-multipart>=0.0.20",
     "python-dateutil>=2.9.0",
     "structlog>=24.4.0",
-    "streamlit>=1.39.0",
     "requests>=2.32.0",
     "passlib[bcrypt]>=1.7.4",
     "python-jose[cryptography]>=3.5.0",
-    "aiosqlite[dev]>=0.22.1",
+    "aiosqlite>=0.22.1",
     "supabase>=2.0.0",
 ]
 
@@ -33,6 +32,7 @@ dev = [
     "httpx>=0.28.0",
     "ruff>=0.9.0",
     "mypy>=1.14.0",
+    "streamlit>=1.39.0",
 ]
 
 [build-system]
