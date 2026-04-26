@@ -9,27 +9,37 @@ from app.core.config import get_settings
 settings = get_settings()
 
 url = settings.database_url
-if "sslmode" in url:
+if url and "sslmode" in url:
     url = url.replace("?sslmode=require", "").rstrip("?").rstrip("&")
 
-engine = create_async_engine(
-    url,
-    echo=settings.is_dev,
-    pool_pre_ping=True,
-    pool_size=1,
-    max_overflow=0,
-    connect_args={
-        "ssl": "require",
-        "command_timeout": 60,
-        "statement_cache_size": 0,  # Fix for PgBouncer/Supabase Pooler invalidation issues
-    },
-)
+engine_kwargs = {
+    "echo": settings.is_dev,
+}
 
-AsyncSessionLocal = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
+engine = None
+AsyncSessionLocal = None
+
+if url:
+    if url.startswith("sqlite"):
+        pass
+    else:
+        engine_kwargs.update({
+            "pool_pre_ping": True,
+            "pool_size": 1,
+            "max_overflow": 0,
+            "connect_args": {
+                "ssl": "require",
+                "command_timeout": 60,
+                "statement_cache_size": 0,
+            }
+        })
+
+    engine = create_async_engine(url, **engine_kwargs)
+    AsyncSessionLocal = async_sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
 
 
 async def create_db_and_tables() -> None:
