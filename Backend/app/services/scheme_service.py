@@ -59,7 +59,15 @@ async def get_eligible_schemes(household: Household, session: Session) -> List[H
     has_young_child = False
     youngest_name = ""
     for child in children:
-        age_days = (today - child.date_of_birth).days
+        # Ensure child.date_of_birth is a date object (SQLite might return str or datetime)
+        dob = child.date_of_birth
+        if hasattr(dob, "date"):
+            dob = dob.date()
+        elif isinstance(dob, str):
+            from datetime import date as dt_date
+            dob = date.fromisoformat(dob)
+            
+        age_days = (today - dob).days
         if age_days < 730:  # 2 years
             has_young_child = True
             youngest_name = child.name
@@ -78,16 +86,18 @@ async def get_eligible_schemes(household: Household, session: Session) -> List[H
 
     # 4. PM Jan Arogya Yojana - Senior Citizens (New 2024 Expansion)
     # Check for members > 70 years
-    has_senior = False
-    for member in children + pregnant_members: # Check all (though types might vary, date_of_birth is common)
-        pass # Better to query all dependents
-        
     stmt = select(Dependent).where(Dependent.household_id == household.id)
     res = await session.execute(stmt)
     all_members = res.scalars().all()
     
     for member in all_members:
-        age_years = (today - member.date_of_birth).days // 365
+        dob = member.date_of_birth
+        if hasattr(dob, "date"):
+            dob = dob.date()
+        elif isinstance(dob, str):
+            dob = date.fromisoformat(dob)
+            
+        age_years = (today - dob).days // 365
         if age_years >= 70:
             schemes.append(HealthScheme(
                 id="pmjay-senior",

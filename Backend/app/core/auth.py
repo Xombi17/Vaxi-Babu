@@ -117,7 +117,9 @@ async def get_current_household(
                 id=user_id,
                 username=email or user_id,
                 name=name,
-                auth_id=user_id  # SQLModel converts str to UUID
+                auth_id=user_id,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
             )
 
         # 4. Fallback to Local Database (for non-Supabase tokens)

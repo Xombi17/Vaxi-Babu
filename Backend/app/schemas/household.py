@@ -60,8 +60,8 @@ class HouseholdResponse(BaseModel):
     district: str | None = None
     preferences: HouseholdPreferences = Field(default_factory=HouseholdPreferences)
     last_onboarded_at: datetime | None
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     @field_validator("preferences", mode="before")
     @classmethod
