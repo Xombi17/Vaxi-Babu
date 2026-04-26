@@ -31,16 +31,6 @@ async def lifespan(app: FastAPI):
         log.error("startup_health_check_failed", health=health)
         log.warning("Continuing startup despite health check failures.")
 
-    # Auto-create tables only in development
-    if settings.is_dev:
-        try:
-            await create_db_and_tables()
-            log.info("db_tables_created_or_verified")
-        except Exception as e:
-            log.error("db_creation_failed", error=str(e))
-    else:
-        log.info("Skipping DB table creation in production.")
-
     yield
 
     log.info("Vaxi Babu_shutting_down")

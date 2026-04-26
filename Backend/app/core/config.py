@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     )
 
     # App
-    app_env: str = "development"
+    app_env: str = "production"
     app_host: str = "0.0.0.0"
     # Render uses PORT, local dev uses APP_PORT or defaults to 8080
     app_port: int = Field(default=8080, alias="PORT", validation_alias="APP_PORT")
