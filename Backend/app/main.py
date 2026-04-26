@@ -44,8 +44,8 @@ app = FastAPI(
         "AI-powered health explanations, and Gemini Live voice support."
     ),
     version="0.1.0",
-    docs_url="/docs" if settings.is_dev else None,     # Hide Swagger in prod
-    redoc_url="/redoc" if settings.is_dev else None,
+    docs_url="/docs",
+    redoc_url="/redoc",
     lifespan=lifespan,
 )
 
