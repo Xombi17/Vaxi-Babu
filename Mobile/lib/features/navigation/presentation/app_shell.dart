@@ -44,9 +44,13 @@ class AppShell extends StatelessWidget {
             selectedIcon: Icon(Icons.settings_rounded),
             label: 'Settings',
           ),
+          NavigationDestination(
+            icon: Icon(Icons.medication_outlined),
+            selectedIcon: Icon(Icons.medication_rounded),
+            label: 'Medicine',
+          ),
         ],
       ),
     );
   }
 }
-

@@ -577,6 +577,20 @@ This module can later support handwritten prescription parsing, allergy cross-ch
 - `flutter analyze` — passed with no issues.
 - `flutter test` — passed.
 
+### Session: 2026-04-26 — Additive Flutter Mobile Client (Phase 5)
+
+**What was built:**
+
+- Added a medicine safety tab to the Flutter bottom navigation shell.
+- Implemented a medicine repository for `/api/v1/medicine/check-name` and `/api/v1/medicine/check-image`.
+- Built a medicine safety screen that supports typed medicine lookup and camera/gallery image upload.
+- Displayed the backend safety bucket, concern checked, caution text, next step, disclaimer, and optional raw OCR text in the result UI.
+
+**Verification:**
+
+- `flutter analyze` — passed with no issues.
+- `flutter test` — passed.
+
 ### Session: 2026-04-11 — Backend Foundation
 
 **What was built:**

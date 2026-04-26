@@ -6,6 +6,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/dependents/presentation/dependents_screen.dart';
 import '../../features/navigation/presentation/app_shell.dart';
+import '../../features/medicine/presentation/medicine_screen.dart';
 import '../../features/reminders/presentation/reminders_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
@@ -89,6 +90,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: SettingsScreen.routePath,
                 builder: (context, state) => const SettingsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: MedicineScreen.routePath,
+                builder: (context, state) => const MedicineScreen(),
               ),
             ],
           ),
