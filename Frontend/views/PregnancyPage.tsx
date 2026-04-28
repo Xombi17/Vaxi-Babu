@@ -22,18 +22,21 @@ export default function PregnancyPage() {
     );
   }
 
-  const week = pregnancy.pregnancy_week;
-  const trimester = pregnancy.trimester;
+  const week = pregnancy.pregnancy_week || 0;
+  const trimester = pregnancy.trimester || 1;
   const progress = (week / 40) * 100;
-  const daysLeft = (40 - week) * 7;
-  const edd = pregnancy.edd ? new Date(pregnancy.edd) : null;
+  const daysLeft = Math.max(0, (40 - week) * 7);
+  const eddDate = pregnancy.expected_due_date ? new Date(pregnancy.expected_due_date) : null;
   const milestones = (pregnancy as any).milestones || [];
+  const riskFlags = typeof pregnancy.high_risk_flags === 'string' 
+    ? pregnancy.high_risk_flags.split(',').map(f => f.trim()).filter(Boolean)
+    : (pregnancy.high_risk_flags as any) || [];
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="font-heading font-800 text-2xl text-white mb-1">Pregnancy Care</h1>
-        <p className="text-sm text-white/35 mb-8">Tracking {pregnancy.dependent_name}&apos;s pregnancy journey</p>
+        <p className="text-sm text-white/35 mb-8">Tracking pregnancy journey</p>
       </motion.div>
 
       {/* Progress Dashboard */}
@@ -44,7 +47,7 @@ export default function PregnancyPage() {
             { label: 'Current Week', value: `Week ${week}`, icon: Calendar, color: 'teal' },
             { label: 'Trimester', value: `${trimester}${trimester === 1 ? 'st' : trimester === 2 ? 'nd' : 'rd'}`, icon: Heart, color: 'coral' },
             { label: 'Days to EDD', value: `${daysLeft} days`, icon: Clock, color: 'warm' },
-            { label: 'EDD', value: edd ? edd.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'N/A', icon: Baby, color: 'sage' },
+            { label: 'EDD', value: eddDate ? eddDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'N/A', icon: Baby, color: 'sage' },
           ].map((s, i) => (
             <div key={i} className="text-center">
               <s.icon size={20} className={`text-${s.color}-400 mx-auto mb-2`} />
@@ -69,7 +72,7 @@ export default function PregnancyPage() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Risk Monitoring */}
-        {pregnancy.high_risk_flags && pregnancy.high_risk_flags.length > 0 && (
+        {riskFlags.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             className="bg-coral-500/[0.06] border border-coral-500/15 rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-4">
@@ -77,7 +80,7 @@ export default function PregnancyPage() {
               <h2 className="font-heading font-700 text-sm text-coral-400">High Risk Flags</h2>
             </div>
             <div className="space-y-3">
-              {pregnancy.high_risk_flags.map((flag: string, i: number) => (
+              {riskFlags.map((flag: string, i: number) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-coral-400 mt-1.5 flex-shrink-0" />
                   <div>

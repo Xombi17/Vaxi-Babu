@@ -22,6 +22,7 @@ import {
   LogOut,
   Menu,
   X,
+  Loader2,
 } from 'lucide-react';
 
 var navItems = [
@@ -68,10 +69,40 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </Link>
         </div>
 
-        <div className="p-3 mx-3 mt-3 bg-surface-800/60 rounded-xl border border-white/[0.04]">
-          <p className="text-xs text-white/30 mb-1">Family</p>
-          <p className="text-sm font-heading font-700 text-white">{household?.family_name || household?.name || '...'} Family</p>
-          <p className="text-xs text-teal-400">{household?.language || household?.primary_language || ''}</p>
+        <div className="p-4 mx-3 mt-4 bg-white/[0.03] rounded-2xl border border-white/[0.06] shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest">Family Profile</p>
+            <div className={`w-1.5 h-1.5 rounded-full ${household ? 'bg-teal-500' : 'bg-white/10 animate-pulse'}`} />
+          </div>
+          
+          {household ? (
+            <div className="space-y-1">
+              <p className="text-sm font-heading font-800 text-white truncate leading-none">
+                {household.name || 'WellSync'} Family
+              </p>
+              <div className="flex items-center gap-1.5 text-[11px] text-white/40">
+                <MapPin size={10} className="text-teal-500/50" />
+                <span className="truncate">
+                  {household.village_town || household.district || 'Location not set'}
+                  {household.state ? `, ${household.state}` : ''}
+                </span>
+              </div>
+              <div className="pt-2 flex items-center gap-2">
+                <span className="px-1.5 py-0.5 rounded-md bg-teal-500/10 text-teal-400 text-[10px] font-bold border border-teal-500/20">
+                  {household.primary_language || 'English'}
+                </span>
+                <span className="text-[10px] text-white/20 font-medium truncate">
+                  ID: {household.id.slice(0, 8)}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="h-4 w-32 bg-white/5 animate-pulse rounded-md" />
+              <div className="h-3 w-24 bg-white/5 animate-pulse rounded-md" />
+              <div className="h-4 w-16 bg-white/5 animate-pulse rounded-md mt-2" />
+            </div>
+          )}
         </div>
 
         <nav className="flex-1 p-3 mt-2 space-y-0.5 overflow-y-auto">

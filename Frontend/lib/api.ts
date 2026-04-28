@@ -156,6 +156,7 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
   }
 
   if (!response.ok) {
+    let errorMessage = '';
     try {
       const errorData = await response.json();
       const detail = errorData.detail || response.statusText;

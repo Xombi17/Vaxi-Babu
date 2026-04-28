@@ -9,10 +9,13 @@ import {
   getGrowthRecords,
   getHealthPass,
   getPregnancy,
+  getMedicineRegimens,
   getRecommendedSchemes,
   getTimeline,
   markEventComplete,
   updateHousehold,
+  getHousehold,
+  getHouseholds,
   createHealthEvent,
   type Dependent,
   type HealthEvent,
@@ -35,7 +38,8 @@ function avatarForRelation(relation: string) {
 }
 
 export function useHousehold() {
-  var householdId = useAuthStore((s) => s.householdId);
+  var { householdId, isLoggedIn } = useAuthStore();
+  var queryClient = useQueryClient();
 
   return useQuery({
     queryKey: ['household', householdId],
@@ -43,15 +47,17 @@ export function useHousehold() {
       if (householdId) {
         try {
           return (await getHousehold(householdId)) as any;
-        } catch {
-          // fall back below
+        } catch (err) {
+          console.warn('Failed to fetch household by ID, falling back to list', err);
         }
       }
 
       var households = await getHouseholds();
-      return (households[0] as any) || null;
+      var h = (households[0] as any) || null;
+      
+      return h;
     },
-    enabled: !!householdId,
+    enabled: isLoggedIn,
   });
 }
 
