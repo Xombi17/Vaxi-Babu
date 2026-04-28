@@ -1,7 +1,6 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, Query
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.database import get_session
@@ -23,7 +22,10 @@ async def get_health_tips(
         return {"tips": [], "error": "Dependent not found"}
 
     today = date.today()
-    age_days = (today - dependent.date_of_birth).days
+    dob = dependent.date_of_birth
+    if isinstance(dob, datetime):
+        dob = dob.date()
+    age_days = (today - dob).days
     age_months = age_days // 30
 
     tips = get_tips_for_age(age_months, language)

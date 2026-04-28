@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import structlog
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -70,7 +70,7 @@ async def get_timeline(
         return TimelineResponse(
             dependent_id=dependent_id,
             dependent_name=dep.name,
-            generated_at=datetime.utcnow(),
+            generated_at=datetime.now(timezone.utc),
             events=[HealthEventResponse.model_validate(e) for e in events],
             next_due=HealthEventResponse.model_validate(next_due) if next_due else None,
         )
@@ -94,12 +94,12 @@ async def mark_event_complete(
         raise HTTPException(status_code=404, detail="Health event not found")
 
     event.status = EventStatus.completed
-    event.completed_at = datetime.utcnow()
+    event.completed_at = datetime.now(timezone.utc)
     event.completed_by = body.completed_by
     event.location = body.location
     if body.notes:
         event.notes = body.notes
-    event.updated_at = datetime.utcnow()
+    event.updated_at = datetime.now(timezone.utc)
     session.add(event)
     await session.flush()
     await session.refresh(event)
@@ -118,9 +118,9 @@ async def mark_vaccination_given(
     if not event or event.dependent_id != dependent_id:
         raise HTTPException(status_code=404, detail="Health event not found")
 
-    event.marked_given_at = datetime.utcnow()
+    event.marked_given_at = datetime.now(timezone.utc)
     event.verification_status = VerificationStatus.pending
-    event.updated_at = datetime.utcnow()
+    event.updated_at = datetime.now(timezone.utc)
     session.add(event)
     await session.flush()
     await session.refresh(event)
@@ -143,7 +143,7 @@ async def verify_vaccination(
     event.verified_by = body.verified_by
     event.verification_notes = body.verification_notes
     event.verification_document_url = body.verification_document_url
-    event.updated_at = datetime.utcnow()
+    event.updated_at = datetime.now(timezone.utc)
     session.add(event)
     await session.flush()
     await session.refresh(event)

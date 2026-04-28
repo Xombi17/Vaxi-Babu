@@ -346,6 +346,18 @@ export function useLiveAPI() {
             },
 
             onmessage: async (message: LiveServerMessage) => {
+              if (message.setupComplete) {
+                console.log("Gemini setup complete. Sending initial greeting...");
+                const initialPrompt = `Hello! Please greet me in ${language || 'English'}, introduce yourself as the Vaxi Babu Health Assistant, and ask how you can help me with my family's health today.`;
+                if (sessionRef.current) {
+                  // Using sendClientContent as per SDK definition
+                  (sessionRef.current as any).sendClientContent({
+                    turns: [{ role: "user", parts: [{ text: initialPrompt }] }],
+                    turnComplete: true,
+                  });
+                }
+              }
+
               console.log("Gemini message received:", message);
 
               const base64Audio =
@@ -522,26 +534,6 @@ export function useLiveAPI() {
         });
 
         sessionRef.current = aiSession;
-        
-        // Trigger initial greeting
-        const initialPrompt = `Hello! Please greet me in ${language || 'English'}, introduce yourself as the Vaxi Babu Health Assistant, and ask how you can help me with my family's health today.`;
-        try {
-          if ((aiSession as any).sendClientContent) {
-            (aiSession as any).sendClientContent({
-              turns: [{ role: "user", parts: [{ text: initialPrompt }] }],
-              turnComplete: true,
-            });
-          } else if ((aiSession as any).send) {
-            (aiSession as any).send(JSON.stringify({
-              clientContent: {
-                turns: [{ role: "user", parts: [{ text: initialPrompt }] }],
-                turnComplete: true
-              }
-            }));
-          }
-        } catch (e) {
-          console.error("Failed to send initial greeting prompt:", e);
-        }
       } catch (err: any) {
         console.error("Connection process failed:", err);
         let errorMessage = err.message || "Failed to connect to Live API";

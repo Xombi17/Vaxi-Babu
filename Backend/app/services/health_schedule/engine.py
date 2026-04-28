@@ -7,7 +7,7 @@ recomputes status (upcoming/due/overdue) dynamically against today's date.
 """
 
 import json
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -68,10 +68,15 @@ def _load_growth_schedule() -> dict[str, Any]:
     return _growth_data
 
 
-def compute_status(due_date: date, completed: bool, today: date | None = None) -> EventStatus:
+def compute_status(due_date: date | datetime, completed: bool, today: date | None = None) -> EventStatus:
     """Compute the current status of a health event from its due date."""
     if completed:
         return EventStatus.completed
+    
+    # Normalize due_date to date
+    if isinstance(due_date, datetime):
+        due_date = due_date.date()
+        
     today = today or date.today()
     delta = (due_date - today).days
     if delta < 0:
@@ -159,7 +164,7 @@ async def refresh_event_statuses(
         new_status = compute_status(event.due_date, completed=False, today=today)
         if new_status != event.status:
             event.status = new_status
-            event.updated_at = datetime.utcnow()
+            event.updated_at = datetime.now(timezone.utc)
 
     await session.flush()
     events.sort(key=lambda e: e.due_date)
@@ -178,9 +183,12 @@ def get_next_due_event(events: list[HealthEvent]) -> HealthEvent | None:
 
 async def generate_pregnancy_schedule(
     dependent: Dependent,
-    lmp_date: date,  # Last Menstrual Period date
+    lmp_date: date | datetime,  # Last Menstrual Period date
     session: AsyncSession,
 ) -> list[HealthEvent]:
+    # Normalize lmp_date to date
+    if isinstance(lmp_date, datetime):
+        lmp_date = lmp_date.date()
     """Generate pregnancy care schedule from LMP date."""
     if dependent.type != DependentType.pregnant:
         return []
@@ -361,6 +369,10 @@ async def generate_growth_check_schedule(
     existing_keys = {e.schedule_key for e in existing_events}
 
     dob = dependent.date_of_birth
+    # Normalize dob to date if it is a datetime
+    if isinstance(dob, datetime):
+        dob = dob.date()
+        
     today = date.today()
     age_days = (today - dob).days
     age_months = age_days // 30

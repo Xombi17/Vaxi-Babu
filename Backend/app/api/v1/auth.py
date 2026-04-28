@@ -1,16 +1,16 @@
 import structlog
+from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import text
 from sqlmodel import Session, select
+
+from app.core.auth import create_access_token, verify_password
 from app.core.database import get_session
 from app.models.household import Household
-from typing import Any
 
 log = structlog.get_logger()
 router = APIRouter(tags=["Authentication"])
-
-from fastapi.security import OAuth2PasswordRequestForm
-from app.core.auth import create_access_token, verify_password
 
 
 def _normalize_username(username: str) -> str:

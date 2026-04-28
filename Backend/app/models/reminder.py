@@ -1,7 +1,8 @@
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from enum import Enum
 
+from sqlalchemy import Column, DateTime
 from sqlmodel import Field, SQLModel
 
 
@@ -49,5 +50,11 @@ class Reminder(SQLModel, table=True):
     status: ReminderStatus = Field(default=ReminderStatus.pending)
     snoozed_until: date | None = Field(default=None)
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )

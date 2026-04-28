@@ -3,6 +3,7 @@ Vaxi Babu — FastAPI Application Entry Point
 """
 
 from contextlib import asynccontextmanager
+from datetime import datetime
 
 import structlog
 from fastapi import FastAPI, Request
@@ -31,6 +32,9 @@ async def lifespan(app: FastAPI):
     if not health.get("healthy"):
         log.error("startup_health_check_failed", health=health)
         log.warning("Continuing startup despite health check failures.")
+
+    # Database initialization and migration
+    await create_db_and_tables()
 
     yield
 
@@ -70,10 +74,25 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    log.error("unhandled_exception", path=request.url.path, error=str(exc), exc_info=True)
+    import traceback
+    error_msg = str(exc)
+    stack_trace = traceback.format_exc()
+    
+    # Log to file for "black box" debugging
+    try:
+        with open("crash_report.log", "a") as f:
+            f.write(f"\n--- {datetime.now()} ---\n")
+            f.write(f"Path: {request.url.path}\n")
+            f.write(f"Error: {error_msg}\n")
+            f.write(f"Stack Trace:\n{stack_trace}\n")
+    except Exception as e:
+        log.error("failed_to_write_crash_log", error=str(e))
+        pass
+
+    log.error("unhandled_exception", path=request.url.path, error=error_msg, exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error", "error": str(exc)},
+        content={"detail": "Internal Server Error", "error": error_msg, "stack": stack_trace if settings.is_dev else None},
         headers={
             "Access-Control-Allow-Origin": request.headers.get("Origin", "*"),
             "Access-Control-Allow-Credentials": "true",

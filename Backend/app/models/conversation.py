@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
+from sqlalchemy import Column, DateTime
 from sqlmodel import Field, SQLModel
 
 class Conversation(SQLModel, table=True):
@@ -16,7 +17,10 @@ class Conversation(SQLModel, table=True):
     role: str = Field(description="user or assistant")
     content: str = Field(description="The transcript text")
     
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
 
 class HealthNote(SQLModel, table=True):
     """

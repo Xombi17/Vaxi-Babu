@@ -5,7 +5,6 @@ Handles tool calls from Gemini Live on the frontend.
 Gemini Live runs entirely on the client side and calls these endpoints for data.
 """
 
-import json
 from datetime import date
 from typing import Any
 
@@ -16,8 +15,6 @@ from sqlmodel import select
 from app.core.database import get_session
 from app.models.dependent import Dependent
 from app.models.health_event import EventStatus, HealthEvent
-from app.models.household import Household
-from app.services.ai_service import answer_voice_question
 
 log = structlog.get_logger()
 router = APIRouter(prefix="/voice", tags=["Voice (Gemini Live)"])
@@ -45,7 +42,10 @@ async def get_household_dependents(request: Request) -> dict[str, Any]:
             children = []
             today = date.today()
             for d in dependents:
-                age_days = (today - d.date_of_birth).days
+                dob = d.date_of_birth
+                if isinstance(dob, datetime):
+                    dob = dob.date()
+                age_days = (today - dob).days
                 age_months = age_days // 30 if age_days >= 30 else 0
 
                 children.append({

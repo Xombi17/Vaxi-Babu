@@ -1,8 +1,9 @@
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from enum import Enum
 
 from pydantic import field_validator
+from sqlalchemy import Column, DateTime
 from sqlmodel import Field, SQLModel
 
 
@@ -62,8 +63,14 @@ class Dependent(SQLModel, table=True):
 
     notes: str | None = Field(default=None, max_length=500)
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
 
     @field_validator("sex", mode="before")
     @classmethod

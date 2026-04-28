@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
@@ -26,7 +26,7 @@ async def create_pregnancy_profile(
     # Check if household already has an active pregnancy
     stmt = select(PregnancyProfile).where(
         PregnancyProfile.household_id == body.household_id,
-        PregnancyProfile.completed == False,
+        PregnancyProfile.completed.is_(False),
     )
     result = await session.execute(stmt)
     existing = result.scalar_one_or_none()
@@ -75,7 +75,7 @@ async def get_pregnancy_profile(
     """Get active pregnancy profile for a household."""
     stmt = select(PregnancyProfile).where(
         PregnancyProfile.household_id == household_id,
-        PregnancyProfile.completed == False,
+        PregnancyProfile.completed.is_(False),
     )
     result = await session.execute(stmt)
     profile = result.scalar_one_or_none()
@@ -95,7 +95,7 @@ async def update_pregnancy_profile(
     """Update pregnancy profile (mark completed, add risk flags)."""
     stmt = select(PregnancyProfile).where(
         PregnancyProfile.household_id == household_id,
-        PregnancyProfile.completed == False,
+        PregnancyProfile.completed.is_(False),
     )
     result = await session.execute(stmt)
     profile = result.scalar_one_or_none()
@@ -108,7 +108,7 @@ async def update_pregnancy_profile(
     if body.completed is not None:
         profile.completed = body.completed
 
-    profile.updated_at = datetime.utcnow()
+    profile.updated_at = datetime.now(timezone.utc)
     session.add(profile)
     await session.commit()
     await session.refresh(profile)

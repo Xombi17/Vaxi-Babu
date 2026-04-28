@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -55,15 +55,15 @@ async def mark_reminder_done(
         raise HTTPException(status_code=404, detail="Reminder not found")
 
     reminder.status = ReminderStatus.completed
-    reminder.updated_at = datetime.utcnow()
+    reminder.updated_at = datetime.now(timezone.utc)
     session.add(reminder)
 
     # Also mark health event as completed
     event = await session.get(HealthEvent, reminder.health_event_id)
     if event:
         event.status = EventStatus.completed
-        event.completed_at = datetime.utcnow()
-        event.updated_at = datetime.utcnow()
+        event.completed_at = datetime.now(timezone.utc)
+        event.updated_at = datetime.now(timezone.utc)
         session.add(event)
 
     await session.flush()
@@ -84,7 +84,7 @@ async def snooze_reminder(
 
     reminder.status = ReminderStatus.snoozed
     reminder.snoozed_until = body.snooze_until
-    reminder.updated_at = datetime.utcnow()
+    reminder.updated_at = datetime.now(timezone.utc)
     session.add(reminder)
     await session.flush()
     await session.refresh(reminder)

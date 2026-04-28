@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -43,10 +43,17 @@ export function AppLayout({ children }: { children: ReactNode }) {
   var router = useRouter();
   var [mobileNav, setMobileNav] = useState(false);
 
-  var handleLogout = () => {
+  const handleLogout = () => {
     logout();
     router.push('/');
   };
+
+  // Onboarding Redirect Logic
+  useEffect(() => {
+    if (household && !household.last_onboarded_at && pathname !== '/onboarding') {
+      router.push('/onboarding');
+    }
+  }, [household, pathname, router]);
 
   return (
     <div className="min-h-screen bg-surface-950 flex">

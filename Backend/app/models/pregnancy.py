@@ -1,7 +1,7 @@
 import uuid
-from datetime import date, datetime, timedelta
-from enum import Enum
+from datetime import date, datetime, timezone
 
+from sqlalchemy import Column, DateTime
 from sqlmodel import Field, SQLModel
 
 
@@ -21,13 +21,22 @@ class PregnancyProfile(SQLModel, table=True):
     high_risk_flags: str = Field(default="", max_length=500, description="Comma-separated risk flags")
     completed: bool = Field(default=False, description="True after delivery")
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
 
     @property
     def pregnancy_week(self) -> int:
         """Current pregnancy week based on LMP."""
-        days_since_lmp = (date.today() - self.lmp_date).days
+        lmp = self.lmp_date
+        if isinstance(lmp, datetime):
+            lmp = lmp.date()
+        days_since_lmp = (date.today() - lmp).days
         return days_since_lmp // 7
 
     @property
@@ -44,4 +53,7 @@ class PregnancyProfile(SQLModel, table=True):
     @property
     def days_until_due(self) -> int:
         """Days remaining until expected due date."""
-        return (self.expected_due_date - date.today()).days
+        due = self.expected_due_date
+        if isinstance(due, datetime):
+            due = due.date()
+        return (due - date.today()).days

@@ -1,8 +1,8 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import Column, JSON
+from sqlalchemy import Column, JSON, DateTime
 from sqlmodel import Field, SQLModel
 
 
@@ -49,7 +49,15 @@ class Household(SQLModel, table=True):
 
     # Preferences and onboarding data
     preferences: dict = Field(default_factory=dict, sa_column=Column(JSON))
-    last_onboarded_at: datetime | None = Field(default=None)
+    last_onboarded_at: datetime | None = Field(
+        default=None, sa_column=Column(DateTime(timezone=True))
+    )
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )

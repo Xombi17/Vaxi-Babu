@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from pydantic import BaseModel
 from datetime import date
 from sqlmodel import Session, select
@@ -64,7 +64,6 @@ async def get_eligible_schemes(household: Household, session: Session) -> List[H
         if hasattr(dob, "date"):
             dob = dob.date()
         elif isinstance(dob, str):
-            from datetime import date as dt_date
             dob = date.fromisoformat(dob)
             
         age_days = (today - dob).days

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import select
@@ -87,10 +87,9 @@ async def update_dependent(
     update_data = body.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(dep, field, value)
-    dep.updated_at = datetime.utcnow()
-    session.add(dep)
+    dep.updated_at = datetime.now(timezone.utc)
+    await session.merge(dep)
     await session.flush()
-    await session.refresh(dep)
     return dep
 
 

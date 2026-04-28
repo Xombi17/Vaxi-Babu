@@ -47,15 +47,46 @@ async def create_db_and_tables() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
 
-        # Add missing columns to health_events table (safe to run multiple times)
-        await conn.execute(text("""
-            ALTER TABLE health_events
-            ADD COLUMN IF NOT EXISTS verification_status VARCHAR,
-            ADD COLUMN IF NOT EXISTS verified_by VARCHAR,
-            ADD COLUMN IF NOT EXISTS verification_document_url VARCHAR,
-            ADD COLUMN IF NOT EXISTS verification_notes TEXT,
-            ADD COLUMN IF NOT EXISTS marked_given_at TIMESTAMP;
-        """))
+        # Ensure datetime columns are using TIMESTAMPTZ to handle aware datetimes
+        # Split into individual commands to avoid asyncpg 'multiple commands' error
+        migration_commands = [
+            "ALTER TABLE households ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'",
+            "ALTER TABLE households ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC'",
+            "ALTER TABLE households ALTER COLUMN last_onboarded_at TYPE TIMESTAMPTZ USING last_onboarded_at AT TIME ZONE 'UTC'",
+            
+            "ALTER TABLE health_events ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'",
+            "ALTER TABLE health_events ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC'",
+            "ALTER TABLE health_events ALTER COLUMN due_date TYPE TIMESTAMPTZ USING due_date AT TIME ZONE 'UTC'",
+            "ALTER TABLE health_events ALTER COLUMN completed_at TYPE TIMESTAMPTZ USING completed_at AT TIME ZONE 'UTC'",
+
+            "ALTER TABLE dependents ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'",
+            "ALTER TABLE dependents ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC'",
+
+            "ALTER TABLE reminders ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'",
+            "ALTER TABLE reminders ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC'",
+            
+            "ALTER TABLE pregnancy_profiles ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'",
+            "ALTER TABLE pregnancy_profiles ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC'",
+            
+            "ALTER TABLE medicine_regimens ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'",
+            "ALTER TABLE medicine_regimens ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC'",
+            
+            "ALTER TABLE conversations ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'",
+            "ALTER TABLE health_notes ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'",
+
+            "ALTER TABLE health_events ADD COLUMN IF NOT EXISTS verification_status VARCHAR",
+            "ALTER TABLE health_events ADD COLUMN IF NOT EXISTS verified_by VARCHAR",
+            "ALTER TABLE health_events ADD COLUMN IF NOT EXISTS verification_document_url VARCHAR",
+            "ALTER TABLE health_events ADD COLUMN IF NOT EXISTS verification_notes TEXT",
+            "ALTER TABLE health_events ADD COLUMN IF NOT EXISTS marked_given_at TIMESTAMPTZ"
+        ]
+
+        for cmd in migration_commands:
+            try:
+                await conn.execute(text(cmd))
+            except Exception as e:
+                # Log and continue if a specific migration fails (e.g. table doesn't exist yet)
+                print(f"Migration command failed: {cmd}. Error: {e}")
 
 
 async def drop_db_and_tables() -> None:

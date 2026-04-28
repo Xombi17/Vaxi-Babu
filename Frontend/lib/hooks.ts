@@ -8,12 +8,11 @@ import {
   getDependents,
   getGrowthRecords,
   getHealthPass,
-  getHousehold,
-  getHouseholds,
-  getMedicineRegimens,
+  getPregnancy,
   getRecommendedSchemes,
   getTimeline,
   markEventComplete,
+  updateHousehold,
   createHealthEvent,
   type Dependent,
   type HealthEvent,
@@ -269,7 +268,23 @@ export function usePregnancy() {
     queryKey: ['pregnancy', householdId],
     queryFn: async () => {
       if (!householdId) return null;
-      return null as any;
+      return getPregnancy(householdId);
+    },
+    enabled: !!householdId,
+  });
+}
+
+export function useUpdateHousehold() {
+  var qc = useQueryClient();
+  var householdId = useAuthStore((s) => s.householdId);
+
+  return useMutation({
+    mutationFn: async (data: Partial<Household>) => {
+      if (!householdId) throw new Error('No household ID');
+      return updateHousehold(householdId, data);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['household', householdId] });
     },
   });
 }

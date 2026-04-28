@@ -1,6 +1,7 @@
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
+from sqlalchemy import Column, DateTime
 from sqlmodel import Field, SQLModel
 
 
@@ -26,4 +27,7 @@ class GrowthRecord(SQLModel, table=True):
     milestone_achieved: str | None = Field(default=None, max_length=300)
     notes: str = Field(default="", max_length=500)
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )

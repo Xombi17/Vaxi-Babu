@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
@@ -54,7 +54,7 @@ async def list_medicine_regimens(
     """List active medicine regimens for a dependent."""
     stmt = select(MedicineRegimen).where(
         MedicineRegimen.dependent_id == dependent_id,
-        MedicineRegimen.active == True,
+        MedicineRegimen.active.is_(True),
     )
     result = await session.execute(stmt)
     regimens = result.scalars().all()
@@ -84,7 +84,7 @@ async def update_medicine_regimen(
     if body.active is not None:
         regimen.active = body.active
 
-    regimen.updated_at = datetime.utcnow()
+    regimen.updated_at = datetime.now(timezone.utc)
     session.add(regimen)
     await session.commit()
     await session.refresh(regimen)
@@ -103,7 +103,7 @@ async def deactivate_medicine_regimen(
         raise HTTPException(status_code=404, detail="Medicine regimen not found")
 
     regimen.active = False
-    regimen.updated_at = datetime.utcnow()
+    regimen.updated_at = datetime.now(timezone.utc)
     session.add(regimen)
     await session.commit()
     await session.refresh(regimen)

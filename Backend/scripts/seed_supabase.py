@@ -8,9 +8,14 @@ import asyncio
 import os
 from datetime import date, timedelta
 from supabase import create_client, Client
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlmodel import select
+from dotenv import load_dotenv
+import uuid
+
+# Load environment variables
+load_dotenv()
 
 # Import models
 import sys
@@ -39,39 +44,38 @@ AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_co
 SEED_PASSWORD = os.getenv("SEED_DEMO_PASSWORD", "Vaxi Babu_demo_secure_2026")
 
 DEMO_FAMILIES = [
-    {"username": "sharma", "name": "Sharma Family", "email": "sharma@Vaxi Babu.demo", "password": SEED_PASSWORD},
-    {"username": "patel", "name": "Patel Family", "email": "patel@Vaxi Babu.demo", "password": SEED_PASSWORD},
-    {"username": "kumar", "name": "Kumar Family", "email": "kumar@Vaxi Babu.demo", "password": SEED_PASSWORD},
-    {"username": "singh", "name": "Singh Family", "email": "singh@Vaxi Babu.demo", "password": SEED_PASSWORD},
-    {"username": "verma", "name": "Verma Family", "email": "verma@Vaxi Babu.demo", "password": SEED_PASSWORD},
+    {"username": "sharma", "name": "Sharma Family", "email": "sharma@vaxibabu.demo", "password": SEED_PASSWORD},
+    {"username": "patel", "name": "Patel Family", "email": "patel@vaxibabu.demo", "password": SEED_PASSWORD},
+    {"username": "kumar", "name": "Kumar Family", "email": "kumar@vaxibabu.demo", "password": SEED_PASSWORD},
+    {"username": "singh", "name": "Singh Family", "email": "singh@vaxibabu.demo", "password": SEED_PASSWORD},
+    {"username": "verma", "name": "Verma Family", "email": "verma@vaxibabu.demo", "password": SEED_PASSWORD},
 ]
 
 async def clear_existing_data():
     """Delete all existing households, dependents, and health events"""
     print("\n🗑️  Clearing existing data...")
     async with AsyncSessionLocal() as session:
-        await session.execute("DELETE FROM health_events")
-        await session.execute("DELETE FROM dependents")
-        await session.execute("DELETE FROM households")
+        # Use TRUNCATE to be absolutely sure and reset sequences
+        await session.execute(text("TRUNCATE TABLE health_events, dependents, households CASCADE"))
         await session.commit()
     print("✅ Cleared existing data")
 
 async def delete_auth_users():
     """Delete all demo auth users"""
     print("\n🗑️  Deleting existing auth users...")
-    for family in DEMO_FAMILIES:
-        try:
-            # Get user by email
-            response = supabase.auth.admin.list_users()
-            users = response.users if hasattr(response, 'users') else []
-
-            for user in users:
-                if user.email == family["email"]:
-                    supabase.auth.admin.delete_user(user.id)
-                    print(f"   Deleted user: {family['email']}")
-        except Exception as e:
-            print(f"   Error deleting {family['email']}: {e}")
-    print("✅ Deleted auth users")
+    try:
+        response = supabase.auth.admin.list_users()
+        users = response
+        
+        deleted_count = 0
+        for user in users:
+            if user.email and user.email.endswith("@vaxibabu.demo"):
+                supabase.auth.admin.delete_user(user.id)
+                print(f"   Deleted user: {user.email}")
+                deleted_count += 1
+        print(f"✅ Deleted {deleted_count} auth users")
+    except Exception as e:
+        print(f"   Error listing/deleting users: {e}")
 
 async def create_demo_users():
     """Create Supabase Auth users and households"""
@@ -94,13 +98,14 @@ async def create_demo_users():
             # Create household linked to auth user
             async with AsyncSessionLocal() as session:
                 household = Household(
+                    id=user_id, # Match Supabase ID
                     name=family["name"],
                     username=family["username"],
                     primary_language="hi",
-                    auth_user_id=user_id,
+                    auth_id=uuid.UUID(user_id),
                     password_hash=get_password_hash(family["password"]),
                 )
-                session.add(household)
+                await session.merge(household)
                 await session.commit()
                 await session.refresh(household)
                 households.append(household)
@@ -252,11 +257,11 @@ async def main():
     await seed_health_events(dependents)
 
     print("\n✅ Seed complete!")
-    print(f"\n📊 Summary:")
+    print("\n📊 Summary:")
     print(f"   - {len(households)} households created")
     print(f"   - {len(dependents)} dependents created")
-    print(f"   - Health events seeded")
-    print(f"\n🔑 Demo credentials:")
+    print("   - Health events seeded")
+    print("\n🔑 Demo credentials:")
     for family in DEMO_FAMILIES:
         print(f"   {family['email']} / {family['password']}")
 

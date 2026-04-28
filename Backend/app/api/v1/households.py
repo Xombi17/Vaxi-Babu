@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import delete
@@ -114,10 +114,12 @@ async def update_household(
 
     for field, value in update_data.items():
         setattr(household, field, value)
-    household.updated_at = datetime.utcnow()
-    session.add(household)
+    
+    household.updated_at = datetime.now(timezone.utc)
+    
+    # Use merge to handle instances that might be detached or from auth layer
+    await session.merge(household)
     await session.flush()
-    await session.refresh(household)
     return household
 
 

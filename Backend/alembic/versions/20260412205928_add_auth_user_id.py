@@ -7,7 +7,6 @@ Create Date: 2026-04-12 15:28:55
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'add_auth_user_id'

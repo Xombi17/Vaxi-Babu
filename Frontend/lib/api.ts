@@ -156,12 +156,13 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
   }
 
   if (!response.ok) {
-    let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
     try {
       const errorData = await response.json();
-      errorMessage = errorData.detail || errorMessage;
+      const detail = errorData.detail || response.statusText;
+      const backendError = errorData.error ? ` (${errorData.error})` : '';
+      errorMessage = `${detail}${backendError}`;
     } catch {
-      // Ignore JSON parse errors
+      errorMessage = `HTTP ${response.status}: ${response.statusText}`;
     }
     throw new ApiError(response.status, errorMessage);
   }
@@ -404,7 +405,7 @@ export async function createHealthEvent(dependentId: string, event: Partial<Heal
 
 export const authApi = {
   async login(emailOrUsername: string, password: string): Promise<{ access_token: string; token_type: string; household_id: string }> {
-    const email = emailOrUsername.includes('@') ? emailOrUsername : `${emailOrUsername}@Vaxi Babu.demo`;
+    const email = emailOrUsername.includes('@') ? emailOrUsername : `${emailOrUsername}@vaxibabu.demo`;
 
     // Use Supabase for authentication
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -450,7 +451,7 @@ export const authApi = {
     password: string;
     primary_language?: string;
   }): Promise<Household> {
-    const email = payload.username.includes('@') ? payload.username : `${payload.username}@Vaxi Babu.demo`;
+    const email = payload.username.includes('@') ? payload.username : `${payload.username}@vaxibabu.demo`;
     
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -483,6 +484,29 @@ export const authApi = {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     } as Household;
+  },
+
+  async signInWithGithub(): Promise<void> {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      throw new ApiError(400, error.message);
+    }
+  },
+
+  async onboardHousehold(householdId: string, data: Partial<Household>): Promise<Household> {
+    return fetchApi<Household>(`/api/v1/households/${householdId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        ...data,
+        last_onboarded_at: new Date().toISOString(),
+      }),
+    });
   },
 };
 

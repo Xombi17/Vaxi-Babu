@@ -54,7 +54,7 @@ flutter build apk    # for android
 
 ```bash
 cp .env.example .env
-# Required: DATABASE_URL (Neon Postgres), GITHUB_TOKEN (GitHub Models PAT)
+# Required: DATABASE_URL (Supabase Postgres), GITHUB_TOKEN (GitHub Models PAT)
 # Note: Use GITHUB_TOKEN instead of GROQ_API_KEY
 ```
 
@@ -93,7 +93,7 @@ cp .env.example .env
 ### Completed
 
 - ✅ FastAPI backend with async/await throughout
-- ✅ Neon Postgres connection via `asyncpg` (asyncpg-native SSL)
+- ✅ Supabase Postgres connection via `asyncpg` (SSL)
 - ✅ SQLModel: Household, Dependent, HealthEvent, Reminder, Conversation
 - ✅ India NIS schedule engine (deterministic, versioned)
 - ✅ AI service using GitHub Models (openai/gpt-4o via https://models.github.ai/inference)
@@ -109,7 +109,7 @@ cp .env.example .env
 
 - **Replaced Groq with GitHub Models** (openai/gpt-4o)
 - **Replaced Ollama + Google Cloud Vision with OpenAI gpt-4o multimodal**
-- **Fixed Neon SSL** — removed `sslmode=require&channel_binding=require` from DATABASE_URL
+- **Fixed Supabase SSL** — ensured connection parameters are compatible with Supabase Pooled connection.
 - **Replaced Vapi and ElevenLabs with Gemini Live** for all languages
 - **Removed all Vapi/11Labs/ElevenLabs references** from frontend and backend
 - **Switched Mobile Strategy**: Native Android (`Android/`) is deprecated. Active development is now in Flutter (`Mobile/`).

@@ -3,7 +3,7 @@ import os
 import uuid
 from datetime import date, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import engine, create_db_and_tables, drop_db_and_tables
+from app.core.database import engine, create_db_and_tables
 from app.models.household import Household
 from app.models.dependent import Dependent, DependentType, Sex
 from app.models.health_event import EventStatus

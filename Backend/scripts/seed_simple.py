@@ -241,7 +241,7 @@ async def main():
     await seed_health_events(dependents)
 
     print("\n✅ Seed complete!")
-    print(f"\n🔑 Demo credentials:")
+    print("\n🔑 Demo credentials:")
     for family in DEMO_FAMILIES:
         print(f"   {family['email']} / {family['password']}")
 

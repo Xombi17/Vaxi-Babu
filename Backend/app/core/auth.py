@@ -1,4 +1,5 @@
 import json
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -107,20 +108,36 @@ async def get_current_household(
                 log.error("auth_payload_missing_sub")
                 raise credentials_exception
 
-            # Trust Supabase: return a virtual household object without DB lookup.
-            # This allows the app to function even if public.households record doesn't exist.
-            metadata = payload.get("user_metadata", {})
-            email = payload.get("email", metadata.get("email", ""))
-            name = metadata.get("name", email.split('@')[0] if email else "User")
+            # Check if household exists in DB
+            result = await session.execute(select(Household).where(Household.id == user_id))
+            household = result.scalars().first()
 
-            return Household(
-                id=user_id,
-                username=email or user_id,
-                name=name,
-                auth_id=user_id,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow()
-            )
+            if not household:
+                # Auto-create household if it doesn't exist (Trusting Supabase Auth)
+                log.info("auth_auto_creating_household", user_id=user_id)
+                metadata = payload.get("user_metadata", {})
+                email = payload.get("email", metadata.get("email", ""))
+                
+                # Robust username (min 3 chars)
+                username = email if email and len(email) >= 3 else f"user_{user_id[:8]}"
+                # Robust name
+                name = metadata.get("name") or (email.split('@')[0] if email else "Family User")
+                if not name or len(name) < 1:
+                    name = "New Family"
+
+                household = Household(
+                    id=user_id,
+                    username=username,
+                    name=name,
+                    auth_id=uuid.UUID(user_id) if isinstance(user_id, str) and "-" in user_id else None,
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
+                )
+                session.add(household)
+                await session.flush()
+                # No refresh here to avoid detachment issues
+
+            return household
 
         # 4. Fallback to Local Database (for non-Supabase tokens)
         username: str = payload.get("sub")

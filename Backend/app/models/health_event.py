@@ -1,7 +1,8 @@
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from enum import Enum
 
+from sqlalchemy import Column, DateTime
 from sqlmodel import Field, SQLModel
 
 
@@ -55,7 +56,9 @@ class HealthEvent(SQLModel, table=True):
 
     # Status
     status: EventStatus = Field(default=EventStatus.upcoming)
-    completed_at: datetime | None = Field(default=None)
+    completed_at: datetime | None = Field(
+        default=None, sa_column=Column(DateTime(timezone=True))
+    )
     completed_by: str | None = Field(default=None, max_length=200, description="Name of healthcare worker")
     location: str | None = Field(default=None, max_length=200, description="Where it was done")
 
@@ -66,10 +69,18 @@ class HealthEvent(SQLModel, table=True):
     verified_by: str | None = Field(default=None, max_length=200, description="ASHA worker name")
     verification_document_url: str | None = Field(default=None, max_length=500, description="URL to verification document")
     verification_notes: str | None = Field(default=None, max_length=500, description="Notes from verification")
-    marked_given_at: datetime | None = Field(default=None, description="When marked as given by parent")
+    marked_given_at: datetime | None = Field(
+        default=None, sa_column=Column(DateTime(timezone=True)), description="When marked as given by parent"
+    )
 
     # Schedule engine versioning
     schedule_version: str = Field(default="india_nis_v1", max_length=50)
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
