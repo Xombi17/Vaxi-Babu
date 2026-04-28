@@ -12,7 +12,7 @@ export function VoiceFAB() {
     ? (params.dependent_id as string)
     : '';
 
-  const { isConnected, isConnecting, connect, disconnect } = useGeminiVoiceBridge();
+  const { isConnected, isConnecting, connect, disconnect, error } = useGeminiVoiceBridge();
 
   const [callError, setCallError] = useState<string | null>(null);
   const startInFlightRef = useRef(false);
@@ -35,6 +35,12 @@ export function VoiceFAB() {
     },
     [clearErrorTimer]
   );
+
+  useEffect(() => {
+    if (error) {
+      setTransientError(error);
+    }
+  }, [error, setTransientError]);
 
   const startCall = useCallback(async () => {
     if (startInFlightRef.current || isConnecting || isConnected) return;

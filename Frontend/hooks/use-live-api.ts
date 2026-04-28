@@ -524,7 +524,15 @@ export function useLiveAPI() {
         sessionRef.current = aiSession;
       } catch (err: any) {
         console.error("Connection process failed:", err);
-        setError(err.message || "Failed to connect to Live API");
+        let errorMessage = err.message || "Failed to connect to Live API";
+        
+        if (err.name === "NotFoundError" || err.message.includes("Requested device not found")) {
+          errorMessage = "Microphone not found. Please connect a microphone.";
+        } else if (err.name === "NotAllowedError" || err.message.includes("Permission denied")) {
+          errorMessage = "Microphone permission denied. Please allow microphone access.";
+        }
+        
+        setError(errorMessage);
         setIsConnecting(false);
         setIsConnected(false);
         // Clean up any partial state
