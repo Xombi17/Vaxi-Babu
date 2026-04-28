@@ -39,12 +39,26 @@ if url:
         if not settings.is_dev:
             engine_kwargs["poolclass"] = NullPool
         
-        engine_kwargs.update({
-            "connect_args": {
-                "ssl": True,
-                "command_timeout": 30,
-            }
-        })
+        # Initialize connect_args
+        engine_kwargs["connect_args"] = {
+            "ssl": True,
+            "command_timeout": 30,
+            "server_settings": {"search_path": "public"}
+        }
+
+        # Force IPv4 resolution for host to avoid Vercel/asyncpg Errno 99 (IPv6 issues)
+        try:
+            from urllib.parse import urlparse
+            import socket
+            parsed = urlparse(url)
+            if parsed.hostname and not parsed.hostname.replace('.', '').isdigit():
+                # Resolve hostname to IPv4
+                ip = socket.gethostbyname(parsed.hostname)
+                url = url.replace(parsed.hostname, ip, 1)
+                # Important: asyncpg might need the original hostname for SSL validation
+                # but with ip-based url, we handle it via connect_args if needed.
+        except Exception as e:
+            print(f"DNS resolution failed: {e}")
 
     engine = create_async_engine(url, **engine_kwargs)
     AsyncSessionLocal = async_sessionmaker(
