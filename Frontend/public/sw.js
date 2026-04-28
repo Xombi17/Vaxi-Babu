@@ -3,7 +3,7 @@ const STATIC_CACHE = 'Vaxi Babu-static-v2';
 const DYNAMIC_CACHE = 'Vaxi Babu-dynamic-v2';
 
 const STATIC_ASSETS = [
-  '/manifest.json',
+  '/site.webmanifest',
   '/web-app-manifest-192x192.png',
   '/web-app-manifest-512x512.png',
 ];
