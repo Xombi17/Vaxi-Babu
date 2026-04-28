@@ -1,2 +1,5 @@
-'use client';
-export { default } from '@/views/MedicinesPage';
+import MedicinesPage from '@/views/MedicinesPage';
+
+export default function Page() {
+  return <MedicinesPage />;
+}
