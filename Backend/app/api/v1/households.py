@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi_cache.decorator import cache
 from sqlalchemy import delete
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -176,6 +177,7 @@ async def list_assigned_households(
 
 
 @router.get("/{household_id}/schemes", response_model=list[HealthScheme])
+@cache(expire=300)
 async def list_household_schemes(
     household_id: str,
     session: AsyncSession = Depends(get_session),

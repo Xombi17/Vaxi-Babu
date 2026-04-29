@@ -9,6 +9,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.inmemory import InMemoryBackend
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -35,6 +37,9 @@ async def lifespan(app: FastAPI):
     if not health.get("healthy"):
         log.error("startup_health_check_failed", health=health)
         log.warning("Continuing startup despite health check failures.")
+
+    # Initialize in-memory cache
+    FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
 
     # Database initialization and migration
     if settings.is_dev:

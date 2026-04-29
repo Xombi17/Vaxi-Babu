@@ -57,10 +57,13 @@ AsyncSessionLocal = None
 
 if url:
     if not url.startswith("sqlite"):
-        from sqlalchemy.pool import NullPool
-        # Force NullPool in production to avoid "Cannot assign requested address"
+        from sqlalchemy.pool import QueuePool
+        # Use QueuePool for persistent FastAPI Cloud connections
         if not settings.is_dev:
-            engine_kwargs["poolclass"] = NullPool
+            engine_kwargs["poolclass"] = QueuePool
+            engine_kwargs["pool_size"] = 10
+            engine_kwargs["max_overflow"] = 20
+            engine_kwargs["pool_pre_ping"] = True
 
         # asyncpg accepts "ssl", but not a separate "server_hostname" kwarg.
         # Keep the original hostname in the URL so TLS/SNI works with Supabase.
