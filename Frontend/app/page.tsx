@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import LandingHero from "@/components/landing/LandingHero";
 import LandingProblem from "@/components/landing/LandingProblem";
