@@ -16,7 +16,7 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { useAuthStore, type Language } from "@/lib/auth-store";
-import { authApi, createDependent, getHousehold, Household } from "@/lib/api";
+import { authApi, createDependent, getHousehold, Household, generateTimeline } from "@/lib/api";
 import { useUpdateHousehold } from "@/lib/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -27,6 +27,8 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [household, setHousehold] = useState<Household | null>(null);
+  const [createdDependentId, setCreatedDependentId] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
   
   // Form State
   const [familyName, setFamilyName] = useState("");
@@ -95,21 +97,18 @@ export default function OnboardingPage() {
       
       // 2. Add first dependent if name is provided
       if (depName && depDob) {
-        await createDependent({
+        const dep = await createDependent({
           household_id: householdId,
           name: depName,
           type: depType,
           date_of_birth: depDob,
           sex: depSex
         });
+        setCreatedDependentId(dep.id);
       }
       
       setLanguage(prefLanguage);
       setStep(4); // Success step
-      
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
     } catch (err) {
       console.error("Onboarding failed", err);
       alert("Something went wrong. Please try again.");
@@ -360,13 +359,90 @@ export default function OnboardingPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center space-y-8 py-12"
               >
-                <div className="w-24 h-24 bg-teal-500/10 rounded-full flex items-center justify-center text-teal-500 mx-auto">
-                  <CheckCircle2 size={48} />
-                </div>
-                <div>
-                  <h1 className="text-4xl font-heading font-800 mb-4">You're all set!</h1>
-                  <p className="text-white/40 text-lg">Taking you to your dashboard...</p>
-                </div>
+                {!generating ? (
+                  <>
+                    <div className="w-24 h-24 bg-teal-500/10 rounded-full flex items-center justify-center text-teal-500 mx-auto">
+                      <CheckCircle2 size={48} />
+                    </div>
+                    <div>
+                      <h1 className="text-4xl font-heading font-800 mb-4">You're all set!</h1>
+                      <p className="text-white/40 text-lg mb-8">Your account has been created successfully.</p>
+                      
+                      {createdDependentId && (
+                        <motion.button
+                          initial={{ y: 20, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: 0.5 }}
+                          onClick={async () => {
+                            setGenerating(true);
+                            try {
+                              await generateTimeline(createdDependentId);
+                              // Add a small delay for the animation to feel real
+                              setTimeout(() => {
+                                router.push("/dashboard");
+                              }, 2000);
+                            } catch (err) {
+                              console.error("Failed to generate timeline", err);
+                              router.push("/dashboard"); // Fallback
+                            }
+                          }}
+                          className="w-full py-5 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 text-black font-heading font-800 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-teal-500/20"
+                        >
+                          Generate Vaccination Schedule <Sparkles size={20} />
+                        </motion.button>
+                      )}
+
+                      {!createdDependentId && (
+                        <button 
+                          onClick={() => router.push("/dashboard")}
+                          className="w-full py-5 bg-white/10 hover:bg-white/20 text-white font-heading font-800 rounded-2xl transition-all"
+                        >
+                          Go to Dashboard
+                        </button>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-8">
+                    <div className="relative w-32 h-32 mx-auto">
+                      <motion.div 
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                        className="absolute inset-0 border-2 border-dashed border-teal-500/30 rounded-full"
+                      />
+                      <motion.div 
+                        animate={{ rotate: -360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        className="absolute inset-2 border-2 border-teal-500 rounded-full border-t-transparent"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center text-teal-400">
+                        <Sparkles size={32} className="animate-pulse" />
+                      </div>
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-heading font-800 mb-2">Analyzing India NIS Schedule...</h2>
+                      <p className="text-white/40">Customizing health milestones for {depName}</p>
+                    </div>
+                    <div className="flex flex-col gap-2 max-w-xs mx-auto">
+                      {[1, 2, 3].map((i) => (
+                        <motion.div 
+                          key={i}
+                          initial={{ width: 0 }}
+                          animate={{ width: "100%" }}
+                          transition={{ duration: 1.5, delay: i * 0.4 }}
+                          className="h-1 bg-teal-500/20 rounded-full overflow-hidden"
+                        >
+                          <motion.div 
+                            animate={{ x: ["-100%", "100%"] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                            className="h-full w-1/3 bg-teal-500"
+                          />
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-center gap-3 text-white/20">
                   <Heart className="animate-pulse text-teal-500" size={16} />
                   <span className="text-sm font-medium tracking-[0.2em] uppercase">Vaxi Babu Premium</span>

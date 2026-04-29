@@ -216,6 +216,15 @@ export async function getDependents(householdId?: string): Promise<Dependent[]> 
 }
 
 /**
+ * Explicitly generate health schedule for a dependent
+ */
+export async function generateTimeline(dependentId: string): Promise<TimelineResponse> {
+  return fetchApi<TimelineResponse>(`/api/v1/timeline/${dependentId}/generate`, {
+    method: 'POST',
+  });
+}
+
+/**
  * Fetch timeline/health events for a dependent
  */
 export async function getTimeline(dependentId: string, category?: string): Promise<TimelineResponse> {

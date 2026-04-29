@@ -4,10 +4,10 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../lib/auth-store';
-import { useDependents, useTimeline, useAllTimelines, useCompleteEvent, useCreateEvent } from '../lib/hooks';
+import { useDependents, useTimeline, useAllTimelines, useCompleteEvent, useCreateEvent, useGenerateTimeline } from '../lib/hooks';
 import { CardSkeleton } from '../components/LoadingSkeleton';
 import ErrorState from '../components/ErrorState';
-import { CalendarClock, Pill, Baby, Heart, Sparkles, X, CheckCircle2, AlertTriangle, Clock, Plus } from 'lucide-react';
+import { CalendarClock, Pill, Baby, Heart, Sparkles, X, CheckCircle2, AlertTriangle, Clock, Plus, Loader2 } from 'lucide-react';
 
 type Category = 'all' | 'vaccine' | 'medicine' | 'growth' | 'pregnancy' | 'checkup';
 
@@ -30,6 +30,8 @@ export default function TimelinePage() {
   
   const completeMutation = useCompleteEvent();
   const createMutation = useCreateEvent();
+  const generateMutation = useGenerateTimeline();
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleAddEvent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +51,22 @@ export default function TimelinePage() {
         setShowAddForm(false);
         setNewTitle('');
         setNewNotes('');
+      }
+    });
+  };
+
+  const handleGenerate = async () => {
+    if (!depId) return;
+    setIsGenerating(true);
+    generateMutation.mutate(depId, {
+      onSuccess: () => {
+        setTimeout(() => {
+          setIsGenerating(false);
+          refetchDep();
+        }, 1500);
+      },
+      onError: () => {
+        setIsGenerating(false);
       }
     });
   };
@@ -104,9 +122,19 @@ export default function TimelinePage() {
         )}
         
         {depId && (
-          <button onClick={() => setShowAddForm(true)} className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 bg-teal-500 hover:bg-teal-400 text-surface-950 font-heading font-700 text-sm rounded-xl transition-all">
-            <Plus size={16} /> Add Record
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button 
+              onClick={handleGenerate} 
+              disabled={isGenerating}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-500/10 border border-teal-500/50 hover:bg-teal-500/20 text-teal-400 font-heading font-700 text-sm rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-teal-500/5"
+            >
+              {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+              <span className="hidden sm:inline">Sync Schedule</span>
+            </button>
+            <button onClick={() => setShowAddForm(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-500 hover:bg-teal-400 text-surface-950 font-heading font-700 text-sm rounded-xl transition-all">
+              <Plus size={16} /> Add Record
+            </button>
+          </div>
         )}
       </motion.div>
 
@@ -232,9 +260,38 @@ export default function TimelinePage() {
       </AnimatePresence>
 
       {!isLoading && filtered.length === 0 && (
-        <div className="text-center py-16">
-          <CalendarClock size={40} className="text-white/10 mx-auto mb-3" />
-          <p className="text-white/30">No events found for this filter.</p>
+        <div className="text-center py-16 px-4">
+          {isGenerating ? (
+            <div className="space-y-6">
+              <div className="relative w-20 h-20 mx-auto">
+                <motion.div 
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-0 border-2 border-dashed border-teal-500/30 rounded-full"
+                />
+                <div className="absolute inset-0 flex items-center justify-center text-teal-400">
+                  <Loader2 size={24} className="animate-spin" />
+                </div>
+              </div>
+              <p className="text-teal-400 font-heading font-700 animate-pulse">Generating Health Schedule...</p>
+            </div>
+          ) : (
+            <>
+              <CalendarClock size={40} className="text-white/10 mx-auto mb-3" />
+              <p className="text-white/30 mb-6">{filter === 'all' ? 'No health events scheduled yet.' : `No ${filter} events found.`}</p>
+              
+              {depId && filter === 'all' && (
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleGenerate}
+                  className="mx-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-teal-500 to-blue-600 text-surface-950 font-heading font-700 rounded-xl transition-all shadow-lg shadow-teal-500/20"
+                >
+                  Generate India NIS Schedule <Sparkles size={16} />
+                </motion.button>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

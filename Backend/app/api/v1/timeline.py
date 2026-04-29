@@ -48,13 +48,8 @@ async def get_timeline(
             log.warning("dependent_not_found", dependent_id=dependent_id)
             raise HTTPException(status_code=404, detail="Dependent not found")
 
-        # Ensure schedule exists, generate based on type
-        if dep.type == DependentType.child:
-            await generate_and_save_schedule(dep, session)
-            await generate_growth_check_schedule(dep, session)
-        elif dep.type == DependentType.pregnant:
-            # For pregnant, we use DOB field as LMP proxy if not already set
-            await generate_pregnancy_schedule(dep, dep.date_of_birth, session)
+        # We no longer auto-generate here. 
+        # The user must call the /generate endpoint explicitly.
 
         # Always refresh statuses to keep due/overdue flags accurate
         events = await refresh_event_statuses(dependent_id, session)
@@ -148,3 +143,42 @@ async def verify_vaccination(
     await session.flush()
     await session.refresh(event)
     return event
+@router.post("/{dependent_id}/generate", response_model=TimelineResponse)
+async def generate_timeline(
+    dependent_id: str,
+    session: AsyncSession = Depends(get_session),
+) -> TimelineResponse:
+    """
+    Explicitly trigger health schedule generation for a dependent.
+    """
+    try:
+        log.info("timeline_generate_request", dependent_id=dependent_id)
+
+        dep = await session.get(Dependent, dependent_id)
+        if not dep:
+            log.warning("dependent_not_found", dependent_id=dependent_id)
+            raise HTTPException(status_code=404, detail="Dependent not found")
+
+        # Generate based on type
+        if dep.type == DependentType.child:
+            await generate_and_save_schedule(dep, session)
+            await generate_growth_check_schedule(dep, session)
+        elif dep.type == DependentType.pregnant:
+            await generate_pregnancy_schedule(dep, dep.date_of_birth, session)
+
+        # Refresh statuses
+        events = await refresh_event_statuses(dependent_id, session)
+        next_due = get_next_due_event(events)
+
+        log.info("timeline_generate_success", dependent_id=dependent_id, event_count=len(events))
+
+        return TimelineResponse(
+            dependent_id=dependent_id,
+            dependent_name=dep.name,
+            generated_at=datetime.now(timezone.utc),
+            events=[HealthEventResponse.model_validate(e) for e in events],
+            next_due=HealthEventResponse.model_validate(next_due) if next_due else None,
+        )
+    except Exception as e:
+        log.error("timeline_generate_error", dependent_id=dependent_id, error=str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to generate timeline: {str(e)}")

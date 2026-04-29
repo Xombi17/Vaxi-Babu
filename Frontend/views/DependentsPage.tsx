@@ -2,19 +2,22 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useDependents, useCreateDependent, useHousehold } from '../lib/hooks';
+import { useDependents, useCreateDependent, useHousehold, useGenerateTimeline } from '../lib/hooks';
 import { CardSkeleton } from '../components/LoadingSkeleton';
-import { Users, Plus, X, CalendarClock, ChevronRight, Baby, Heart, User } from 'lucide-react';
+import { Users, Plus, X, CalendarClock, ChevronRight, Baby, Heart, User, Sparkles, Loader2 } from 'lucide-react';
 
 export default function DependentsPage() {
   const { data: household } = useHousehold();
   const { data: dependents, isLoading } = useDependents();
   const createMutation = useCreateDependent();
+  const generateMutation = useGenerateTimeline();
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [relation, setRelation] = useState<'child' | 'spouse' | 'parent'>('child');
   const [dob, setDob] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
+  const [addedDependentId, setAddedDependentId] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const deps = dependents ?? [];
 
@@ -22,10 +25,28 @@ export default function DependentsPage() {
     e.preventDefault();
     if (!name || !dob) return;
     createMutation.mutate({ name, relation, dob, gender }, {
-      onSuccess: () => {
-        setShowForm(false);
-        setName(''); setDob('');
+      onSuccess: (data: any) => {
+        setAddedDependentId(data.id);
+        // We don't close the form yet, we show the generation button
       },
+    });
+  };
+
+  const handleGenerate = async () => {
+    if (!addedDependentId) return;
+    setIsGenerating(true);
+    generateMutation.mutate(addedDependentId, {
+      onSuccess: () => {
+        setTimeout(() => {
+          setShowForm(false);
+          setAddedDependentId(null);
+          setIsGenerating(false);
+          setName(''); setDob('');
+        }, 1500);
+      },
+      onError: () => {
+        setIsGenerating(false);
+      }
     });
   };
 
@@ -85,44 +106,90 @@ export default function DependentsPage() {
                 <button onClick={() => setShowForm(false)} className="p-1 text-white/30 hover:text-white/60"><X size={18} /></button>
               </div>
               <form onSubmit={handleAdd} className="space-y-4">
-                <div>
-                  <label className="text-xs text-white/40 mb-1.5 block">Full Name</label>
-                  <input type="text" value={name} onChange={e => setName(e.target.value)} required
-                    className="w-full px-4 py-3 bg-surface-800/40 border border-white/[0.08] rounded-xl text-white placeholder:text-white/20 focus:outline-none focus:border-teal-500/30 text-sm" placeholder="e.g. Aarav Sharma" />
-                </div>
-                <div>
-                  <label className="text-xs text-white/40 mb-1.5 block">Relation</label>
-                  <div className="flex gap-2">
-                    {(['child', 'spouse', 'parent'] as const).map(r => (
-                      <button key={r} type="button" onClick={() => setRelation(r)}
-                        className={`flex-1 py-2.5 rounded-xl text-xs font-medium capitalize transition-all ${relation === r ? 'bg-teal-500/15 text-teal-400 border border-teal-500/20' : 'bg-surface-800/40 text-white/35 border border-white/[0.06]'}`}>{r}</button>
-                    ))}
+                {addedDependentId ? (
+                  <div className="py-6 text-center space-y-6">
+                    {!isGenerating ? (
+                      <>
+                        <div className="w-16 h-16 bg-teal-500/10 rounded-full flex items-center justify-center text-teal-500 mx-auto">
+                          <Plus size={32} />
+                        </div>
+                        <div>
+                          <h3 className="font-heading font-700 text-white text-lg">Member Added!</h3>
+                          <p className="text-white/40 text-sm mt-1">Shall we generate the health schedule for {name}?</p>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={handleGenerate}
+                          className="w-full py-4 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 text-surface-950 font-heading font-700 rounded-xl transition-all shadow-lg shadow-teal-500/20 flex items-center justify-center gap-2"
+                        >
+                          Generate Schedule <Sparkles size={18} />
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => { setShowForm(false); setAddedDependentId(null); setName(''); setDob(''); }}
+                          className="w-full py-3 text-white/40 hover:text-white/60 text-sm transition-colors"
+                        >
+                          Skip for now
+                        </button>
+                      </>
+                    ) : (
+                      <div className="space-y-6">
+                        <div className="relative w-20 h-20 mx-auto">
+                          <motion.div 
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                            className="absolute inset-0 border-2 border-dashed border-teal-500/30 rounded-full"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center text-teal-400">
+                            <Loader2 size={24} className="animate-spin" />
+                          </div>
+                        </div>
+                        <p className="text-teal-400 font-heading font-700 animate-pulse">Generating Schedule...</p>
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-white/40 mb-1.5 block">Date of Birth</label>
-                    <input type="date" value={dob} onChange={e => setDob(e.target.value)} required
-                      className="w-full px-4 py-3 bg-surface-800/40 border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-teal-500/30 text-sm [color-scheme:dark]" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-white/40 mb-1.5 block">Gender</label>
-                    <div className="flex gap-2">
-                      {(['male', 'female'] as const).map(g => (
-                        <button key={g} type="button" onClick={() => setGender(g)}
-                          className={`flex-1 py-3 rounded-xl text-xs font-medium capitalize transition-all ${gender === g ? 'bg-teal-500/15 text-teal-400 border border-teal-500/20' : 'bg-surface-800/40 text-white/35 border border-white/[0.06]'}`}>{g}</button>
-                      ))}
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-xs text-white/40 mb-1.5 block">Full Name</label>
+                      <input type="text" value={name} onChange={e => setName(e.target.value)} required
+                        className="w-full px-4 py-3 bg-surface-800/40 border border-white/[0.08] rounded-xl text-white placeholder:text-white/20 focus:outline-none focus:border-teal-500/30 text-sm" placeholder="e.g. Aarav Sharma" />
                     </div>
-                  </div>
-                </div>
-                {relation === 'child' && (
-                  <div className="p-3 bg-teal-500/[0.06] border border-teal-500/15 rounded-xl">
-                    <p className="text-xs text-teal-400">✨ Adding a child will automatically generate their India NIS vaccination schedule based on date of birth.</p>
-                  </div>
+                    <div>
+                      <label className="text-xs text-white/40 mb-1.5 block">Relation</label>
+                      <div className="flex gap-2">
+                        {(['child', 'spouse', 'parent'] as const).map(r => (
+                          <button key={r} type="button" onClick={() => setRelation(r)}
+                            className={`flex-1 py-2.5 rounded-xl text-xs font-medium capitalize transition-all ${relation === r ? 'bg-teal-500/15 text-teal-400 border border-teal-500/20' : 'bg-surface-800/40 text-white/35 border border-white/[0.06]'}`}>{r}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs text-white/40 mb-1.5 block">Date of Birth</label>
+                        <input type="date" value={dob} onChange={e => setDob(e.target.value)} required
+                          className="w-full px-4 py-3 bg-surface-800/40 border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-teal-500/30 text-sm [color-scheme:dark]" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-white/40 mb-1.5 block">Gender</label>
+                        <div className="flex gap-2">
+                          {(['male', 'female'] as const).map(g => (
+                            <button key={g} type="button" onClick={() => setGender(g)}
+                              className={`flex-1 py-3 rounded-xl text-xs font-medium capitalize transition-all ${gender === g ? 'bg-teal-500/15 text-teal-400 border border-teal-500/20' : 'bg-surface-800/40 text-white/35 border border-white/[0.06]'}`}>{g}</button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    {relation === 'child' && (
+                      <div className="p-3 bg-teal-500/[0.06] border border-teal-500/15 rounded-xl">
+                        <p className="text-xs text-teal-400">✨ Add this child and generate their India NIS vaccination schedule.</p>
+                      </div>
+                    )}
+                    <button type="submit" disabled={createMutation.isPending} className="w-full py-3.5 bg-teal-500 hover:bg-teal-400 text-surface-950 font-heading font-700 rounded-xl transition-all disabled:opacity-60 flex items-center justify-center gap-2">
+                      {createMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />} Add Member
+                    </button>
+                  </>
                 )}
-                <button type="submit" disabled={createMutation.isPending} className="w-full py-3.5 bg-teal-500 hover:bg-teal-400 text-surface-950 font-heading font-700 rounded-xl transition-all disabled:opacity-60">
-                  Add Member
-                </button>
               </form>
             </motion.div>
           </>

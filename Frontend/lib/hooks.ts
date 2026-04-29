@@ -12,6 +12,7 @@ import {
   getMedicineRegimens,
   getRecommendedSchemes,
   getTimeline,
+  generateTimeline,
   markEventComplete,
   updateHousehold,
   getHousehold,
@@ -145,6 +146,19 @@ export function useTimeline(depId: string | undefined) {
         status: e.status,
         ai_explanation: undefined,
       }));
+    },
+  });
+}
+
+export function useGenerateTimeline() {
+  var qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (depId: string) => {
+      return generateTimeline(depId);
+    },
+    onSuccess: (_, depId) => {
+      qc.invalidateQueries({ queryKey: ['timeline', depId] });
+      qc.invalidateQueries({ queryKey: ['all-timelines'] });
     },
   });
 }
