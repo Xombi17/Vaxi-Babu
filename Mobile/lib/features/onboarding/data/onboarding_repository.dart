@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/network/dio_provider.dart';
-import '../data/models/household_create.dart';
-import '../data/models/household.dart';
+import '../../households/data/models/household_create.dart';
+import '../../households/data/models/household.dart';
 
 final onboardingRepositoryProvider = Provider<OnboardingRepository>(
   (ref) => OnboardingRepository(ref.watch(apiClientProvider)),

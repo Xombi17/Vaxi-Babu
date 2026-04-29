@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:flutter/foundation.dart';
+
 import '../data/pregnancy_repository.dart';
-import '../domain/pregnancy_profile.dart';
+import '../data/models/pregnancy_profile.dart';
 
 final pregnancyControllerProvider =
     StateNotifierProvider<PregnancyController, PregnancyState>(

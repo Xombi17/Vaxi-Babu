@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// ignore: unused_import
+// ignore: unused_import
 import '../../../core/network/api_exception.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../application/onboarding_controller.dart';
-import '../data/models/household.dart';
+import 'package:vaxi_babu_mobile/features/households/data/models/household.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -51,7 +53,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           villageTown: _villageTownController.text.trim().isEmpty
               ? null
               : _villageTownController.text.trim(),
-          state: _stateController.text.trim().isEmpty
+          householdState: _stateController.text.trim().isEmpty
               ? null
               : _stateController.text.trim(),
           district: _districtController.text.trim().isEmpty

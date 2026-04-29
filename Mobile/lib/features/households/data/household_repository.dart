@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/dio_provider.dart';
 import 'models/household.dart';
-import 'models/household_create.dart';
+import '../../onboarding/data/models/household_create.dart';
 
 final householdRepositoryProvider = Provider<HouseholdRepository>(
   (ref) => HouseholdRepository(ref.watch(apiClientProvider)),

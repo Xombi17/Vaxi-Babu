@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:flutter/foundation.dart';
+
 import '../data/onboarding_repository.dart';
 import '../../households/data/models/household.dart';
+import '../../households/data/models/household_create.dart';
 
 final onboardingControllerProvider =
     StateNotifierProvider<OnboardingController, OnboardingState>(
@@ -21,7 +24,7 @@ class OnboardingController extends StateNotifier<OnboardingState> {
     required String username,
     required String password,
     String? villageTown,
-    String? state,
+    String? householdState,
     String? district,
     String? aiTone,
     String? language,
@@ -37,7 +40,7 @@ class OnboardingController extends StateNotifier<OnboardingState> {
       username: username,
       password: password,
       villageTown: villageTown,
-      state: state,
+      state: householdState,
       district: district,
       preferences: HouseholdPreferences(
         aiTone: aiTone ?? 'simple',

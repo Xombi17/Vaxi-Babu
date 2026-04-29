@@ -53,7 +53,6 @@ class _PregnancyScreenState extends ConsumerState<PregnancyScreen> {
   @override
   Widget build(BuildContext context) {
     final pregnancyState = ref.watch(pregnancyControllerProvider);
-    final isSubmitting = pregnancyState.isLoading;
     final errorMessage = pregnancyState.error;
     final profile = pregnancyState.profile;
 
@@ -83,9 +82,9 @@ class _PregnancyScreenState extends ConsumerState<PregnancyScreen> {
               if (profile != null) ...[
                 _buildProfileCard(profile),
                 const SizedBox(height: 24),
-                _buildUpdateSection(),
+                _buildUpdateSection(pregnancyState),
               ] else ...[
-                _buildAddPregnancyForm(),
+                _buildAddPregnancyForm(pregnancyState),
               ],
               if (errorMessage != null) ...[
                 const SizedBox(height: 24),
@@ -163,7 +162,7 @@ class _PregnancyScreenState extends ConsumerState<PregnancyScreen> {
     );
   }
 
-  Widget _buildAddPregnancyForm() {
+  Widget _buildAddPregnancyForm(PregnancyState pregnancyState) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -218,21 +217,21 @@ class _PregnancyScreenState extends ConsumerState<PregnancyScreen> {
         ),
         const SizedBox(height: 24),
         FilledButton.icon(
-          onPressed: isSubmitting ? null : _submit,
-          icon: isSubmitting
-              ? const SizedBox(
+          onPressed: pregnancyState.isLoading ? null : _submit,
+          icon: pregnancyState.isLoading
+              ? SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.add),
-          label: Text(isSubmitting ? 'Saving...' : 'Create Pregnancy Profile'),
+          label: Text(pregnancyState.isLoading ? 'Saving...' : 'Create Pregnancy Profile'),
         ),
       ],
     );
   }
 
-  Widget _buildUpdateSection() {
+  Widget _buildUpdateSection(PregnancyState pregnancyState) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -250,7 +249,7 @@ class _PregnancyScreenState extends ConsumerState<PregnancyScreen> {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: isSubmitting ? null : () => _updateProfile(completed: true),
+                onPressed: pregnancyState.isLoading ? null : () => _updateProfile(completed: true),
                 icon: const Icon(Icons.check_circle_outline),
                 label: const Text('Mark as Completed'),
               ),
@@ -258,7 +257,7 @@ class _PregnancyScreenState extends ConsumerState<PregnancyScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: isSubmitting ? null : () => _showRiskFlagsDialog(),
+                onPressed: pregnancyState.isLoading ? null : () => _showRiskFlagsDialog(),
                 icon: const Icon(Icons.warning_amber_outlined),
                 label: const Text('Update Risk Flags'),
               ),

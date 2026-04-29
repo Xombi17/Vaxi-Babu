@@ -8,7 +8,7 @@ HouseholdCreate _$HouseholdCreateFromJson(Map<String, dynamic> json) =>
       username: json['username'] as String,
       password: json['password'] as String,
       villageTown: json['village_town'] as String?,
-      state: json['state'] as String?,
+
       district: json['district'] as String?,
       preferences: json['preferences'] == null
           ? null
@@ -24,7 +24,7 @@ Map<String, dynamic> _$HouseholdCreateToJson(HouseholdCreate instance) =>
       'username': instance.username,
       'password': instance.password,
       'village_town': instance.villageTown,
-      'state': instance.state,
+
       'district': instance.district,
       'preferences': instance.preferences?.toJson(),
     };
