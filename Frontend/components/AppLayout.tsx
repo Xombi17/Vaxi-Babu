@@ -19,6 +19,7 @@ import {
   Users,
   Bell,
   Settings,
+  Shield,
   LogOut,
   Menu,
   X,
@@ -34,6 +35,7 @@ var navItems = [
   { path: '/care', label: 'Nearby Care', icon: MapPin },
   { path: '/dependents', label: 'Family Members', icon: Users },
   { path: '/reminders', label: 'Reminders', icon: Bell },
+  { path: '/chw', label: 'CHW Field Mode', icon: Shield, chwOnly: true },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -42,10 +44,11 @@ var bottomNavItems = [
   { path: '/timeline', label: 'Timeline', icon: CalendarClock },
   { path: '/medicines', label: 'Meds', icon: Pill },
   { path: '/dependents', label: 'Family', icon: Users },
+  { path: '/chw', label: 'CHW', icon: Shield, chwOnly: true },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {
-  var { logout } = useAuthStore();
+  var { logout, chwMode } = useAuthStore();
   var { data: household } = useHousehold();
   var pathname = usePathname();
   var router = useRouter();
@@ -113,20 +116,22 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 p-3 mt-2 space-y-0.5 overflow-y-auto">
-          {navItems.map((item) => {
+          {navItems.filter(item => !('chwOnly' in item) || chwMode).map((item) => {
             var active = pathname?.startsWith(item.path) || false;
+            const isChw = 'chwOnly' in item;
             return (
               <Link
                 key={item.path}
                 href={item.path}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   active
-                    ? 'bg-teal-500/15 text-teal-400 border border-teal-500/20'
-                    : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'
+                    ? isChw ? 'bg-orange-500/15 text-orange-400 border border-orange-500/20' : 'bg-teal-500/15 text-teal-400 border border-teal-500/20'
+                    : isChw ? 'text-orange-400/60 hover:text-orange-400 hover:bg-orange-500/10 border border-transparent' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
                 <item.icon size={18} />
                 {item.label}
+                {isChw && <span className="ml-auto text-[9px] font-bold bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-md">WORKER</span>}
               </Link>
             );
           })}
@@ -163,12 +168,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 <button onClick={() => setMobileNav(false)} className="p-1 text-white/40"><X size={20} /></button>
               </div>
               <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-                {navItems.map((item) => {
+                {navItems.filter(item => !('chwOnly' in item) || chwMode).map((item) => {
                   var active = pathname?.startsWith(item.path) || false;
+                  const isChw = 'chwOnly' in item;
                   return (
                     <Link key={item.path} href={item.path} onClick={() => setMobileNav(false)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${active ? 'bg-teal-500/15 text-teal-400' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04]'}`}>
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                        active
+                          ? isChw ? 'bg-orange-500/15 text-orange-400' : 'bg-teal-500/15 text-teal-400'
+                          : isChw ? 'text-orange-400/60 hover:text-orange-400 hover:bg-orange-500/10' : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04]'
+                      }`}>
                       <item.icon size={18} />{item.label}
+                      {isChw && <span className="ml-auto text-[9px] font-bold bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-md">WORKER</span>}
                     </Link>
                   );
                 })}
@@ -191,17 +202,20 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-950/90 backdrop-blur-xl border-t border-white/[0.06] pb-safe">
         <div className="flex items-center justify-around h-16 px-2">
-          {bottomNavItems.map((item) => {
+          {bottomNavItems.filter(item => !('chwOnly' in item) || chwMode).map((item) => {
             var active = pathname?.startsWith(item.path) || false;
+            const isChw = 'chwOnly' in item;
             return (
               <Link
                 key={item.path}
                 href={item.path}
                 className={`flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${
-                  active ? 'text-teal-400' : 'text-white/40 hover:text-white/70'
+                  active
+                    ? isChw ? 'text-orange-400' : 'text-teal-400'
+                    : isChw ? 'text-orange-400/40 hover:text-orange-400' : 'text-white/40 hover:text-white/70'
                 }`}
               >
-                <item.icon size={20} className={active ? 'drop-shadow-[0_0_8px_rgba(32,223,200,0.5)]' : ''} />
+                <item.icon size={20} className={active ? (isChw ? 'drop-shadow-[0_0_8px_rgba(251,146,60,0.5)]' : 'drop-shadow-[0_0_8px_rgba(32,223,200,0.5)]') : ''} />
                 <span className="text-[10px] font-medium">{item.label}</span>
               </Link>
             );

@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from . import ai
 from . import auth
+from . import chw
 from . import config
 from . import dependents
 from . import growth
@@ -33,6 +34,7 @@ router.include_router(medicines.router)
 router.include_router(growth.router)
 router.include_router(ai.router)
 router.include_router(voice.router)
+router.include_router(chw.router)
 router.include_router(config.router)
 router.include_router(sync.router)
 router.include_router(health_tips.router)

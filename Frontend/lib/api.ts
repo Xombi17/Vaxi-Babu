@@ -275,6 +275,79 @@ export async function getRecommendedSchemes(householdId: string): Promise<Health
   return fetchApi<HealthScheme[]>(`/api/v1/households/${householdId}/schemes`);
 }
 
+// ─── CHW / ASHA Worker API ────────────────────────────────────────────────────
+
+export interface CHWDependentSummary {
+  name: string;
+  type: string;
+  age_months: number;
+  overdue: number;
+  due: number;
+  completed: number;
+  total: number;
+}
+
+export interface CHWHouseholdSummary {
+  household_id: string;
+  household_name: string;
+  village_town: string | null;
+  district: string | null;
+  state: string | null;
+  total_members: number;
+  total_events: number;
+  completed_events: number;
+  overdue_count: number;
+  due_count: number;
+  health_score: number;
+  is_at_risk: boolean;
+  status_color: 'red' | 'amber' | 'green';
+  dependents: CHWDependentSummary[];
+  last_onboarded_at: string | null;
+}
+
+export interface CHWListResponse {
+  worker: { name: string; type: string; district: string | null; state: string | null };
+  households: CHWHouseholdSummary[];
+  stats: { total_households: number; at_risk: number; on_track: number; total_overdue_events: number };
+}
+
+export async function getCHWHouseholds(): Promise<CHWListResponse> {
+  return fetchApi<CHWListResponse>('/api/v1/chw/households');
+}
+
+export async function getCHWHouseholdStatus(householdId: string): Promise<CHWHouseholdSummary> {
+  return fetchApi<CHWHouseholdSummary>(`/api/v1/chw/households/${householdId}/status`);
+}
+
+export async function generateFieldReport(
+  voiceNote: string,
+  householdId?: string,
+  language = 'en',
+): Promise<{ report: Record<string, unknown>; generated_at: string }> {
+  return fetchApi('/api/v1/chw/field-report', {
+    method: 'POST',
+    body: JSON.stringify({ voice_note: voiceNote, household_id: householdId, language }),
+  });
+}
+
+export async function downloadCHWComplianceCSV(): Promise<void> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const res = await fetch(`${API_URL}/api/v1/chw/compliance-report?format=csv`, {
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+  if (!res.ok) throw new Error(`Compliance report failed: ${res.status}`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `chw_compliance_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+
 // Pregnancy Profile Types and Functions
 export interface PregnancyProfile {
   id: string;

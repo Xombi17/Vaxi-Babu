@@ -12,6 +12,7 @@ interface AuthState {
   language: Language;
   voiceEnabled: boolean;
   notificationsEnabled: boolean;
+  chwMode: boolean;
   voiceFabOpen: boolean;
   sidebarOpen: boolean;
   loginWithToken: (token: string, userId: string, householdId: string, familyName?: string) => void;
@@ -20,6 +21,7 @@ interface AuthState {
   setLanguage: (lang: Language) => void;
   toggleVoice: () => void;
   toggleNotifications: () => void;
+  toggleCHWMode: () => void;
   setVoiceFabOpen: (open: boolean) => void;
   setSidebarOpen: (open: boolean) => void;
 }
@@ -34,6 +36,7 @@ export const useAuthStore = create<AuthState>()(
       language: 'English',
       voiceEnabled: true,
       notificationsEnabled: true,
+      chwMode: false,
       voiceFabOpen: false,
       sidebarOpen: false,
 
@@ -65,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
       setLanguage: (lang) => set({ language: lang }),
       toggleVoice: () => set((s) => ({ voiceEnabled: !s.voiceEnabled })),
       toggleNotifications: () => set((s) => ({ notificationsEnabled: !s.notificationsEnabled })),
+      toggleCHWMode: () => set((s) => ({ chwMode: !s.chwMode })),
       setVoiceFabOpen: (open) => set({ voiceFabOpen: open }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
     }),
@@ -78,6 +82,7 @@ export const useAuthStore = create<AuthState>()(
         language: state.language,
         voiceEnabled: state.voiceEnabled,
         notificationsEnabled: state.notificationsEnabled,
+        chwMode: state.chwMode,
       }),
     }
   )

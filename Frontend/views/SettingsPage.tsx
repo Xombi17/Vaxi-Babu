@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import { useAuthStore, type Language } from "../lib/auth-store";
 import { useHousehold } from "../lib/hooks";
-import { Globe, Bell, Mic, Download, LogOut, Shield, Info } from "lucide-react";
+import { Globe, Bell, Mic, Download, LogOut, Shield, Info, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const languages: Language[] = [
@@ -23,6 +23,8 @@ export default function SettingsPage() {
     toggleVoice,
     notificationsEnabled,
     toggleNotifications,
+    chwMode,
+    toggleCHWMode,
     logout,
   } = useAuthStore();
   const { data: household } = useHousehold();
@@ -174,6 +176,64 @@ export default function SettingsPage() {
               Download JSON
             </button>
           </div>
+        </motion.div>
+
+        {/* CHW / Worker Mode */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className={`rounded-2xl p-5 border transition-all duration-300 ${
+            chwMode
+              ? 'bg-orange-500/10 border-orange-500/25'
+              : 'bg-surface-800/40 border-white/[0.06]'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
+                chwMode ? 'bg-orange-500/20' : 'bg-white/[0.06]'
+              }`}>
+                <Shield size={16} className={chwMode ? 'text-orange-400' : 'text-white/30'} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-white">CHW / Worker Mode</p>
+                  {chwMode && (
+                    <span className="text-[9px] font-black bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-md border border-orange-500/20">
+                      ACTIVE
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-white/30">
+                  {chwMode
+                    ? 'CHW Field Dashboard visible in navigation'
+                    : 'Enable for ASHA / Community Health Workers'}
+                </p>
+              </div>
+            </div>
+            <button
+              id="chw-mode-toggle"
+              onClick={toggleCHWMode}
+              className={`w-12 h-7 rounded-full transition-colors relative ${
+                chwMode ? 'bg-orange-500' : 'bg-white/10'
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full bg-white absolute top-1 transition-all ${
+                  chwMode ? 'left-6' : 'left-1'
+                }`}
+              />
+            </button>
+          </div>
+          {chwMode && (
+            <div className="mt-3 flex items-start gap-2 bg-orange-500/8 rounded-xl p-3 border border-orange-500/15">
+              <Users size={12} className="text-orange-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-orange-300/70 leading-relaxed">
+                CHW Field Dashboard is now in the navigation. Your backend account type must be ASHA, Anganwadi, or Health Worker to access household compliance data.
+              </p>
+            </div>
+          )}
         </motion.div>
 
         {/* About */}
