@@ -105,7 +105,11 @@ async def global_exception_handler(request: Request, exc: Exception):
     log.error("unhandled_exception", path=request.url.path, error=error_msg, exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error", "error": error_msg, "stack": stack_trace if settings.is_dev else None},
+        content={
+            "detail": "Internal Server Error",
+            "error": error_msg if settings.is_dev else "An unexpected error occurred.",
+            "stack": stack_trace if settings.is_dev else None
+        },
         headers={
             "Access-Control-Allow-Origin": request.headers.get("Origin", "*"),
             "Access-Control-Allow-Credentials": "true",
