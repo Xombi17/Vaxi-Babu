@@ -37,73 +37,88 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
         initial={{ opacity: 1 }}
         exit={{ opacity: 0, scale: 1.1 }}
         transition={{ duration: 0.6, ease: "easeInOut" }}
-        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
-        style={{ background: "radial-gradient(ellipse at center, #0a1628 0%, #020817 70%)" }}
+        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden bg-[#020817]"
       >
-        {/* DNA Helixes on sides */}
-        {[0, 1].map((side) => (
-          <motion.div
-            key={`dna-${side}`}
-            className="absolute top-0 bottom-0 w-8 opacity-20"
-            style={{ [side === 0 ? "left" : "right"]: "2%" }}
-          >
-            <svg width="32" height="100%" viewBox="0 0 32 800" preserveAspectRatio="none">
-              {[...Array(20)].map((_, i) => (
-                <motion.g key={i}>
-                  <motion.circle
-                    cx={16 + Math.sin(i + 0) * 12}
-                    cy={i * 40}
-                    r="3"
-                    fill="#06b6d4"
-                    animate={{ cx: [16 + Math.sin(i) * 12, 16 - Math.sin(i) * 12, 16 + Math.sin(i) * 12] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
-                  />
-                  <motion.circle
-                    cx={16 - Math.sin(i + 0) * 12}
-                    cy={i * 40}
-                    r="3"
-                    fill="#3b82f6"
-                    animate={{ cx: [16 - Math.sin(i) * 12, 16 + Math.sin(i) * 12, 16 - Math.sin(i) * 12] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
-                  />
-                  <motion.line
-                    x1={16 + Math.sin(i) * 12} y1={i * 40}
-                    x2={16 - Math.sin(i) * 12} y2={i * 40}
-                    stroke="rgba(255,255,255,0.1)" strokeWidth="1"
-                    animate={{ 
-                      x1: [16 + Math.sin(i) * 12, 16 - Math.sin(i) * 12, 16 + Math.sin(i) * 12],
-                      x2: [16 - Math.sin(i) * 12, 16 + Math.sin(i) * 12, 16 - Math.sin(i) * 12]
-                    }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
-                  />
-                </motion.g>
-              ))}
-            </svg>
-          </motion.div>
-        ))}
+        {/* Large DNA Helix on Left Side Only */}
+        <motion.div
+          className="absolute top-0 bottom-0 left-0 w-32 opacity-40"
+        >
+          <svg width="120" height="100%" viewBox="0 0 120 800" preserveAspectRatio="none">
+            {[...Array(25)].map((_, i) => (
+              <motion.g key={i}>
+                {/* Connecting Line */}
+                <motion.line
+                  x1={60 + Math.sin(i) * 40} y1={i * 35}
+                  x2={60 - Math.sin(i) * 40} y2={i * 35}
+                  stroke="rgba(255,255,255,0.2)" strokeWidth="2"
+                  animate={{ 
+                    x1: [60 + Math.sin(i) * 40, 60 - Math.sin(i) * 40, 60 + Math.sin(i) * 40],
+                    x2: [60 - Math.sin(i) * 40, 60 + Math.sin(i) * 40, 60 - Math.sin(i) * 40]
+                  }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
+                />
+                {/* Blue Nucleotide */}
+                <motion.circle
+                  cx={60 + Math.sin(i) * 40}
+                  cy={i * 35}
+                  r="6"
+                  fill="#1e3a8a"
+                  stroke="white" strokeWidth="1"
+                  animate={{ cx: [60 + Math.sin(i) * 40, 60 - Math.sin(i) * 40, 60 + Math.sin(i) * 40] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
+                />
+                {/* White Nucleotide */}
+                <motion.circle
+                  cx={60 - Math.sin(i) * 40}
+                  cy={i * 35}
+                  r="6"
+                  fill="#ffffff"
+                  stroke="#1e3a8a" strokeWidth="1"
+                  animate={{ cx: [60 - Math.sin(i) * 40, 60 + Math.sin(i) * 40, 60 - Math.sin(i) * 40] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
+                />
+              </motion.g>
+            ))}
+          </svg>
+        </motion.div>
 
-        {/* Flowing Stickers for Splash */}
+        {/* Flowing Stickers for Splash - Solid & Darker */}
         {splashStickers.map((s, i) => (
           <motion.div
             key={i}
-            className={`absolute p-4 rounded-3xl ${s.bg} border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)] backdrop-blur-md`}
-            style={{ top: s.top, bottom: s.bottom, left: s.left, right: s.right }}
+            className={`absolute p-5 rounded-[2rem] ${s.bg.replace('/20', '')} border-2 border-white shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-20`}
+            style={{ 
+              top: s.top, 
+              bottom: s.bottom, 
+              left: s.left, 
+              right: s.right,
+              backgroundColor: s.bg.includes('rose') ? '#e11d48' : 
+                               s.bg.includes('purple') ? '#9333ea' :
+                               s.bg.includes('cyan') ? '#0891b2' :
+                               s.bg.includes('emerald') ? '#059669' :
+                               s.bg.includes('blue') ? '#2563eb' :
+                               s.bg.includes('amber') ? '#d97706' :
+                               s.bg.includes('indigo') ? '#4f46e5' : '#0d9488'
+            }}
             initial={{ opacity: 0, scale: 0, rotate: -20 }}
             animate={{ 
-              opacity: 0.8, 
+              opacity: 1, 
               scale: 1,
-              y: [0, -30, 0],
+              y: [0, -40, 0],
               x: [0, 20, 0],
-              rotate: [-20, 10, -20]
+              rotate: [-20, 15, -20]
             }}
             transition={{ 
-              duration: 8 + i, 
+              duration: 7 + i, 
               repeat: Infinity, 
               ease: "easeInOut",
               delay: s.delay 
             }}
           >
-            <s.Icon className={s.color} size={48} strokeWidth={2} />
+            <s.Icon className="text-white" size={44} strokeWidth={2.5} />
+            
+            {/* Sticker Shadow/Lift Effect */}
+            <div className="absolute inset-0 rounded-[2rem] bg-black/10 -z-10 translate-y-2" />
           </motion.div>
         ))}
 
