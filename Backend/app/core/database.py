@@ -40,7 +40,7 @@ if url:
         # asyncpg accepts "ssl", but not a separate "server_hostname" kwarg.
         # Keep the original hostname in the URL so TLS/SNI works with Supabase.
         engine_kwargs["connect_args"] = {
-            "ssl": True,
+            "ssl": "require",
             "command_timeout": 30,
             "server_settings": {
                 "search_path": "public",
