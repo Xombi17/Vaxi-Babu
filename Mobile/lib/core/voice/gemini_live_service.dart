@@ -120,7 +120,13 @@ class GeminiLiveService {
   }
 
   void _handleMessage(dynamic message) {
-    final data = jsonDecode(message as String);
+    String textMessage;
+    if (message is Uint8List) {
+      textMessage = utf8.decode(message);
+    } else {
+      textMessage = message as String;
+    }
+    final data = jsonDecode(textMessage);
 
     if (data['setupComplete'] != null) {
       _statusController.add('Ready');

@@ -18,7 +18,6 @@ class DashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Vaxi Babu'),
       ),
-      floatingActionButton: const VoiceFAB(),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(dashboardOverviewProvider.future),
         child: dashboardValue.when(
@@ -63,14 +62,6 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.cloud_done_outlined),
-                  title: const Text('Backend base URL'),
-                  subtitle: const Text(AppConfig.apiBaseUrl),
                 ),
               ),
               const SizedBox(height: 16),
