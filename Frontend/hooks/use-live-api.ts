@@ -54,6 +54,84 @@ const getChildVaccinationStatusDeclaration: FunctionDeclaration = {
   },
 };
 
+// B1 — Today's priorities
+const getTodaysPrioritiesDeclaration: FunctionDeclaration = {
+  name: "get_todays_priorities",
+  description:
+    "Returns all overdue and due health actions across every household member. Call this when the user asks 'What should I do today?', 'What's urgent?', or anything about today's health tasks.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      household_id: {
+        type: Type.STRING,
+        description: "The unique ID of the household.",
+      },
+    },
+    required: ["household_id"],
+  },
+};
+
+// B2 — Voice-driven dependent creation
+const addDependentByVoiceDeclaration: FunctionDeclaration = {
+  name: "add_dependent_by_voice",
+  description:
+    "Creates a new family member (dependent) from voice input. Extract name, date_of_birth (YYYY-MM-DD), type (child/adult/elder/pregnant), and sex (male/female/other). First call with confirmed=false to show a preview. Then call again with confirmed=true after user says 'yes, confirm'.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      household_id: { type: Type.STRING, description: "The unique ID of the household." },
+      name: { type: Type.STRING, description: "Full name of the person to add." },
+      date_of_birth: { type: Type.STRING, description: "Date of birth in YYYY-MM-DD format." },
+      type: { type: Type.STRING, description: "Type: child, adult, elder, or pregnant." },
+      sex: { type: Type.STRING, description: "Sex: male, female, or other." },
+      confirmed: { type: Type.BOOLEAN, description: "Set to true only after user confirms the preview." },
+    },
+    required: ["household_id", "name", "date_of_birth"],
+  },
+};
+
+// B3 — Voice medicine safety check
+const checkMedicineByVoiceDeclaration: FunctionDeclaration = {
+  name: "check_medicine_by_voice",
+  description:
+    "Checks whether a medicine is safe to use based on its name. Use when user asks about a specific medicine by name, e.g. 'Is paracetamol safe for my baby?'. Extract medicine_name and optional concern (pregnancy, infant, allergy).",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      medicine_name: { type: Type.STRING, description: "Name of the medicine to check." },
+      concern: { type: Type.STRING, description: "Optional: pregnancy, infant, allergy, or general." },
+      language: { type: Type.STRING, description: "Language code for the response (en, hi, mr, etc.)." },
+    },
+    required: ["medicine_name"],
+  },
+};
+
+// B4 — Conversation memory
+const getConversationContextDeclaration: FunctionDeclaration = {
+  name: "get_conversation_context",
+  description:
+    "Retrieves the recent conversation history for this household. Use at the start of a session to recall what was discussed last time, e.g. pending vaccinations or follow-up actions.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {},
+    required: [],
+  },
+};
+
+const saveConversationTurnDeclaration: FunctionDeclaration = {
+  name: "save_conversation_turn",
+  description:
+    "Saves a key summary or important turn from the current conversation to memory. Use after resolving an important health query to help recall it next session.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      role: { type: Type.STRING, description: "'user' or 'assistant'." },
+      text: { type: Type.STRING, description: "The text to remember." },
+    },
+    required: ["role", "text"],
+  },
+};
+
 export function useLiveAPI() {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -203,7 +281,7 @@ export function useLiveAPI() {
         sessionStartTimeRef.current = Date.now();
         lastActivityTimeRef.current = Date.now();
 
-        const systemInstruction = `You are a helpful family health assistant for Vaxi Babu.
+        const systemInstruction = `You are Vaxi — a warm, expert family health assistant for Vaxi Babu.
 
 ## Language
 - The user's preferred language is ${language}.
@@ -212,8 +290,8 @@ export function useLiveAPI() {
 
 ## Critical Data Rule: Never invent IDs
 - NEVER fabricate or guess household_id or dependent_id.
-- NEVER use placeholder strings like "your_household_id", "user's household ID", "child's ID", "unknown".
-- If household_id is missing, you MUST say you cannot access household records and ask the user to open the app / sign in.
+- NEVER use placeholder strings like "your_household_id", "user's household ID", or "child's ID".
+- If household_id is missing, you MUST say you cannot access household records and ask the user to open the app.
 
 ## Privacy / UX
 - NEVER read out or repeat any internal IDs (UUIDs), dependent_id values, household_id values, or database identifiers.
@@ -222,19 +300,35 @@ export function useLiveAPI() {
 ## Runtime Context
 - Household ID: ${householdId || "MISSING"}
 
-## Mandatory Prefetch (ALWAYS)
-- On the FIRST user message of EVERY call, you MUST immediately call get_household_dependents to get the list of children in the household.
-- After calling it, wait for the tool result. Then continue.
+## Session Start (ALWAYS do both steps)
+1. Call get_conversation_context to check if there is any history from a previous session. If yes, briefly mention it: "Last time we discussed...".
+2. Call get_household_dependents to load the current list of family members.
 
-## Tool Use (required)
-- When the user asks about their children or vaccinations, call get_household_dependents first (if you have not already) and use the returned dependents list.
-- IMPORTANT: If get_household_dependents returned at least one dependent, you DO have the child names. Do not claim you don't have their name.
-- If the user asks "what is my child's name" and the query was resolved, answer with the name(s) you have.
-- For any vaccination-related query, call get_child_vaccination_status with the real household_id and the real dependent_id from the dependents list (never the child's name).
-- If the user asks about "my children" without specifying which child, ask which child by name from the list.
+## B1 — What Should I Do Today?
+- When the user asks "What should I do today?", "What's pending?", "Any urgent tasks?", or similar → call get_todays_priorities.
+- Read the top 3 results aloud clearly: who needs what action, and how urgent it is.
+- If no priorities, say "Great news — everything is on track for your family today!"
 
-## If no children are found
-- If the dependents tool returns an empty list, explain that there are no children linked to this household and ask whether they'd like to add a child or proceed with general vaccine schedule guidance.
+## B2 — Add a New Family Member by Voice
+- If user says "Add my son/daughter/wife/parent" or "Add [Name] to the family" → collect: name, date of birth, type (child/adult/elder/pregnant), sex.
+- Ask one question at a time if any field is missing.
+- Once you have all fields, call add_dependent_by_voice with confirmed=false. Read the preview aloud and ask for confirmation.
+- Only call add_dependent_by_voice with confirmed=true after the user explicitly says "yes" or "confirm".
+- Never save without confirmation.
+
+## B3 — Medicine Safety Check by Voice
+- If user asks "Is [medicine] safe?", "Can I give [medicine] to my child?", or similar → extract the medicine name and optional concern, then call check_medicine_by_voice.
+- Read the verdict and reason aloud simply and clearly.
+- Always end with: "This is general guidance. Please consult your doctor for personal medical advice."
+
+## B4 — Conversation Memory
+- At the start of every session, call get_conversation_context. If history exists, mention relevant past context.
+- After resolving an important health query (e.g., a vaccination status question), call save_conversation_turn with a short summary of the key result.
+- Example: save role='assistant', text='User asked about Arjun's BCG status. It is overdue by 5 days.'
+
+## Tool Use (existing)
+- When the user asks about their children or vaccinations, call get_household_dependents first (if not already done).
+- For any vaccination-related query for a specific child, call get_child_vaccination_status with the real household_id and dependent_id.
 
 ## Medical Safety
 - Do NOT diagnose.
@@ -242,8 +336,9 @@ export function useLiveAPI() {
 
 ## Style
 - Use short, clear sentences.
-- Before calling a tool, say what you are doing (e.g., "I’m checking your household records now.").
-- Be calm, empathetic, and encouraging.`;
+- Before calling a tool, say what you are doing (e.g., "Let me check today's priorities for your family.").
+- Be calm, empathetic, and encouraging.
+- Never read UUIDs or technical identifiers aloud.`;
 
         // Initialize Audio Context for playback
         let audioCtx: AudioContext;
@@ -455,6 +550,77 @@ export function useLiveAPI() {
                             response: { health_pass: result },
                           };
                         }
+
+                        // B1 — Today's priorities
+                        if (call.name === "get_todays_priorities") {
+                          const args = call.args as { household_id?: string };
+                          const hid = args.household_id || householdId;
+                          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/v1/voice/tools/get-todays-priorities`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                            body: JSON.stringify({ household_id: hid }),
+                          });
+                          const data = await res.json();
+                          return { id: call.id, name: call.name, response: data };
+                        }
+
+                        // B2 — Add dependent by voice
+                        if (call.name === "add_dependent_by_voice") {
+                          const args = call.args as {
+                            household_id?: string;
+                            name: string;
+                            date_of_birth: string;
+                            type?: string;
+                            sex?: string;
+                            confirmed?: boolean;
+                          };
+                          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/v1/voice/tools/add-dependent-by-voice`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                            body: JSON.stringify({ ...args, household_id: args.household_id || householdId }),
+                          });
+                          const data = await res.json();
+                          return { id: call.id, name: call.name, response: data };
+                        }
+
+                        // B3 — Medicine safety check by voice
+                        if (call.name === "check_medicine_by_voice") {
+                          const args = call.args as {
+                            medicine_name: string;
+                            concern?: string;
+                            language?: string;
+                          };
+                          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/v1/voice/tools/check-medicine-by-voice`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                            body: JSON.stringify({ ...args, language: args.language || 'en' }),
+                          });
+                          const data = await res.json();
+                          return { id: call.id, name: call.name, response: data };
+                        }
+
+                        // B4 — Get conversation context
+                        if (call.name === "get_conversation_context") {
+                          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/v1/voice/tools/get-conversation-context`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                            body: JSON.stringify({}),
+                          });
+                          const data = await res.json();
+                          return { id: call.id, name: call.name, response: data };
+                        }
+
+                        // B4 — Save conversation turn
+                        if (call.name === "save_conversation_turn") {
+                          const args = call.args as { role: string; text: string };
+                          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/v1/voice/tools/save-conversation-turn`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                            body: JSON.stringify(args),
+                          });
+                          const data = await res.json();
+                          return { id: call.id, name: call.name, response: data };
+                        }
                       } catch (err) {
                         return {
                           id: call.id,
@@ -527,6 +693,11 @@ export function useLiveAPI() {
                 functionDeclarations: [
                   getHouseholdDependentsDeclaration,
                   getChildVaccinationStatusDeclaration,
+                  getTodaysPrioritiesDeclaration,
+                  addDependentByVoiceDeclaration,
+                  checkMedicineByVoiceDeclaration,
+                  getConversationContextDeclaration,
+                  saveConversationTurnDeclaration,
                 ],
               },
             ],

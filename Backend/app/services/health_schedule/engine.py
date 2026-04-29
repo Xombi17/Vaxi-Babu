@@ -143,7 +143,7 @@ async def generate_and_save_schedule(
 
     # Return all events (existing + newly created)
     all_events = list(existing_events) + new_events
-    all_events.sort(key=lambda e: e.due_date)
+    all_events.sort(key=lambda e: e.due_date.date() if isinstance(e.due_date, datetime) else e.due_date)
     return all_events
 
 
@@ -168,7 +168,7 @@ async def refresh_event_statuses(
             event.updated_at = datetime.now(timezone.utc)
 
     await session.flush()
-    events.sort(key=lambda e: e.due_date)
+    events.sort(key=lambda e: e.due_date.date() if isinstance(e.due_date, datetime) else e.due_date)
     return events
 
 
@@ -245,7 +245,7 @@ async def generate_pregnancy_schedule(
 
     await session.flush()
     all_events = list(existing_events) + new_events
-    all_events.sort(key=lambda e: e.due_date)
+    all_events.sort(key=lambda e: e.due_date.date() if isinstance(e.due_date, datetime) else e.due_date)
     return all_events
 
 
@@ -344,7 +344,7 @@ async def generate_medicine_events(
 
     await session.flush()
     all_events = list(existing_events) + new_events
-    all_events.sort(key=lambda e: e.due_date)
+    all_events.sort(key=lambda e: e.due_date.date() if isinstance(e.due_date, datetime) else e.due_date)
     return all_events
 
 
@@ -416,7 +416,7 @@ async def generate_growth_check_schedule(
 
     await session.flush()
     all_events = list(existing_events) + new_events
-    all_events.sort(key=lambda e: e.due_date)
+    all_events.sort(key=lambda e: e.due_date.date() if isinstance(e.due_date, datetime) else e.due_date)
     return all_events
 
 
@@ -464,5 +464,5 @@ async def generate_adult_wellness_schedule(
 
     await session.flush()
     all_events = list(existing_events) + new_events
-    all_events.sort(key=lambda e: e.due_date)
+    all_events.sort(key=lambda e: e.due_date.date() if isinstance(e.due_date, datetime) else e.due_date)
     return all_events
