@@ -45,22 +45,32 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
-    await ref.read(onboardingControllerProvider.notifier).createHousehold(
-          name: _nameController.text.trim(),
-          primaryLanguage: _languageController.text.trim(),
-          userType: 'family',
-          username: _usernameController.text.trim(),
-          password: _passwordController.text,
-          villageTown: _villageTownController.text.trim().isEmpty
-              ? null
-              : _villageTownController.text.trim(),
-          householdState: _stateController.text.trim().isEmpty
-              ? null
-              : _stateController.text.trim(),
-          district: _districtController.text.trim().isEmpty
-              ? null
-              : _districtController.text.trim(),
-        );
+    try {
+      await ref.read(onboardingControllerProvider.notifier).createHousehold(
+            name: _nameController.text.trim(),
+            primaryLanguage: _languageController.text.trim(),
+            userType: 'family',
+            username: _usernameController.text.trim(),
+            password: _passwordController.text,
+            villageTown: _villageTownController.text.trim().isEmpty
+                ? null
+                : _villageTownController.text.trim(),
+            householdState: _stateController.text.trim().isEmpty
+                ? null
+                : _stateController.text.trim(),
+            district: _districtController.text.trim().isEmpty
+                ? null
+                : _districtController.text.trim(),
+          );
+
+      // Successfully created, now log in using AuthController
+      await ref.read(authControllerProvider.notifier).login(
+            username: _usernameController.text.trim(),
+            password: _passwordController.text,
+          );
+    } catch (e) {
+      // The error is handled by the controllers and displayed in the UI.
+    }
   }
 
   @override
