@@ -16,7 +16,7 @@ export default function LandingPage() {
   const [showSplash, setShowSplash] = useState(true);
 
   return (
-    <div className="min-h-screen bg-surface-950 text-white relative overflow-hidden">
+    <div className="min-h-screen bg-surface-950 text-white relative overflow-hidden bg-animate">
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
       
       <div className={showSplash ? "opacity-0 invisible h-0 overflow-hidden" : "opacity-100 visible transition-opacity duration-1000"}>

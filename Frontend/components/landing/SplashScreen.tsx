@@ -50,103 +50,77 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
           transition={{ duration: 2, repeat: Infinity }}
         />
 
-        {/* SYRINGE SVG */}
+        {/* SYRINGE + HAND SILHOUETTE SVG */}
         <motion.div
-          initial={{ scale: 0, rotate: -30 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ duration: 0.8, type: "spring", stiffness: 200 }}
-          className="relative mb-8"
+          initial={{ scale: 0.8, opacity: 0, y: 40 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ duration: 1, ease: "easeOut" }}
+          className="relative mb-12"
         >
-          <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Syringe body */}
-            <motion.rect x="45" y="20" width="30" height="60" rx="4"
-              stroke="url(#syringeGrad)" strokeWidth="2.5" fill="rgba(6,182,212,0.05)"
-              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-              transition={{ duration: 1 }} />
-            {/* Plunger */}
-            <motion.rect x="52" y="8" width="16" height="8" rx="2"
-              fill="rgba(6,182,212,0.3)" stroke="url(#syringeGrad)" strokeWidth="1.5"
-              initial={{ y: 8 }}
-              animate={phase === "fluid" || phase === "text" ? { y: 22 } : { y: 8 }}
-              transition={{ duration: 1.2, ease: "easeInOut" }} />
-            <motion.line x1="60" y1="16" x2="60" y2="22"
-              stroke="url(#syringeGrad)" strokeWidth="2"
-              initial={{ y1: 16 }} animate={phase === "fluid" || phase === "text" ? { y1: 30 } : { y1: 16 }}
-              transition={{ duration: 1.2, ease: "easeInOut" }} />
-            {/* Needle */}
-            <motion.line x1="60" y1="80" x2="60" y2="105"
-              stroke="url(#needleGrad)" strokeWidth="2.5" strokeLinecap="round"
-              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-              transition={{ duration: 0.6, delay: 0.4 }} />
-            {/* Needle tip */}
-            <motion.circle cx="60" cy="108" r="2" fill="#06b6d4"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }} />
-            {/* Fluid inside syringe */}
-            <motion.rect x="48" y="40" width="24" height="36" rx="2"
-              fill="url(#fluidGrad)"
-              initial={{ height: 36, y: 40 }}
-              animate={phase === "fluid" || phase === "text" ? { height: 4, y: 72 } : { height: 36, y: 40 }}
-              transition={{ duration: 1.4, ease: "easeInOut" }} />
-            {/* Measurement lines */}
-            {[30, 40, 50, 60, 70].map((y, i) => (
-              <motion.line key={i} x1="46" y1={y} x2="50" y2={y}
-                stroke="rgba(6,182,212,0.3)" strokeWidth="1"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 + i * 0.1 }} />
-            ))}
-            {/* Gradients */}
+          <svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Silhouetted Hand */}
+            <motion.path
+              d="M40 200 C60 180, 80 160, 100 150 C120 140, 140 140, 150 160 C160 180, 150 200, 140 220 L130 240 L40 240 Z"
+              fill="rgba(255,255,255,0.05)"
+              animate={{ y: [0, -5, 0] }}
+              transition={{ duration: 4, repeat: Infinity }}
+            />
+            <motion.path
+              d="M100 150 C110 130, 130 120, 145 135 L120 160 Z"
+              fill="rgba(255,255,255,0.08)"
+            />
+            
+            {/* Syringe (positioned as if held) */}
+            <g transform="rotate(-35, 120, 120) translate(20, -40)">
+              {/* Syringe body */}
+              <motion.rect x="45" y="20" width="30" height="70" rx="4"
+                stroke="url(#syringeGrad)" strokeWidth="2" fill="rgba(6,182,212,0.03)" />
+              {/* Plunger */}
+              <motion.rect x="52" y="5" width="16" height="8" rx="2"
+                fill="rgba(6,182,212,0.2)" stroke="url(#syringeGrad)" strokeWidth="1"
+                animate={phase === "fluid" || phase === "text" ? { y: 25 } : { y: 0 }}
+                transition={{ duration: 1.5, ease: "easeInOut" }} />
+              {/* Needle */}
+              <line x1="60" y1="90" x2="60" y2="130" stroke="#94a3b8" strokeWidth="1.5" />
+              {/* Fluid */}
+              <motion.rect x="48" y="40" width="24" height="46" rx="2"
+                fill="url(#fluidGrad)"
+                animate={phase === "fluid" || phase === "text" ? { height: 5, y: 81 } : { height: 46, y: 40 }}
+                transition={{ duration: 1.5, ease: "easeInOut" }} />
+            </g>
+            
             <defs>
-              <linearGradient id="syringeGrad" x1="45" y1="20" x2="75" y2="80">
+              <linearGradient id="syringeGrad" x1="45" y1="20" x2="75" y2="90">
                 <stop offset="0%" stopColor="#06b6d4" />
                 <stop offset="100%" stopColor="#3b82f6" />
               </linearGradient>
-              <linearGradient id="needleGrad" x1="60" y1="80" x2="60" y2="108">
-                <stop offset="0%" stopColor="#06b6d4" />
-                <stop offset="100%" stopColor="#22d3ee" />
-              </linearGradient>
-              <linearGradient id="fluidGrad" x1="48" y1="40" x2="72" y2="76">
-                <stop offset="0%" stopColor="rgba(6,182,212,0.6)" />
-                <stop offset="100%" stopColor="rgba(59,130,246,0.4)" />
+              <linearGradient id="fluidGrad" x1="48" y1="40" x2="72" y2="86">
+                <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.6" />
               </linearGradient>
             </defs>
           </svg>
 
-          {/* Fluid drops spraying from needle */}
+          {/* Shooting fluid spray */}
           <AnimatePresence>
             {(phase === "fluid" || phase === "text") && (
-              <>
-                {[...Array(8)].map((_, i) => (
-                  <motion.div key={`drop-${i}`}
-                    className="absolute rounded-full"
-                    style={{
-                      width: `${3 + Math.random() * 4}px`,
-                      height: `${3 + Math.random() * 4}px`,
-                      left: `${55 + (Math.random() - 0.5) * 20}px`,
-                      top: "105px",
-                      background: `rgba(6,182,212,${0.4 + Math.random() * 0.4})`,
-                      boxShadow: "0 0 6px rgba(6,182,212,0.5)",
-                    }}
-                    initial={{ opacity: 1, y: 0, x: 0, scale: 1 }}
+              <div className="absolute top-[160px] left-[160px]">
+                {[...Array(12)].map((_, i) => (
+                  <motion.div key={i}
+                    className="absolute w-1 h-1 bg-cyan-400 rounded-full"
+                    initial={{ opacity: 1, x: 0, y: 0 }}
                     animate={{
                       opacity: 0,
-                      y: 30 + Math.random() * 40,
-                      x: (Math.random() - 0.5) * 50,
-                      scale: 0.2,
+                      x: 40 + Math.random() * 80,
+                      y: 40 + Math.random() * 80,
+                      scale: 0.5
                     }}
-                    transition={{ duration: 0.8 + Math.random() * 0.6, delay: i * 0.15, ease: "easeOut" }}
+                    transition={{ duration: 1, delay: i * 0.05 }}
                   />
                 ))}
-              </>
+              </div>
             )}
           </AnimatePresence>
-
-          {/* Glow pulse around syringe */}
-          <motion.div
-            className="absolute inset-[-20px] rounded-full border border-cyan-500/20"
-            animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
         </motion.div>
 
         {/* Brand name - typewriter effect */}
@@ -156,13 +130,13 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
           transition={{ duration: 0.5 }}
           className="relative text-center"
         >
-          <h1 className="text-6xl sm:text-7xl font-bold italic tracking-tight"
+          <h1 className="text-8xl sm:text-[10rem] font-bold italic tracking-tighter"
             style={{ fontFamily: "'Dancing Script', cursive" }}>
             {brandName.split("").map((char, i) => (
               <motion.span key={i}
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={phase === "text" || phase === "done" ? { opacity: 1, scale: 1 } : {}}
-                transition={{ delay: i * 0.12, duration: 0.4, ease: "backOut" }}
+                initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
+                animate={phase === "text" || phase === "done" ? { opacity: 1, scale: 1, rotate: 0 } : {}}
+                transition={{ delay: i * 0.1, duration: 0.5, ease: "backOut" }}
                 className={i < 4 ? "text-white" : ""}
                 style={i >= 4 ? {
                   background: "linear-gradient(135deg, #06b6d4, #3b82f6)",
