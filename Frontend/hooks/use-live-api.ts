@@ -10,6 +10,7 @@ import {
   getHousehold,
   getDependents,
   getHealthPass,
+  getHouseholdHealthPasses,
   Household,
   Dependent,
   HealthPassResponse,
@@ -162,24 +163,40 @@ export function useLiveAPI() {
             dependents = await getDependents(householdId);
             setDependentsList(dependents);
 
-            const healthData = await Promise.all(
-              dependents.map(async (dep) => {
-                try {
-                  const pass = await getHealthPass(dep.id);
-                  return {
-                    name: dep.name,
-                    stats: pass.stats,
-                    nextDue: pass.next_due,
-                  };
-                } catch (e) {
-                  console.warn(
-                    `Could not fetch health pass for ${dep.name}:`,
-                    e,
-                  );
-                  return { name: dep.name, stats: null, nextDue: null };
-                }
-              }),
-            );
+            let healthData: {
+              name: string;
+              stats: any;
+              nextDue: any;
+            }[] = [];
+
+            try {
+              const passes = await getHouseholdHealthPasses(householdId);
+              healthData = passes.map((pass) => ({
+                name: pass.dependent.name,
+                stats: pass.stats,
+                nextDue: pass.next_due,
+              }));
+            } catch (e) {
+              console.warn("Could not fetch bulk health passes, falling back:", e);
+              healthData = await Promise.all(
+                dependents.map(async (dep) => {
+                  try {
+                    const pass = await getHealthPass(dep.id);
+                    return {
+                      name: dep.name,
+                      stats: pass.stats,
+                      nextDue: pass.next_due,
+                    };
+                  } catch (e) {
+                    console.warn(
+                      `Could not fetch health pass for ${dep.name}:`,
+                      e,
+                    );
+                    return { name: dep.name, stats: null, nextDue: null };
+                  }
+                }),
+              );
+            }
 
             healthSummary = healthData
               .map(

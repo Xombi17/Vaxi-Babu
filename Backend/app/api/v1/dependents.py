@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import select
+from sqlmodel import select, col
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.auth import get_current_household
@@ -110,23 +110,10 @@ async def delete_dependent(
     await session.delete(dep)
 
 
-@router.get("/{dependent_id}/pass", response_model=HealthPassResponse)
-async def get_health_pass(
-    dependent_id: str,
-    session: AsyncSession = Depends(get_session),
-    current_household: Household = Depends(get_current_household),
+def calculate_health_pass(
+    dependent: Dependent, events: list[HealthEvent]
 ) -> HealthPassResponse:
-    dep = await session.get(Dependent, dependent_id)
-    if not dep:
-        raise HTTPException(status_code=404, detail="Dependent not found")
-    if dep.household_id != current_household.id:
-        raise HTTPException(status_code=403, detail="Forbidden")
-
-    # Fetch health events for stats
-    query = select(HealthEvent).where(HealthEvent.dependent_id == dependent_id)
-    result = await session.execute(query)
-    events = result.scalars().all()
-
+    """Calculate health pass statistics and next due event for a dependent."""
     total_events = len(events)
     completed_events = len([e for e in events if e.status == EventStatus.completed])
     overdue_count = len([e for e in events if e.status == EventStatus.overdue])
@@ -150,7 +137,7 @@ async def get_health_pass(
     next_event = upcoming_events[0] if upcoming_events else None
 
     return HealthPassResponse(
-        dependent=dep,
+        dependent=dependent,
         stats=HealthPassStats(
             total_events=total_events,
             completed_events=completed_events,
@@ -163,3 +150,59 @@ async def get_health_pass(
             date=next_event.due_date if next_event else None,
         ),
     )
+
+
+@router.get("/{dependent_id}/pass", response_model=HealthPassResponse)
+async def get_health_pass(
+    dependent_id: str,
+    session: AsyncSession = Depends(get_session),
+    current_household: Household = Depends(get_current_household),
+) -> HealthPassResponse:
+    dep = await session.get(Dependent, dependent_id)
+    if not dep:
+        raise HTTPException(status_code=404, detail="Dependent not found")
+    if dep.household_id != current_household.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    # Fetch health events for stats
+    query = select(HealthEvent).where(HealthEvent.dependent_id == dependent_id)
+    result = await session.execute(query)
+    events = result.scalars().all()
+
+    return calculate_health_pass(dep, list(events))
+
+
+@router.get("/household/{household_id}/passes", response_model=list[HealthPassResponse])
+async def list_household_health_passes(
+    household_id: str,
+    session: AsyncSession = Depends(get_session),
+    current_household: Household = Depends(get_current_household),
+) -> list[HealthPassResponse]:
+    """Fetch health passes for all dependents in a household in a single call."""
+    if current_household.id != household_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    # 1. Fetch all dependents for the household
+    dep_query = select(Dependent).where(Dependent.household_id == household_id)
+    dep_result = await session.execute(dep_query)
+    dependents = dep_result.scalars().all()
+
+    if not dependents:
+        return []
+
+    dep_ids = [d.id for d in dependents]
+
+    # 2. Fetch all health events for these dependents in one query
+    event_query = select(HealthEvent).where(col(HealthEvent.dependent_id).in_(dep_ids))
+    event_result = await session.execute(event_query)
+    all_events = event_result.scalars().all()
+
+    # 3. Group events by dependent_id
+    events_by_dep: dict[str, list[HealthEvent]] = {d_id: [] for d_id in dep_ids}
+    for event in all_events:
+        events_by_dep[event.dependent_id].append(event)
+
+    # 4. Calculate and return passes
+    return [
+        calculate_health_pass(dep, events_by_dep[dep.id]) for dep in dependents
+    ]

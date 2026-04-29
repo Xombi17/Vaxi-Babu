@@ -262,6 +262,13 @@ export async function getHealthPass(dependentId: string): Promise<HealthPassResp
   return fetchApi<HealthPassResponse>(`/api/v1/dependents/${dependentId}/pass`);
 }
 
+/**
+ * Fetch health passes for all dependents in a household
+ */
+export async function getHouseholdHealthPasses(householdId: string): Promise<HealthPassResponse[]> {
+  return fetchApi<HealthPassResponse[]>(`/api/v1/dependents/household/${householdId}/passes`);
+}
+
 export async function getRecommendedSchemes(householdId: string): Promise<HealthScheme[]> {
   return fetchApi<HealthScheme[]>(`/api/v1/households/${householdId}/schemes`);
 }
