@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../auth/presentation/login_screen.dart';
 import '../presentation/register_screen.dart';
@@ -56,7 +56,7 @@ class WelcomeScreen extends ConsumerWidget {
                   const SizedBox(height: 40),
                   ElevatedButton.icon(
                     onPressed: () {
-                      Navigator.of(context).pushNamed(RegisterScreen.routePath);
+                      context.push(RegisterScreen.routePath);
                     },
                     icon: const Icon(Icons.person_add),
                     label: const Text('Create Account'),
@@ -68,8 +68,7 @@ class WelcomeScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
                     onPressed: () {
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                          LoginScreen.routePath, (route) => false);
+                      context.go(LoginScreen.routePath);
                     },
                     icon: const Icon(Icons.login),
                     label: const Text('Sign In'),

@@ -154,11 +154,16 @@ async def delete_household(
 async def list_assigned_households(
     user_type: str = "asha",
     session: AsyncSession = Depends(get_session),
+    current_household: Household = Depends(get_current_household),
 ) -> list[Household]:
-    """List households assigned to an ASHA/Anganwadi worker."""
+    """List households assigned to an ASHA/Anganwadi worker. Caller must be authenticated."""
     from app.models.household import UserType
 
     user_type_enum = UserType.from_string(user_type) if isinstance(user_type, str) else user_type
+
+    # Only ASHA/Anganwadi users may call this endpoint
+    if current_household.user_type not in (UserType.from_string("asha"), UserType.from_string("anganwadi")):
+        raise HTTPException(status_code=403, detail="Forbidden")
 
     result = await session.execute(
         select(Household).where(Household.user_type == user_type_enum).order_by(Household.created_at.desc())

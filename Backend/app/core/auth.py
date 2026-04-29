@@ -9,6 +9,7 @@ from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import select
+from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -79,7 +80,8 @@ async def get_current_household(
                     token, 
                     verification_key, 
                     algorithms=verification_algs, 
-                    options={"verify_aud": False, "leeway": 60}
+                    options={"verify_aud": True, "leeway": 10},
+                    audience="authenticated",
                 )
                 is_supabase = True
                 log.debug("auth_supabase_verified", user_id=payload.get("sub"))
@@ -108,18 +110,33 @@ async def get_current_household(
                 log.error("auth_payload_missing_sub")
                 raise credentials_exception
 
-            # Check if household exists in DB
-            result = await session.execute(select(Household).where(Household.id == user_id))
+            # Robust extraction of email/username
+            metadata = payload.get("user_metadata", {})
+            email = payload.get("email", metadata.get("email", ""))
+            normalized_email = email.lower().strip() if email else None
+            
+            # Search by ID, Auth ID, or Username
+            # This handles cases where a user exists with a different ID (e.g. from demo)
+            # but now logs in via Supabase with the same email.
+            search_conditions = [Household.id == user_id]
+            try:
+                auth_id_uuid = uuid.UUID(user_id)
+                search_conditions.append(Household.auth_id == auth_id_uuid)
+            except (ValueError, TypeError):
+                auth_id_uuid = None
+                
+            if normalized_email:
+                search_conditions.append(Household.username == normalized_email)
+                
+            result = await session.execute(select(Household).where(or_(*search_conditions)))
             household = result.scalars().first()
 
             if not household:
                 # Auto-create household if it doesn't exist (Trusting Supabase Auth)
                 log.info("auth_auto_creating_household", user_id=user_id)
-                metadata = payload.get("user_metadata", {})
-                email = payload.get("email", metadata.get("email", ""))
                 
                 # Robust username (min 3 chars)
-                username = email if email and len(email) >= 3 else f"user_{user_id[:8]}"
+                username = normalized_email if normalized_email and len(normalized_email) >= 3 else f"user_{user_id[:8]}"
                 # Robust name
                 name = metadata.get("name") or (email.split('@')[0] if email else "Family User")
                 if not name or len(name) < 1:
@@ -129,13 +146,24 @@ async def get_current_household(
                     id=user_id,
                     username=username,
                     name=name,
-                    auth_id=uuid.UUID(user_id) if isinstance(user_id, str) and "-" in user_id else None,
+                    auth_id=auth_id_uuid,
                     created_at=datetime.now(timezone.utc),
                     updated_at=datetime.now(timezone.utc)
                 )
                 session.add(household)
                 await session.flush()
                 # No refresh here to avoid detachment issues
+            else:
+                # If found but auth_id is missing or different, link it
+                if auth_id_uuid and household.auth_id != auth_id_uuid:
+                    log.info("auth_linking_existing_household", username=household.username, user_id=user_id)
+                    household.auth_id = auth_id_uuid
+                    # Mark as managed by Supabase if it wasn't already
+                    if household.password_hash != "SUPABASE_AUTH_MANAGED":
+                        household.password_hash = "SUPABASE_AUTH_MANAGED"
+                    household.updated_at = datetime.now(timezone.utc)
+                    session.add(household)
+                    await session.flush()
 
             return household
 

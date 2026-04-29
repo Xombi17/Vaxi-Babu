@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/network/dio_provider.dart';
+import '../../../core/network/api_endpoints.dart';
 import '../data/models/pregnancy_profile.dart';
 
 final pregnancyRepositoryProvider = Provider<PregnancyRepository>(
@@ -30,7 +31,7 @@ class PregnancyRepository {
   Future<PregnancyProfile?> getPregnancyProfile(String householdId) async {
     try {
       return _apiClient.get<PregnancyProfile>(
-        '/pregnancy/$householdId',
+      '${ApiEndpoints.pregnancy}/$householdId',
         decoder: (data) => PregnancyProfile.fromJson(data as Map<String, dynamic>),
       );
     } catch (e) {
@@ -45,7 +46,7 @@ class PregnancyRepository {
     String? highRiskFlags,
   }) async {
     return _apiClient.patch<PregnancyProfile>(
-      '/pregnancy/$householdId',
+      '${ApiEndpoints.pregnancy}/$householdId',
       data: <String, dynamic>{
         if (completed != null) 'completed': completed,
         if (highRiskFlags != null) 'high_risk_flags': highRiskFlags,

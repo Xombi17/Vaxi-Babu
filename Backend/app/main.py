@@ -3,7 +3,6 @@ Vaxi Babu — FastAPI Application Entry Point
 """
 
 from contextlib import asynccontextmanager
-from datetime import datetime
 
 import structlog
 from fastapi import FastAPI, Request

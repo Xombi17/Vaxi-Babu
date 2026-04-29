@@ -79,10 +79,13 @@ async def update_dependent(
     dependent_id: str,
     body: DependentUpdate,
     session: AsyncSession = Depends(get_session),
+    current_household: Household = Depends(get_current_household),
 ) -> Dependent:
     dep = await session.get(Dependent, dependent_id)
     if not dep:
         raise HTTPException(status_code=404, detail="Dependent not found")
+    if dep.household_id != current_household.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
 
     update_data = body.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -97,10 +100,13 @@ async def update_dependent(
 async def delete_dependent(
     dependent_id: str,
     session: AsyncSession = Depends(get_session),
+    current_household: Household = Depends(get_current_household),
 ) -> None:
     dep = await session.get(Dependent, dependent_id)
     if not dep:
         raise HTTPException(status_code=404, detail="Dependent not found")
+    if dep.household_id != current_household.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     await session.delete(dep)
 
 

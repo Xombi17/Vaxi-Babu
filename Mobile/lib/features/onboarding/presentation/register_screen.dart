@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 // ignore: unused_import
 // ignore: unused_import
@@ -223,8 +223,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: () {
-                          Navigator.of(context).pushNamedAndRemoveUntil(
-                              LoginScreen.routePath, (route) => false);
+                          context.go(LoginScreen.routePath);
                         },
                         child: const Text('Already have an account? Sign in'),
                       ),

@@ -23,6 +23,7 @@ dependencies = [
     "python-jose[cryptography]>=3.5.0",
     "aiosqlite>=0.22.1",
     "supabase>=2.0.0",
+    "slowapi>=0.1.9",
 ]
 
 [project.optional-dependencies]
