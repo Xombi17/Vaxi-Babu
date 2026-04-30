@@ -3,8 +3,10 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TrendingUp, Calendar, Ruler, Weight, FileText, ArrowRight, Loader2 } from 'lucide-react';
 import { createGrowthRecord } from '@/lib/api';
+import { useAuthStore } from '@/lib/auth-store';
 
 export default function AddGrowthRecordPage() {
+  const { householdId } = useAuthStore();
   const params = useParams();
   const router = useRouter();
   const dependentId = params.dependent_id as string;
@@ -27,6 +29,7 @@ export default function AddGrowthRecordPage() {
     try {
       await createGrowthRecord(dependentId, {
         recorded_date: recordedDate,
+        household_id: householdId || '',
         weight_kg: weightKg ? parseFloat(weightKg) : undefined,
         height_cm: heightCm ? parseFloat(heightCm) : undefined,
         head_circumference_cm: headCircumferenceCm ? parseFloat(headCircumferenceCm) : undefined,
